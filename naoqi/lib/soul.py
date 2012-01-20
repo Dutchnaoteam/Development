@@ -68,16 +68,16 @@ memProxy = ALProxy('ALMemory', '127.0.0.1', 9559)
 memProxy.insertListData([['dntBallDist', '', 0], ['dntPhase', 0, 0], ['dntNaoNum', robot, 0]])
 
 # specify the coach here!
-try:
-    coachproxy = ALProxy('ALMemory', '192.168.1.14', 9559)
-except: 
-    pass
+#try:
+#   coachproxy = ALProxy('ALMemory', '192.168.1.14', 9559)
+#except: 
+#    pass
     
 # If keeper -> different style of play
 playerType = 0
 if (robot == 1):
     playerType = 1
-
+    
     # Keeper coaches other naos
     try:
         # specify all playing naos here!
@@ -161,6 +161,8 @@ def Ready():
         firstCall['Playing'] = True
         firstCall['Penalized'] = True
         
+    # localize!!!    
+        
 # Set state: start searching for ball. CAUTION: Game is started in Set phase instead of Initial in penalty shootout!
 # ledProxy:  Chest Yellow
 def Set():
@@ -238,8 +240,16 @@ def Playing():
         print 'Fallen'
         # relocalize
     else:
+        # localization features on field:
+        # - goals, both yellow
+        # - lines
+        # - other robots ???
+        
+        # hacks:
+        # - rules for placement on field -> clustered particles in according place
+        # - falling                      -> scattered particles
+        # - ...
         pass
-        # localize
     
     try:
         coachPhase = coachproxy.getData('dnt'+str(robot))
@@ -602,7 +612,8 @@ def BallFound():
         else:            
             # hacked influencing of perception, causing walking forward to have priority
             if x > 0.3:
-                walking.walk(tr_max = 4.5, tr_min = 2.5, step_max = 25, step_min = 15, x_step = 0.035, y_step = 0.035, t_step = 17.5)
+                walking.walk()
+                # walking.walk(tr_max = 4.5, tr_min = 3.0, step_max = 27.5, step_min = 17.5, x_step = 0.035, y_step = 0.035, t_step = 17.5)
             else:
                 walking.walk()
             

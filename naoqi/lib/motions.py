@@ -1320,9 +1320,8 @@ def killKnees():
                                   [[-1.1], [-1.1]], [[0.35],[0.35]], True)
 # stop walking if active    
 def killWalk():
-    if motProxy.walkIsActive():
-        walkTo(0.00001, 0, 0)
-
+    motProxy.stopWalk()
+    
 # left kick with inputangle
 def lKickAngled(angle):
     motProxy.setAngles(['RShoulderRoll', 'RShoulderPitch', 'LShoulderRoll', 'LShoulderPitch',
