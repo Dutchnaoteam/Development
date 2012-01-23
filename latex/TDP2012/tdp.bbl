@@ -1,0 +1,42 @@
+\begin{thebibliography}{1}
+
+\bibitem{vanDerMey2011}
+K.-J.~Droog A.~van~der Mey, F.~Smit and A.~Visser.
+\newblock Emotion expression of an affective state space; a humanoid robot
+  displaying a dynamic emotional state during a soccer game.
+\newblock In {\em Proc. 3rd D-CIS Human Factors Event}, november 2010.
+
+\bibitem{DutchNaoTeamTDP2011}
+Duncan ten Velden, Camiel Verschoor, Auke Wiggers, Sharon Gieske, Anna Keune,
+  Sander Nugteren, Michael Cabot, Eszter Fodor, Maurits van Bellen, Timothy
+  Dingeman, Tim van Rossum, Steven Laan, and Arnoud Visser.
+\newblock Dutch nao team - team description for robocup 2011.
+\newblock Proceedings CD of the 15th RoboCup Symposium, Istanbul, July 2011.
+
+\bibitem{vdMolen2011}
+Hessel van~der Molen.
+\newblock Self-localization in the robocup soccer standard platform league with
+  the use of a dynamic tree.
+\newblock Bachelor's thesis, Universiteit van Amsterdam, June 2011.
+
+\bibitem{DutchNaoTeamTechReport2011}
+Camiel Verschoor, Auke Wiggers, Duncan ten Velthuis, Anna Keune, Michael Cabot,
+  Sander Nugteren, Erik van Egmond, Hessel van~der Molen, Robert Iepsma,
+  Maurits van Bellen, Merel de~Groot, Eszter Fodor, Richard Rozeboom, and
+  Arnoud Visser.
+\newblock Dutch nao team - code release 2011 and technical report 2011.
+\newblock Amsterdam, October 2011.
+
+\bibitem{DutchNaoTeamTDP2010}
+A.~Visser, R.~Iepsma, M.~van Bellen, R.~Kumar Gupta, and B.~Khalesi.
+\newblock Dutch nao team - team description paper - standard platform league -
+  german open 2010 (published online), January 2010.
+
+\bibitem{Visser2011rios}
+Arnoud Visser, David de~Bos, and Hessel van~der Molen.
+\newblock An {E}xperimental {C}omparison of {M}apping {M}ethods, the {G}utmann
+  dataset.
+\newblock In {\em Proc. of the RoboCup IranOpen 2011 Symposium (RIOS11)}, April
+  2011.
+
+\end{thebibliography}
