@@ -1,0 +1,96 @@
+\begin{thebibliography}{10}
+\providecommand{\url}[1]{#1}
+\csname url@rmstyle\endcsname
+\providecommand{\newblock}{\relax}
+\providecommand{\bibinfo}[2]{#2}
+\providecommand\BIBentrySTDinterwordspacing{\spaceskip=0pt\relax}
+\providecommand\BIBentryALTinterwordstretchfactor{4}
+\providecommand\BIBentryALTinterwordspacing{\spaceskip=\fontdimen2\font plus
+\BIBentryALTinterwordstretchfactor\fontdimen3\font minus
+  \fontdimen4\font\relax}
+\providecommand\BIBforeignlanguage[2]{{%
+\expandafter\ifx\csname l@#1\endcsname\relax
+\typeout{** WARNING: IEEEtran.bst: No hyphenation pattern has been}%
+\typeout{** loaded for the language `#1'. Using the pattern for}%
+\typeout{** the default language instead.}%
+\else
+\language=\csname l@#1\endcsname
+\fi
+#2}}
+
+\bibitem{Sheridan1992}
+T.~Sheridan, \emph{Telerobotics, automation, and human supervisory
+  control}.\hskip 1em plus 0.5em minus 0.4em\relax MIT Press, 1992.
+
+\bibitem{Goodrich2007}
+M.~A. Goodrich and A.~C. Schultz, ``Human-robot interaction: A survey,''
+  \emph{Foundation and Trends in Human-Computer Interaction}, vol.~1, no.~3,
+  pp. 203 -- 275, 2007.
+
+\bibitem{Goza2004}
+S.~M. Goza, R.~O. Ambrose, M.~A. Diftler, and I.~M. Spain, ``Telepresence
+  control of the nasa/darpa robonaut on a mobility platform,'' in
+  \emph{Proceedings of the SIGCHI conference on Human factors in computing
+  systems}, ser. CHI '04.\hskip 1em plus 0.5em minus 0.4em\relax New York, NY,
+  USA: ACM, 2004, pp. 623--629.
+
+\bibitem{VanErp2006}
+J.~B. van Erp, M.~Duistermaat, C.~Jansen, E.~Groen, and M.~Hoedemaeker,
+  ``Tele-presence: Bringing the operator back in the loop,'' in \emph{Virtual
+  Media for Military Applications}.\hskip 1em plus 0.5em minus 0.4em\relax
+  Meeting Proceedings RTO-MP-HFM-136, Paper 9, 2006, pp. 1--18.
+
+\bibitem{Suay2011}
+H.~B. Suay and S.~Chernova, ``Humanoid robot control using depth camera,'' in
+  \emph{Proceedings of the 6th international conference on Human-robot
+  interaction (HRI'11)}.\hskip 1em plus 0.5em minus 0.4em\relax New York, NY,
+  USA: ACM, 2011, pp. 401--402, note the video submission at
+  \url{http://dl.acm.org}.
+
+\bibitem{Broccia2011}
+G.~Broccia, M.~Livesu, and R.~Scateni, ``Gestural interaction for robot motion
+  control,'' in \emph{Eurographics Italian Chapter Conference}, 2011, pp.
+  61--66.
+
+\bibitem{Wainer2007}
+J.~Wainer, D.~Feil-Seifer, D.~A. Shell, and M.~J. Matari\'{c}, ``Embodiment and
+  human-robot interaction: A task-based perspective,'' in \emph{Proceedings,
+  16th IEEE International Workshop on Robot and Human Interactive Communication
+  (RO-MAN 2007)}, Augustus 2007, pp. 26--29.
+
+\bibitem{Koenig2010}
+N.~Koenig, L.~Takayama, and M.~J. Matari\'{c}, ``Learning from demonstration: A
+  study of visual and auditory communication and influence diagrams,'' in
+  \emph{International Symposium on Experimental Robotics (ISER)}, December
+  2010.
+
+\bibitem{Shoemake1985}
+K.~Shoemake, ``Animating rotation with quaternion curves,'' \emph{SIGGRAPH
+  Comput. Graph.}, vol.~19, no.~3, pp. 245--254, July 1985.
+
+\bibitem{euler}
+\BIBentryALTinterwordspacing
+G.~G. Slabaugh, ``Computing euler angles from a rotation matrix,'' Georgia
+  Institute of Technology, Tech. Rep., August 1999. [Online]. Available:
+  \url{http://www.gregslabaugh.name/publications/euler.pdf}
+\BIBentrySTDinterwordspacing
+
+\bibitem{Woodson1992}
+W.~E. Woodson, B.~Tillman, and P.~Tillman, \emph{Human Factors Design
+  Handbook}, 2nd~ed.\hskip 1em plus 0.5em minus 0.4em\relax McGraw Hill, 1992.
+
+\bibitem{freiburg}
+\BIBentryALTinterwordspacing
+E.~Berger and H.~B. Amor, ``Advanced kinect controller for humanized robots,''
+  student project similar to our project. [Online]. Available:
+  \url{http://naoforge.net/naovideoblog/2011/04/28/advanced-kinect-controller-humanoid-robots/}
+\BIBentrySTDinterwordspacing
+
+\bibitem{veltrop}
+\BIBentryALTinterwordspacing
+T.~Veltrop, ``Humanoid navigation teleoperation using nao and kinect,''
+  freelancer working with the Aldebaran Nao and Kinect. [Online]. Available:
+  \url{See http://taylor.veltrop.com/robotics.php}
+\BIBentrySTDinterwordspacing
+
+\end{thebibliography}
