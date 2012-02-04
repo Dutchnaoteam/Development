@@ -113,7 +113,7 @@ Due to the fact that tracking the head is difficult for the Kinect and the orien
 The glasses used are the Vuzix VR920 (see Figure~\ref{Components}). Moreover, images can be sent from the cameras of the Nao to the glasses, enabling the user to see what the robot sees. 
 The SDK from Vuzix (Version 3.0.7) was used to retrieve the orientation of the users head.
 \subsection{The Wii Remotes}
-The Kinect is performs poorly at determining the lower part of the arms, namely the wrists and hands. In order to be able to mimic the hands another piece of hardware was needed, the Wii Remotes (see Figure~\ref{Components}). The Wii Remote, or informally Wiimote, has several buttons and a built-in accelerometer. The orientation of the hands can be derived from this. Another possibility is to use buttons on the remote to control the Nao (for example, open or close hands). Other sequences are also initiated through the Wiimotes, such as walking or bending the knees.
+The Kinect performs poorly at determining the lower part of the arms, namely the wrists and hands. In order to be able to mimic the hands another piece of hardware was needed, the Wii Remotes (see Figure~\ref{Components}). The Wii Remote, or informally Wiimote, has several buttons and a built-in accelerometer. The orientation of the hands can be derived from this. Another possibility is to use buttons on the remote to control the Nao (for example, open or close hands). Other sequences are also initiated through the Wiimotes, such as walking or bending the knees.
 The software used for the Wiimotes is `WiiYourself!'  version 1.15.
 \section{DESIGN ISSUES}
 \label{sec:design}
@@ -173,7 +173,7 @@ The rotation around the z-axis can be determined from the second column of the r
 Yet, when the element $R_{32} \neq 0$, the Nao cannot perform any rotation which is defined by this rotation matrix.
 As an easy way to solve this problem was not found, resulting in the need for a different approach. \\\\
 \noindent{\textbf{`Forward backward'}}\\
-The ‘forward backward’ approach also uses rotation matrices, only in a quite different way. 
+The ‘forward backward’ approach also uses rotation matrices, only in quite a different way. 
 The idea is that the position of the end effector (i.e. the hands) is calculated first, then the Nao's built-in functions are used to solve the resulting inverse kinematics problem. 
 The name 'forward backward' is derived from how the values for these angles are found: First the observed human rotation matrices are used to calculate the hands position (starting at the shoulders position). Then the inverse kinematics calculates the angles in the Nao kinematic chain using the hands position. 
 In short: go forward from the shoulder to the hand and then backwards from the hand to the shoulder.
@@ -188,7 +188,7 @@ To illustrate the approach, an example: Assume the roll of the right shoulder is
 \center{\includegraphics[width = 3.2cm]{StickFigure.png}}
 \caption{A stick figure showing the shoulder roll in the Nao}
 \end{figure}
-Regular trigonometry could be used to solve this, however, for some joints, it is not possible to create a triangle of joint positions lying in a single plane.  For example, the elbow yaw cannot be calculated in a triangular fashion. The elbow yaw is the joint that makes you able to turn you lower arm around the axis of your upper arm. To create a triangle that calculates the elbow yaw, the positions of the elbow, the hand and another joint in that plane that is perpendicular to the upper arms axis are needed. There is no such joint, therefore the angle cannot be calculated through trigonometry. The solution to this problem is the use of vectors, which do not need to have a common point in order to calculate the angle between them. Now for the example, to calculate the elbow roll, the vector pointing from the shoulder to the hip and the vector pointing from the elbow to the hand are needed. The dot product between the two can be used to determine the angle even if the vectors are not in the same plane (where $\theta$ is the angle between the two vectors):
+Regular trigonometry could be used to solve this, however, for some joints, it is not possible to create a triangle of joint positions lying in a single plane.  For example, the elbow yaw cannot be calculated in a triangular fashion. The elbow yaw is the joint that makes you able to turn you lower arm around the axis of your upper arm. To create a triangle that calculates the elbow yaw, the positions of the elbow, the hand and another joint in that plane that is perpendicular to the upper arms axis are needed. There is no such joint, therefore the angle cannot be calculated through trigonometry. The solution to this problem is the use of vectors, which do not need to have a common point in order to calculate the angle between them. In order to calculate the elbow yaw, the vector pointing from the shoulder to the hip and the vector pointing from the elbow to the hand are needed. The dot product between the two can be used to determine the angle even if the vectors are not in the same plane (where $\theta$ is the angle between the two vectors):
 $$ \vec{a} \cdot \vec{b} = ||\vec{a}|| \cdot ||\vec{b}|| \cos{\theta}$$
 \subsection{Realtime datatransfer to/from Nao}
 The Kinect, the VR glasses and Wiimote all need to send data to the Nao.
