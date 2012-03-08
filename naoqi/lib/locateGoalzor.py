@@ -79,10 +79,10 @@ def run(image, yawHead, color):
     INPUT:  image, a [160-by-120] image needed to be filtered
             yawHead, the Robot Head Yaw, to make the angle absolute
             color, the filter color a string, can be 'blue' or 'yellow'
-    OUTPUT: returns a tupple (x, y) containing to angles for the best two
+    OUTPUT: returns a tuple (x, y) containing to angles for the best two
             poles. (None,None) is given if poles are missing
             At one missing pole (angle, None) will be returned
-            (None, angle) will never be.
+            (None, angle) will never be returned.
     '''
 
     # Filter an image based on color.
@@ -98,35 +98,42 @@ def run(image, yawHead, color):
     # Form a dict of vertical lines.
     lines = {}
     for x in range(width):                                              # for every vertical line
+        
+        checker = False
         for y in range(10,height,10):                                   # iterate from top down steps of ten pixels (start at ten)
             if (image[y,x] > threshold):                                # when a true pixel is found 
                 ry = y - 9                                              # go back nine pixels
-                while(image[ry,x] <= 70):                               # start iterating by one pixel until a true pixel is found
+                while(image[ry,x] <= threshold):                               # start iterating by one pixel until a true pixel is found
                     ry = ry + 1
+                
                 checker = False
-                for checky in range(ry, min(ry + 20, height)):          # count until 20 pixels are found in a row or until a false pixel is found
+                
+                for checky in range(ry, min(ry + 15, height)):          # count until 15 pixels are found in a row or until a false pixel is found
                     if (image[checky,x] <= 70):
                         break
-                    if (checky == ry+19):
+                    elif (checky == ry+14):
                         checker = True
-                if (checker):                                           # when a line of true pixels is found do the same from the bottom up
-                
-                    for by in range(height-10,0,-10):                   # iterate from top down steps of ten pixels (start at ten)
-                        if (image[by,x] > threshold):                   # when a true pixel is found 
-                            bry = by + 9                                # go back nine pixels
-                            while(image[bry,x] <= 70):                  # start iterating by one pixel until a true pixel is found
-                                bry = bry - 1
-                            checker = False
-                            for checky in range(max(bry-20,0), bry):    # count until 20 pixels are found in a row or until a false pixel is found
-                                if (image[checky,x] <= 70):
-                                        break
-                                if (checky == bry-19):
-                                    checker = True
-                            if (checker):                               # if bottom up searching goes past the starting pixel: Im an idiot
-                                lines[x] = (ry, bry)                    # remember starting and ending pixel
-                                break
-                    break                                               # when a false pixel is found retry at the last known pixel (ten further)
-      
+            if checker: 
+                break
+        if checker:               # when a line of true pixels is found do the same from the bottom up
+            for by in range(height-10,0,-10):                   # iterate from top down steps of ten pixels (start at ten)
+                if (image[by,x] > threshold):                   # when a true pixel is found 
+                    bry = by + 9                                # go back nine pixels
+                    while(image[bry,x] <= threshold):           # start iterating by one pixel until a true pixel is found
+                        bry = bry - 1
+                    checker = False
+                    for checky in range(max(bry-15,0), bry):    # count until 15 pixels in this column are found or until a false pixel is found
+                        if (image[checky,x] <= 70):
+                            break
+                        elif checky == bry-14 or checky == ry:  # also stop if lines overlap 
+                            checker = True
+                            
+                    if (checker):                               # if bottom up searching goes past the starting pixel: Im an idiot
+                        lines[x] = (ry, bry)                    # remember starting and ending pixel
+                        
+                                                                # when a false pixel is found retry at the last known pixel (ten further)
+    # IN CONCLUSION: A line on x has at least 20 pixels of yellow color
+    
     #######################ALGORITHMICDIVISION#######################
       
     # Group the veritcal lines together.
@@ -139,20 +146,25 @@ def run(image, yawHead, color):
     NotQuiteAsMax = None
     posMax = None
     posNotQuiteAsMax = None
-    for i in range(len(lines)-1):                                       # itterate from left to right (only where a line is found)
+    
+    for i in range(len(lines)-1):                                       # iterate from left to right (only where a line is found)
         if (currentBlob == 'empty'):                                    # remember first line
             currentBlob = 'full'
             underline = sortedlines[i]
         left = sortedlines[i]
         right = sortedlines[i+1]
+        
         (leftTop,leftBot) = lines[left]
         (rightTop,rightBot) = lines[right]
-        if (((right -  left) == 1) and not((leftBot<rightTop) or (rightBot<leftTop))):
+        
+        # if 2 lines are directly connected
+        if right - left == 1 and not (leftBot<rightTop or  rightBot<leftTop):
             upperline = sortedlines[i+1]                                # find the most outer line attached to the first line
+        # if they are separated    
         else:
-            if ((upperline - underline) > 3):                           # remember that one
+            if upperline - underline > 3:                           # remember that one
                 pos = (upperline + underline)/2
-                dif = upperline - underline                             # and the difference between the to
+                dif = upperline - underline                             # and the difference between the two
                 if (dif > NotQuiteAsMax):                               # save it if its greater than the others found
                     if (dif > Max):
                         posNotQuiteAsMax = posMax
@@ -166,6 +178,7 @@ def run(image, yawHead, color):
     if ((upperline - underline) > 3):                                   # when passed through all the lines, save the last ()
         pos = (upperline + underline)/2                                 # if its greater than the others found
         dif = upperline - underline
+        
         if (dif > NotQuiteAsMax):
             if (dif > Max):
                 posNotQuiteAsMax = posMax
@@ -178,12 +191,34 @@ def run(image, yawHead, color):
     
     #######################ALGORITHMICDIVISION#######################
     
+    # convert pixelwidth to actual width, which is 0.07 metres 
+    
+    
     # return angles to the found positions
-    tupplepart1 = None                                                  # calculate the angles to the position of the two found poles
+    tuplepart1 = None                                                  # calculate the angles to the position of the two found poles
     if posNotQuiteAsMax:
-        tupplepart1 = calcXangle(posNotQuiteAsMax)  + yawHead
-    tupplepart2 = None
+        tuplepart1 = calcXangle(posNotQuiteAsMax) + yawHead, pixelsToMeters( NotQuiteAsMax )
+    tuplepart2 = None
     if posMax:
-        tupplepart2 = calcXangle(posMax)  + yawHead
-    if tupplepart1 or tupplepart2:
-        return (tupplepart2, tupplepart1) # (closest, furthest)         # return the angles
+        tuplepart2 = calcXangle(posMax)  + yawHead, pixelsToMeters( Max )
+    if tuplepart1 or tuplepart2:
+        return (tuplepart2, tuplepart1) # (closest, furthest)         # return the angles
+        
+def pixelsToMeters( pixels ):
+    # 59 = 0.3
+    # 53 = 0.4
+    # 44 = 0.5
+    # 38 = 0.6
+    # 24 = 0.7
+    # 17 = 0.8
+    # 20 = 0.9
+    # 18 = 1.0
+    # 12 = 1.1
+    # 11 = 1.2
+    #  8 = 1.3
+    #  5 = 1.9
+    # WOLFRAMFIT:
+    return 2.55 - 0.56958 * math.log( pixels )
+    
+    
+    

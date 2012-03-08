@@ -22,10 +22,10 @@ class stateController(threading.Thread):
     def __init__(self, name):
         threading.Thread.__init__(self)
         self.name = name
-        self.on = True
+        self.running = True
 
     def __del__(self):
-        self.on = False
+        self.running = False
         self.gc.close()
 
     def run(self):
@@ -33,7 +33,7 @@ class stateController(threading.Thread):
         buttonState = 0
         counter = 0
         now = time.time()
-        while(self.on):
+        while(self.running):
             counter += 1
             # if gamecontroller active
             if self.gc.controlledRefresh():
@@ -107,7 +107,7 @@ class stateController(threading.Thread):
 
     # Closes thread
     def close(self):
-        self.on = False
+        self.running = False
         self.gc.close()
 
 # This code will only be executed if invoked directly. Not when imported from another file.

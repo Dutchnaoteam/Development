@@ -26,6 +26,7 @@ footRight()                  sidestep right (keeper)                getting stuc
 
 getHeadPos()                 return current [yaw,pitch]             x
 getPose()                    return current pose (belly, etc)       x 
+getRobotVelocity()           return xspeed, yspeed, rotspeed        x
 
 hak()                        second attempt at heelball             improvement or removal..
 hakje()                      first attempt at heelball              improvement or removal.. 
@@ -1074,6 +1075,10 @@ def getHeadPos():
 def getPose():
     return posProxy.getActualPoseAndTime()[0]
 
+# return the x-, y-, rotational speed
+def getRobotVelocity():
+    return motProxy.getRobotVelocity()
+    
 # hakje fails
 def hak():
     stiff()
@@ -1320,7 +1325,7 @@ def killKnees():
                                   [[-1.1], [-1.1]], [[0.35],[0.35]], True)
 # stop walking if active    
 def killWalk():
-    motProxy.stopWalk()
+    motProxy.post.walkTo(0,0,0.001)
     
 # left kick with inputangle
 def lKickAngled(angle):
