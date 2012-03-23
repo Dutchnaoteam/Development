@@ -41,7 +41,7 @@ class KalmanBall():
         self.mu = [[ initial[0] ],[ initial[1] ]]
         self.Sigma = [[0.1,0],[0,0.1]]
 
-    def iterate(self, measurement):
+    def iterate(self, measurement, control):
         now = time.time()
         # timestamps matter. IMPORTANT: Do not use if first iteration has not been set. 
         if self.firstCall:
@@ -49,10 +49,14 @@ class KalmanBall():
             self.timeStamp = time.time()
             
         timeTaken = time.time() - self.timeStamp
+        # major screwup if this happens 
+        if timeTaken > 1.0:
+            print 'Interval was way too long:', timeTaken
+            timeTaken = 1.0
         self.timeStamp = time.time() 
 
-        velocity = motProxy.getRobotVelocity()
-        #velocity = [0,0,0]
+        #velocity = motProxy.getRobotVelocity()
+        velocity = control
                 
         # known are speeds, convert to absolute movements
         nao_movement_x     = velocity[0] * timeTaken

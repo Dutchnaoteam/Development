@@ -1325,7 +1325,8 @@ def killKnees():
                                   [[-1.1], [-1.1]], [[0.35],[0.35]], True)
 # stop walking if active    
 def killWalk():
-    motProxy.post.walkTo(0,0,0.001)
+    if motProxy.walkIsActive():
+        motProxy.post.walkTo(0,0,0.001)
     
 # left kick with inputangle
 def lKickAngled(angle):

@@ -1,10 +1,9 @@
 from random import *
 from math import *
-from naoqi import ALProxy
 import time
 import threading
 
-motProxy = ALProxy('ALMotion', '127.0.0.1', 9559)
+#motProxy = ALProxy('ALMotion', '127.0.0.1', 9559)
 
 class ParticleFilter(threading.Thread):
 
@@ -19,7 +18,7 @@ class ParticleFilter(threading.Thread):
     control = [0,0,0]
     meanState = [0,0,0]
     counter = 0
-    lock = threading.Lock()            #lock = threading.Lock():
+    lock = threading.Lock()
     
     # feature coordinates per id, (x,y).
     # note that the naming is based on naoviewpoint (left poles are
@@ -58,37 +57,40 @@ class ParticleFilter(threading.Thread):
         while not self.closed:
             while self.running:
                 # get the current timestamp
-                interval = time.time()- self.timeStamp
+                interval = time.time() - self.timeStamp
                 self.timeStamp = time.time()
 
                 oldState = self.meanState
 
                 # get measurements, if available
-                measurements = self.measurements()
-                self.measurements = [None]
-                # get the current robot velocity
+                measurements = self.measurements
+                with self.lock:
+                    self.measurements = [None]
                 
-                control = motProxy.getRobotVelocity()
-                if control != [0,0,0]:
-                    self.control[0] += control[0] * interval
-                    self.control[1] += control[1] * interval
-                    self.control[2] += control[2] * interval
-                    
-                    self.counter += 1
-                    
-                if self.counter == 20 or measurements[0] != None:
-                    self.counter = 0
-                    self.meanState = self.iteratePlus( measurements , self.control ) 
+                # get the current robot velocity
+                #control = motProxy.getRobotVelocity()
+                
+                control[0] += self.control[0] * interval
+                control[1] += self.control[1] * interval
+                control[2] += self.control[2] * interval
+                self.meanState = self.iteratePlus( measurements , self.control ) 
+    
                 if oldState != self.meanState:
                     print 'Current position', self.meanState
                 
         print 'Closed particle filter thread safely.'
+    
+    def setControl(self, control):
+        self.control = control
+    
+    def getControl(self):
+        return self.control
      
     def getPosition(self):
         return self.meanState
                  
     def setMeasurements( self,measurements ):
-        with self.lock:     # with self.lock
+        with self.lock:
             self.measurements = measurements
         
     # Reset field variables for this particleFilter. 
@@ -211,11 +213,10 @@ class ParticleFilter(threading.Thread):
     # Simple motion model: Increment the state by the rotated control vector
     def motionModel( self, sample, control, interval ):
                 
-        # Add noise to the motion, currently 0.1 meters per 1 meter and 0.2 rad per 1 rad (I think)
-        
-        control[0] = (control[0] + gauss( 0, 0.001 ) )
-        control[1] = (control[1] + gauss( 0, 0.001 ) )
-        control[2] = (control[2] + gauss( 0, 0.002 ) )
+        # Add noise to the motion, currently 0.01 meters per 1 meter and 0.2 rad per 1? or 2 pi rad (I think)
+        control[0] = (control[0] + gauss( 0, 0.01 ) )
+        control[1] = (control[1] + gauss( 0, 0.01 ) )
+        control[2] = (control[2] + gauss( 0, 0.2 ) )
         
         x = sample[0] + control[0] * cos(sample[2]) + control[1] * cos(sample[2] + 0.5 * pi )
         y = sample[1] + control[0] * sin(sample[2]) + control[1] * sin(sample[2] + 0.5 * pi )
@@ -234,9 +235,9 @@ class ParticleFilter(threading.Thread):
             rangeR = sqrt( ( x-xR )**2 + ( y-yR )**2 )
             bearingR = self.minimizedAngle( atan2( yR - y, xR - x) - theta )
             
-            sigmaRange = 0.1
-            sigmaBearing =  0.005
-            sigmaSignature = 0.01
+            sigmaRange = 0.3        # range is very uncertain
+            sigmaBearing =  0.005     # bearing is very precise
+            sigmaSignature = 0.01    # signature does not really matter here
 
             weight = self.prob( rangeR-rangeM , sigmaRange ) * \
                      self.prob( bearingR-bearingM , sigmaBearing ) * \

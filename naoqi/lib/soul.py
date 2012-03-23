@@ -25,7 +25,7 @@ import visionInterface as vis         # All vision actions
 import coach
 import walking    
 import kalmanFilter as kalman
-import particleFilter as particle
+#import particleFilter as particle
 
 # Start the ballfinding thread
 visThread = vis.Vision('VISION')
@@ -34,6 +34,7 @@ visThread.start()
 # audio settings
 ttsProxy = ALProxy('ALTextToSpeech', '127.0.0.1', 9559)
 audProxy = ALProxy('ALAudioDevice', '127.0.0.1', 9559)
+motProxy = ALProxy('ALMotion', '127.0.0.1', 9559)
 
 # Ball location
 ball_loc = dict()
@@ -99,11 +100,9 @@ kickOff = 0
 penalty = 0
 
 kalmanFilterBall = kalman.KalmanBall()
-particleFilter   = particle.ParticleFilter()
-particleFilter.start()
-
-# testposition
-position         = [3, 2, 0]
+control = [0,0,0]
+#particleFilter   = particle.ParticleFilter()
+#particleFilter.start()
 
 ## STATES (Gamestates)
 # Initial()
@@ -175,19 +174,17 @@ def Ready():
         firstCall['Playing'] = True
         firstCall['Penalized'] = True
     
-        # feed the particle filter the nao's current position (remember, we already know it!)
-        numberOfSamples = 100
-        #PARTICLE FILTER DOESN'T SEEM TO WORK 
-        ##########particleFilter.reset( position, numberOfSamples )
-        ##########particleFilter.startFilter()
+        #  feed the particle filter the nao's current position (remember, we already know it!)
+        # numberOfSamples = 100
+        # particleFilter.reset( position, numberOfSamples )
+        # particleFilter.startFilter()
         
-    goal = vis.scanCircleGoal()
-    desiredPosition = [ 6.0, 2.0, 1.57 ] 
-    
-    localize( goal, 'Goal' , desiredPosition )
-    
+    #goal = vis.scanCircleGoal()
+    #desiredPosition = [ 6.0, 2.0, 1.57 ] 
+    #localize( goal, 'Goal' , desiredPosition )
     #print 'At position', position
-    
+
+'''    
 def localize( features, featureType, desiredPosition ):
     global position
     
@@ -225,7 +222,7 @@ def localize( features, featureType, desiredPosition ):
                 bearing, range = goalposts
                 signature = 0       
                 
-                ''' TODO find which pole is more likely to be seen '''
+                # TODO find which pole is more likely to be seen
                 if color == 'Blue':
                     if (y < 3 and theta + bearing > 0) or theta + bearing  > 0.5:
                         idFeature = 'BluePoleLeft'
@@ -264,16 +261,17 @@ def minimizedAngle( angle ) :
     if angle <= -math.pi:
         angle += 2*math.pi
     return angle
-   
+'''
         
 # Set state: start searching for ball. CAUTION: Game is started in Set phase instead of Initial in penalty shootout!
 # ledProxy:  Chest Yellow
 def Set():
+    global control
     global teamColor
     global kickOff
     global phase
     global firstCall
-    
+    control = [0,0,0]
     # if the first iteration
     if firstCall['Set']:
         
@@ -341,7 +339,7 @@ def Playing():
     # if nao has fallen down, stand up
     if mot.standUp():
         print 'Fallen'
-        particleFilter.reset( position )
+        #particleFilter.reset( position )
         # relocalize
     else:
         # localization features on field:
@@ -353,8 +351,8 @@ def Playing():
         # - rules for placement on field -> clustered particles in according place
         # - falling                      -> scattered particles
         # - ...
-        position = particleFilter.meanState
-    
+        # position = particleFilter.meanState
+        pass
     try:
         coachPhase = coachproxy.getData('dnt'+str(robot))
         if coachPhase:
@@ -643,6 +641,7 @@ def Standby():
 
 def BallFound():
     global phase
+    global control
     
     seen = False
     
@@ -650,7 +649,12 @@ def BallFound():
     ball = visThread.findBall()
     if ball:
         seen = True
-    
+
+    ball = kalmanFilterBall.iterate(ball, control)
+    (x,y) = ball
+    memProxy.insertData('dntPhase', 'BallFound')
+    memProxy.insertData('dntBallDist', math.sqrt(x**2 + y**2))
+        
     if firstCall['BallFound']:
         ledProxy.fadeRGB('RightFaceLeds', 0x0000ff00, 0)
         firstCall['BallFound'] = False
@@ -658,22 +662,15 @@ def BallFound():
         if seen:
             kalmanFilterBall.setFirstCall(True, ball)
         
-    ball = kalmanFilterBall.iterate(ball)
-    
-    (x,y) = ball
-    print x,y
-    memProxy.insertData('dntPhase', 'BallFound')
-    memProxy.insertData('dntBallDist', math.sqrt(x**2 + y**2))
-
-    if x < 0.17 and -0.02 < y < 0.02 and seen:
+    if seen and x < 0.17 and -0.02 < y < 0.02:
         print 'Kick'
         # BLOCKING CALL: FIND BALL WHILE STANDING STILL FOR ACCURATE CORRECTION
         mot.killWalk()
-        phase = 'Kick'
-        
+        control = [0,0,0]
+        phase = 'Kick'           
     else:            
         if seen:
-            print 'Seen ball'
+            print 'Seen ball', x,y 
             # hacked influencing of perception, causing walking forward to have priority
             theta = math.atan(y/x) / 2.5
             x = 3 * (x-0.17)
@@ -683,30 +680,41 @@ def BallFound():
             else:
                 y = 2.0 * y
         else:
-            print 'Not seen ball'
+            print 'Not seen ball',x,y
             # find the 'ideal' headposition based on the kalman filter position
-            (yaw, pitch) = vis.calcHeadAngle( (x,y), (320,480), True)
-            mot.changeHead( yaw * 0.5, pitch * 0.5 )
+            # (yaw, pitch) = vis.calcHeadAngle( (x,y), (320,480), True)
+            # mot.changeHead( yaw * 0.5, pitch * 0.5 )
             
             # hacked influencing, turn towards last found position first
             theta = math.atan(y/x) / 2.0
             x = (x/3.0 -0.2)
             y = 0
-            
 
         mot.SWTV(x , y, theta, 1.0)
-    
+        
+        # maxXSpeed 8 cm / s for nao 
+        vX = max(-1, min(1,x)) * 0.08
+        # maxYSppeed is the same
+        vY = max(-1, min(1, y)) * 0.08
+        # maxTSpeed 2pi / 8 s = 1/4 pi / s
+        vT = max(-1, min(1, theta))* 0.25 * math.pi
+        
+        control = [vX,vY,vT]
+            
+
     # If covariance becomes too large, when?
     if kalmanFilterBall.Sigma[0][0] > 4.0:
         
         print kalmanFilterBall.Sigma
         print 'Perhaps the ball is lost, turning ', y,'to find it' 
         mot.postWalkTo(0,0, math.atan(y / x))
+        # TODO somehow influence kalman mu based on turn
         phase = 'BallNotFound'
 
 def BallNotFound():
     global ball_loc
     global phase
+    global control
     
     # if this is the first time the ball is not founnd
     if firstCall['BallNotFound']:
@@ -715,6 +723,7 @@ def BallNotFound():
         ledProxy.fadeRGB('RightFaceLeds',0x00ff0000, 0) # no ball, led turns red
         mot.killWalk()
         firstCall['BallNotFound'] = False
+        control = [0,0,0]
         
     # try to find a ball
     if vis.scanCircle(visThread, 0.2):
@@ -855,7 +864,7 @@ def awakeSoul():
         pass
     sc.close()
     visThread.close()
-    particleFilter.close()
+    # particleFilter.close()
     
 # DICTIONARIES
 # STATES

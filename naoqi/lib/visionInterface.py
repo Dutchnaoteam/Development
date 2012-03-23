@@ -30,7 +30,6 @@ def subscribe():
     return vidProxy.subscribe("python_GVM", 0, 11, 30)
 
 # Vision ID
-unsubscribe()
 visionID = subscribe()
 # METHODS FOR VISION
 
@@ -39,7 +38,6 @@ def snapShot(nameId):
     #getPosition(name, space={0,1,2}, useSensorValues)
     # Make image
     shot = vidProxy.getImageRemote(nameId)
-        
     vid = motProxy.getPosition('CameraBottom', 2, True)
     head = motProxy.getAngles(["HeadPitch", "HeadYaw"], True)
     
@@ -176,9 +174,9 @@ def scanCircleGoal(yawRange = {0:-1.5, 1:1.5}):
         elif 2<yawRange[r]:
             yawRange[r] = 2     
     
+    current = motProxy.getAngles(['HeadPitch', 'HeadYaw'], True)
     # move head to starting position
-    motProxy.setAngles(['HeadPitch', 'HeadYaw'], [-0.5, yawRange[0] ], 0.8)
-    time.sleep(0.6)
+    motProxy.angleInterpolation(['HeadPitch', 'HeadYaw'], [-0.5, yawRange[0] ], [abs(current[0] + 0.5 / 3.0), abs(current[1] + yawRange[0] / 2.0)], True)
     
     increment = math.copysign(0.25, yawRange[1])
     for yaw in xfrange( yawRange[0] + increment, yawRange[1] + increment, increment):
