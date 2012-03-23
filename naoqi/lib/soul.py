@@ -177,8 +177,9 @@ def Ready():
     
         # feed the particle filter the nao's current position (remember, we already know it!)
         numberOfSamples = 100
-        particleFilter.reset( position, numberOfSamples )
-        particleFilter.startFilter()
+        #PARTICLE FILTER DOESN'T SEEM TO WORK 
+        ##########particleFilter.reset( position, numberOfSamples )
+        ##########particleFilter.startFilter()
         
     goal = vis.scanCircleGoal()
     desiredPosition = [ 6.0, 2.0, 1.57 ] 
