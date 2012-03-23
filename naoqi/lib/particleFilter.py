@@ -18,7 +18,7 @@ class ParticleFilter(threading.Thread):
     control = [0,0,0]
     meanState = [0,0,0]
     counter = 0
-    lock = threading.Lock()
+    lock = threading.Lock()            #lock = threading.Lock():
     
     # feature coordinates per id, (x,y).
     # note that the naming is based on naoviewpoint (left poles are
@@ -87,7 +87,7 @@ class ParticleFilter(threading.Thread):
         return self.meanState
                  
     def setMeasurements( self,measurements ):
-        with self.lock
+        with self.lock:     # with self.lock
             self.measurements = measurements
         
     # Reset field variables for this particleFilter. 
