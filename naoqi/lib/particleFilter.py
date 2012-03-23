@@ -1,5 +1,6 @@
 from random import *
 from math import *
+from naoqi import ALProxy
 import time
 import threading
 
