@@ -6,6 +6,9 @@ import math
 motProxy = ALProxy('ALMotion', '127.0.0.1', 9559)
 posProxy = ALProxy('ALRobotPose', '127.0.0.1', 9559)
 
+# set footgaitconfig
+
+
 '''
 All motions are to be specified here in alphabetical order:
 
@@ -666,18 +669,21 @@ def diveLeft():
     times.append([0.5])
     
     names.extend(['RHipRoll', 'RHipPitch', 'RKneePitch', 'RAnklePitch', 'RAnkleRoll'])
-    angles.extend([[0], [-0.3], [0.6871], [-0.3099], [0.54788]])
+    angles.extend([[0.0], [-0.3], [0.6871], [-0.3099], [0.54788]])
     times.extend([[0.5], [0.5], [0.5], [0.5], [0.5]])
 
+    motProxy.post.angleInterpolation(names, angles, times, True)
+
+    names = list()
+    angles = list()
+
     names.extend(['LShoulderPitch', 'LShoulderRoll', 'LElbowYaw', 'LElbowRoll'])    
-    angles.extend([[-1.1], [0.5], [0.1883], [-0.5016]])
-    times.extend([[0.2], [0.2], [0.2], [0.2]])
+    angles.extend([-1.1,             0.5,            0.1883,    -0.5016] )
 
     names.extend(['RShoulderPitch','RShoulderRoll', 'RElbowYaw', 'RElbowRoll'])
-    angles.extend([[1.2, 1.5], [-0.11, 0.3403], [-0.1, 0.1226], [0.25, 0.903]])
-    times.extend([[0.2,0.5], [0.2,0.5], [0.2,0.5], [0.2, 0.5]])
-    
-    motProxy.angleInterpolation(names, angles, times, True)
+    angles.extend([1.5,             0.3403,          0.1226,       0.903])
+
+    motProxy.angleInterpolationWithSpeed(names, angles, 1.0, True)    
     
     motProxy.setStiffnesses('Body', 0)
     time.sleep(2)
@@ -694,17 +700,25 @@ def diveLeft():
     motProxy.setAngles('RLeg', [-0.5,0,0,0.6,0.2,-0.2], 0.2)    
     motProxy.setAngles('LLeg', [-0.5,0,0,0.6,0.2, 0.2], 0.2)
     motProxy.setStiffnesses('RArm', 0)
-    while posProxy.getActualPoseAndTime()[0] != 'Back' and posProxy.getActualPoseAndTime()[0] != 'Belly':
+
+    # wait until nao has taken a pose or three seconds have passed
+    now = time.time()
+    while posProxy.getActualPoseAndTime()[0] != 'Back' and \
+          posProxy.getActualPoseAndTime()[0] != 'Belly' and \
+          time.time() - now < 3.0 :
         pass
+    
     motProxy.setStiffnesses('Body',0.8)
     if posProxy.getActualPoseAndTime()[0] == 'Back':
         backToStand()
-        motProxy.walkTo(0.1, 0.05, 1.5)
+        walkTo(0.1, 0.05, 1.5)
 
     elif posProxy.getActualPoseAndTime()[0] == 'Belly':
         bellyToStand()
-        motProxy.walkTo(-0.1, -0.05, -1.5)
-    
+        walkTo(-0.1, -0.05, -1.5)
+    else:
+        print 'What the heck, I do not have a pose!'
+        
 # dive towards the right (keeper)
 def diveRight():
     names = list()
@@ -722,18 +736,24 @@ def diveRight():
     names.extend(['LHipRoll', 'LHipPitch', 'LKneePitch', 'LAnklePitch', 'LAnkleRoll'])
     angles.extend([[0], [-0.3], [0.6871], [-0.3099], [-0.54788]])
     times.extend([[0.5], [0.5], [0.5], [0.5], [0.5]])
+
+    motProxy.post.angleInterpolation(names, angles, times, True)
+    
+    names = list()
+    angles = list()
     
     names.extend(['RShoulderPitch','RShoulderRoll', 'RElbowYaw', 'RElbowRoll'])
-    angles.extend([[-1.1], [-0.5], [0.1883], [0.5016]])
-    times.extend([[0.2], [0.2], [0.2], [0.2]])
+    angles.extend([-1.1, -0.5, 0.1883, 0.5016])
     
     names.extend(['LShoulderPitch', 'LShoulderRoll', 'LElbowYaw', 'LElbowRoll'])
-    angles.extend([[1.2, 1.5], [0.11, -0.3403], [-0.1, 0.1226], [-0.25, -0.903]])
-    times.extend([[0.2,0.5], [0.2,0.5], [0.2,0.5], [0.2, 0.5]])
+    angles.extend([1.5, -0.3403, 0.1226, -0.903])
+
+    motProxy.angleInterpolationWithSpeed(names, angles, 1.0, True)
     
-    motProxy.angleInterpolation(names, angles, times, True)
     motProxy.setStiffnesses('Body', 0)
+
     time.sleep(2)
+
     motProxy.setStiffnesses('LArm', 0.8)
     motProxy.setStiffnesses('LLeg', 0.6)
     motProxy.setStiffnesses('RLeg', 0.6)
@@ -743,16 +763,22 @@ def diveRight():
     motProxy.setAngles('LLeg', [-0.5,0,0,0.6,0.2, 0.2], 0.2)    
     motProxy.setAngles('RLeg', [-0.5,0,0,0.6,0.2,-0.2], 0.2)
     motProxy.setStiffnesses('RArm', 0)
-    while posProxy.getActualPoseAndTime()[0] != 'Back' and posProxy.getActualPoseAndTime()[0] != 'Belly':
+
+    now = time.time()
+    while posProxy.getActualPoseAndTime()[0] != 'Back' and \
+          posProxy.getActualPoseAndTime()[0] != 'Belly' and \
+          time.time() - now < 3.0:
         pass    
     motProxy.setStiffnesses('Body',0.8)
     if posProxy.getActualPoseAndTime()[0] == 'Back':
         backToStand()
-        motProxy.walkTo(0.1, -0.05, -1.5)
+        walkTo(0.1, -0.05, -1.5)
     elif posProxy.getActualPoseAndTime()[0] == 'Belly':
         bellyToStand()
-        motProxy.walkTo(-0.1, 0.05, 1.5)
-    
+        walkTo(-0.1, 0.05, 1.5)
+    else:
+        print 'What the heck, I do not have a pose!'
+        
 # heelball, not finished.
 def experimentalKick(angle):
     names = list()
@@ -1289,14 +1315,15 @@ def kick(angle):
         times =  [[ 0.5], [0.5], [0.5], [0.5], [0.5], [ 0.4,  0.8], [ 0.4, 0.8],  [0.4, 0.8], [0.4], [0.5], [ 0.4], [ 0.4], [ 0.4],  [0.4]]
         motProxy.angleInterpolation(names, angles, times, True)
         
-        motProxy.angleInterpolation(['RShoulderPitch', 'RHipPitch', 'RKneePitch', 'RAnklePitch'], 
-                                    [1.5,               -0.7,        1.05,         -0.5],  
-                                    [[0.1],             [0.1],       [0.1],        [0.1]], True)
+        motProxy.angleInterpolationWithSpeed(['RShoulderPitch', 'RHipPitch', 'RKneePitch', 'RAnklePitch'], 
+                                             [1.5,               -0.7,        1.05,         -0.5],  
+                                             1.0 , True)
         
         motProxy.angleInterpolation(['RHipPitch', 'RKneePitch', 'RAnklePitch'], \
                                     [-0.5,         1.1,        -0.65], 
                                     [[0.25],       [0.25],     [0.25]], True)
         normalPose(True)
+        
     # kick towards front, left leg    
     elif -0.2 < angle < 0:  
         names = ['LShoulderRoll', 'LShoulderPitch', 'RShoulderRoll', 'RShoulderPitch', 'LHipRoll', 'LHipPitch', 'LKneePitch', 'LAnklePitch', \
@@ -1304,9 +1331,9 @@ def kick(angle):
         angles = [[0.3], [0.4], [-0.5], [1.0], [0.0], [-0.4, -0.2], [0.95, 1.5], [-0.55, -1], [-0.2], [0.0], [-0.4], [0.95], [-0.55], [-0.2]]
         times =  [[0.5], [0.5], [ 0.5], [0.5], [0.5], [ 0.4,  0.8], [ 0.4, 0.8], [ 0.4, 0.8], [ 0.4], [0.5], [ 0.4], [0.4] , [0.4],   [0.4]]        
         motProxy.angleInterpolation(names, angles, times, True)
-        motProxy.angleInterpolation(['LShoulderPitch', 'LHipPitch', 'LKneePitch', 'LAnklePitch'],
-                                    [1.5,               -0.7,        1.05,         -0.5],        
-                                    [[0.1],              [0.1],      [0.1],        [0.1]], True)
+        motProxy.angleInterpolationWithSpeed(['LShoulderPitch', 'LHipPitch', 'LKneePitch', 'LAnklePitch'],
+                                             [1.5,               -0.7,        1.05,         -0.5],        
+                                             1.0, True)
         motProxy.angleInterpolation(['LHipPitch', 'LKneePitch', 'LAnklePitch'], 
                                     [-0.5,         1.1,          -0.65], 
                                     [[0.25],      [0.25],        [0.25]], True)    
@@ -1323,6 +1350,7 @@ def killKnees():
                                            [[0], [0]], [[0.15], [0.15]])
         motProxy.angleInterpolation(['RHipPitch', 'LHipPitch'], 
                                   [[-1.1], [-1.1]], [[0.35],[0.35]], True)
+
 # stop walking if active    
 def killWalk():
     if motProxy.walkIsActive():
@@ -1448,7 +1476,7 @@ def sideLeftKick():
     angles = list()
     times = list()
     
-    namees = ['RShoulderRoll','LHipRoll', 'LHipPitch', 'LKneePitch','LAnklePitch','LAnkleRoll','RHipRoll','RHipPitch','RKneePitch','RAnklePitch','RAnkleRoll']
+    names = ['RShoulderRoll','LHipRoll', 'LHipPitch', 'LKneePitch','LAnklePitch','LAnkleRoll','RHipRoll','RHipPitch','RKneePitch','RAnklePitch','RAnkleRoll']
     angles = [[-0.4],         [0.0, 0.3], [-0.4, -0.8],[0.95, 0.2], [-0.55, 0.6], [-0.25,-0.3],[0.05 ],   [-0.4],     [0.95],      [-0.5],       [-0.25]]
     times  = [[0.2],          [0.3, 0.75],[0.5,   1.0],[0.5,  1.0], [ 0.5,  1.0], [0.5,   1.0],[ 1.0],    [0.5],      [0.5 ],      [ 0.5],       [ 0.5]]
     

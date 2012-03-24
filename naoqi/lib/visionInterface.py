@@ -176,7 +176,10 @@ def scanCircleGoal(yawRange = {0:-1.5, 1:1.5}):
     
     current = motProxy.getAngles(['HeadPitch', 'HeadYaw'], True)
     # move head to starting position
-    motProxy.angleInterpolation(['HeadPitch', 'HeadYaw'], [-0.5, yawRange[0] ], [abs(current[0] + 0.5 / 3.0), abs(current[1] + yawRange[0] / 2.0)], True)
+    motProxy.angleInterpolation(['HeadPitch',                 'HeadYaw'], \
+                                [-0.5,                        yawRange[0] ], \
+                                [abs(current[0] + 0.5 / 3.0), abs(current[1] + yawRange[0] / 2.0)], \
+                                True)
     
     increment = math.copysign(0.25, yawRange[1])
     for yaw in xfrange( yawRange[0] + increment, yawRange[1] + increment, increment):

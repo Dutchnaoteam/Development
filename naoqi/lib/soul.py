@@ -34,7 +34,6 @@ visThread.start()
 # audio settings
 ttsProxy = ALProxy('ALTextToSpeech', '127.0.0.1', 9559)
 audProxy = ALProxy('ALAudioDevice', '127.0.0.1', 9559)
-motProxy = ALProxy('ALMotion', '127.0.0.1', 9559)
 
 # Ball location
 ball_loc = dict()
@@ -263,7 +262,8 @@ def minimizedAngle( angle ) :
     return angle
 '''
         
-# Set state: start searching for ball. CAUTION: Game is started in Set phase instead of Initial in penalty shootout!
+# Set state: start searching for ball. CAUTION: Game is started in Set phase 
+# instead of Initial in penalty shootout!
 # ledProxy:  Chest Yellow
 def Set():
     global control
@@ -271,7 +271,9 @@ def Set():
     global kickOff
     global phase
     global firstCall
+
     control = [0,0,0]
+
     # if the first iteration
     if firstCall['Set']:
         
@@ -513,9 +515,10 @@ def BallFoundKeep():
                 # Similar triangles -> C / B = D / A 
                 #                      D     = A*C/B
                 #                      D     = ynew - dir
+                #                      A*C/B = ynew - dir
                 #                      dir   = A*C/B - ynew
                 
-                dir = (yold - ynew )* xnew / (xold - xnew) - ynew
+                dir = (yold - ynew ) * xnew / (xold - xnew) - ynew
                 
                 # if a direction has been found, clear all variables 
                 ball_loc = dict()
@@ -567,7 +570,8 @@ def BallApproaching():
         print 'Step left'
         mot.footLeft()
     phase = 'BallNotFoundKeep'
-    
+
+'''    
 def InGoalArea():
     global phase
     mot.normalPose()
@@ -599,9 +603,9 @@ def InGoalArea():
         print 'No Ball'
         mot.killWalk()
         phase = 'ReturnToGoal'
-
-    
-
+'''
+     
+'''
 def UnpenalizedKeep():
     global phase
     global ball_loc
@@ -622,7 +626,7 @@ def UnpenalizedKeep():
     
     # walk straight towards a goal if you see one
     mot.postWalkTo( x2-x1,y2-y1, minimizedAngle( (t2-t1)-math.pi ) )
-    
+''' 
     
     
 # PLAYER
@@ -636,7 +640,7 @@ def Standby():
     global phase
     ttsProxy.say('Waiting')
     mot.killWalk()
-    time.sleep(1)
+    time.sleep(0.3)
     phase = 'BallFound'
 
 def BallFound():
@@ -743,7 +747,8 @@ def Kick():
     
     # scan for a goal
     goal = vis.scanCircleGoal()
-    motProxy.post.angleInterpolation(['HeadPitch', 'HeadYaw'], [[0.5], [0]], [[0.15], [0.15]], True)
+
+    mot.setHead(0, 0.5)
     visThread.startScan()
     
     # Case 0 : Ball stolen/lost.
