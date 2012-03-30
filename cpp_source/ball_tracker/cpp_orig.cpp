@@ -30,16 +30,8 @@ BOOST_PYTHON_MODULE(balltracker)
         .def_readwrite("max_val", &maxValLoc::max_val);
 }
 
-maxValLoc balltrack(char image[])
+maxValLoc balltrack(IplImage* img)
 {
-    IplImage* img = 0;
-
-    // load an image
-    img=cvLoadImage(image);
-    if(!img) {
-        printf("Could not load image file: %d\n", 1 );
-        exit(0);
-    }
 
     IplImage *imgOrig = cvCreateImage(cvGetSize(img), 8, 3);
     *imgOrig = *img;

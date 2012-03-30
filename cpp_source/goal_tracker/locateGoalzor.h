@@ -10,15 +10,31 @@
 #include <map>
 #include <algorithm>
 #include <boost/foreach.hpp>
+#include <boost/python.hpp>
+#include <Python.h>
 
 using namespace std;
 
-typedef struct tuple {
+
+struct tup {
     double first;
     double second;
-} tuple;
+} ;
 
 // prototypes
 IplImage* markGoalCV(IplImage* im, string color);
 double calcXangle(int xcoord);
-tuple run(IplImage* image, double yawHead, string color);
+tup run(IplImage* image, double yawHead, string color);
+tup goaltrack(IplImage* img, string color);
+
+
+
+BOOST_PYTHON_MODULE(goaltracker)
+{
+    using namespace boost::python;
+    def("goaltrack", goaltrack);
+    class_<tup>("tup")
+        .def_readwrite("first", &tup::first)
+        .def_readwrite("second", &tup::second);
+}
+
