@@ -9,35 +9,35 @@
 #include <Python.h>
 
 typedef struct {
-    CvPoint max_loc;
+    int max_loc_x;
+    int max_loc_y;
     double max_val;
 } maxValLoc;
 
-int main(int argc, char *argv[]);
+maxValLoc balltrack(char image[]);
 void filterIm(IplImage *img);
 void blur(IplImage *img);
 maxValLoc findMax(IplImage *img);
 
 
-BOOST_PYTHON_MODULE(testing)
+BOOST_PYTHON_MODULE(balltracker)
 {
     using namespace boost::python;
-    def("main", main);
+    def("balltrack", balltrack);
+    class_<maxValLoc>("maxValLov")
+        .def_readwrite("max_loc_x", &maxValLoc::max_loc_x)
+        .def_readwrite("max_loc_y", &maxValLoc::max_loc_y)
+        .def_readwrite("max_val", &maxValLoc::max_val);
 }
 
-int main(int argc, char *argv[])
+maxValLoc balltrack(char image[])
 {
     IplImage* img = 0;
 
-    if(argc < 2) {
-        printf("Usage: main <image-file-name>\n\7");
-        exit(0);
-    }
-
     // load an image
-    img=cvLoadImage(argv[1]);
+    img=cvLoadImage(image);
     if(!img) {
-        printf("Could not load image file: %s\n",argv[1]);
+        printf("Could not load image file: %d\n", 1 );
         exit(0);
     }
 
@@ -60,15 +60,11 @@ int main(int argc, char *argv[])
     useconds = end.tv_usec - start.tv_usec;
     mtime = ( (seconds) * 1000 + useconds/1000.0 ) + 0.5;
     printf("Time taken: %ld milliseconds\n", mtime);
+    
 
-    cvCircle(imgOrig, max.max_loc, 3, CV_RGB(0, 255, 0), -1, 8, 0);
-
-    // create a window
-    cvNamedWindow("mainWin", CV_WINDOW_AUTOSIZE);
-    cvShowImage("mainWin", imgOrig);
-    cvWaitKey(0);
     cvReleaseImage(&img);
     cvReleaseImage(&imgOrig);
+    return max;
 }
 
 void filterIm(IplImage* img)
@@ -105,7 +101,8 @@ maxValLoc findMax(IplImage* img)
     maxValLoc ret;
 
     cvMinMaxLoc(img, &min_val, &max_val, &min_loc, &max_loc);
-    ret.max_loc = max_loc;
+    ret.max_loc_x = max_loc.x;
+    ret.max_loc_y = max_loc.y;
     ret.max_val = max_val;
 
     return ret;
