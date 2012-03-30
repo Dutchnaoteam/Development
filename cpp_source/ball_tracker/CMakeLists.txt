@@ -1,4 +1,6 @@
-PROJECT( cpp_orig )
+LINK_LIBRARIES( boost_python )
 FIND_PACKAGE( OpenCV REQUIRED )
-ADD_EXECUTABLE( balltracker cpp_orig.cpp )
+INCLUDE_DIRECTORIES( "/usr/include/python2.7" )
+LINK_DIRECTORIES( "/usr/lib/python2.7" )
+ADD_LIBRARY( balltracker SHARED cpp_orig.cpp )
 TARGET_LINK_LIBRARIES( balltracker ${OpenCV_LIBS} )

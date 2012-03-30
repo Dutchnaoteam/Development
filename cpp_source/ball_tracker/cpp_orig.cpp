@@ -5,15 +5,25 @@
 #include <highgui.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <boost/python.hpp>
+#include <Python.h>
 
 typedef struct {
     CvPoint max_loc;
     double max_val;
 } maxValLoc;
 
+int main(int argc, char *argv[]);
 void filterIm(IplImage *img);
 void blur(IplImage *img);
 maxValLoc findMax(IplImage *img);
+
+
+BOOST_PYTHON_MODULE(testing)
+{
+    using namespace boost::python;
+    def("main", main);
+}
 
 int main(int argc, char *argv[])
 {
