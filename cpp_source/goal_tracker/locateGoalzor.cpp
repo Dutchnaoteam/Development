@@ -2,6 +2,7 @@
 
 using namespace std;
 
+
 IplImage* markGoalCV(IplImage *im, string color)
 {
     /**
@@ -80,7 +81,7 @@ double calcXangle(int xcoord)
     return xAngle;
 }
 
-tuple run(IplImage* image, double yawHead, string color)
+tup run(IplImage* image, double yawHead, string color)
 {
     /**
      * By Author
@@ -246,7 +247,7 @@ tuple run(IplImage* image, double yawHead, string color)
         tupplepart2 = calcXangle(posMax) + yawHead;
 
     if (tupplepart1 || tupplepart2) {
-        tuple ret;
+        tup ret;
         ret.first = tupplepart2;
         ret.second = tupplepart1;
 
@@ -254,16 +255,9 @@ tuple run(IplImage* image, double yawHead, string color)
     }
 }
 
-
-
-int main(int argc, const char* argv[])
+tup goaltrack(IplImage* img, string color)
 {
-    IplImage* img = cvLoadImage(argv[1]);
-
-    tuple goal = run(img, 0, argv[2]);
-
-    cout << "(" << goal.first << ", " << goal.second << ")" << endl;
-
+    tup goal = run(img, 0, color);
     cvReleaseImage(&img);
-    return 0;
+    return goal;
 }
