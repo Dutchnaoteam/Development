@@ -2,10 +2,6 @@ import math
 import time
 import random
 import matrix
-import visionInterface as v
-from naoqi import ALProxy
-
-motProxy = ALProxy('ALMotion', '127.0.0.1', 9559)
 
 # Method to create samples given the mean and covariance matrix
 def sample(mean, cov , dimensions):
@@ -13,15 +9,15 @@ def sample(mean, cov , dimensions):
 
     randoms = matrix.zero(dimensions, 1)
     for i in range(len(randoms)):
-        randoms[i][0] = random.gauss(0,1)
+        randoms[i][0] = random.gauss(0,0.05)
 
     return matrix.plus( mean , matrix.mult(r, randoms))
 
 class KalmanBall():    
     # R = noise for covariance matrix prediction step
-    R = [[0.001,0],[0,0.001]]
+    R = [[0.01,0],[0,0.01]]
     # Q = noise for covariance matrix correction step
-    Q = [[0.001,0],[0,0.001]]
+    Q = [[0.01,0],[0,0.01]]
 
     mu = [[0],[0]]
     Sigma = [[0.1,0],[0,0.1]]
@@ -40,19 +36,19 @@ class KalmanBall():
         self.firstCall = arg
         self.mu = [[ initial[0] ],[ initial[1] ]]
         self.Sigma = [[0.1,0],[0,0.1]]
-
+        self.timeStamp = time.time()
+        
     def iterate(self, measurement, control):
         now = time.time()
         # timestamps matter. IMPORTANT: Do not use if first iteration has not been set. 
         if self.firstCall:
             self.firstCall = False
-            self.timeStamp = time.time()
             
         timeTaken = time.time() - self.timeStamp
         # major screwup if this happens 
         if timeTaken > 1.0:
-            print 'Interval was way too long:', timeTaken
-            timeTaken = 1.0
+            print 'Interval was way too long: ', timeTaken, 'seconds.'
+            timeTaken = 0.0
         self.timeStamp = time.time() 
 
         #velocity = motProxy.getRobotVelocity()
@@ -62,11 +58,11 @@ class KalmanBall():
         nao_movement_x     = velocity[0] * timeTaken
         nao_movement_y     = velocity[1] * timeTaken
         nao_movement_t     = velocity[2] * timeTaken
-
+        #print timeTaken
         # step forward using control vector u
         self.u[0][0] = nao_movement_x
         self.u[1][0] = nao_movement_y
-
+        print 'Increment control ', self.u 
         muBelief = self.mu
         
         # ________ PREDICTION ________
@@ -78,6 +74,7 @@ class KalmanBall():
         # Predict new measurement based on nao movement.
         # Nao moves x,y towards the ball 
         muBelief = matrix.subtract( muBelief , self.u )
+        #print muBelief
         # Nao rotates theta
         muBelief = matrix.mult( rotationmatrix, muBelief )
 

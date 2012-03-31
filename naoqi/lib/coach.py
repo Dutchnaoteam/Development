@@ -18,8 +18,6 @@ import time
 import threading
 from naoqi import ALProxy
 
-memProxy = ALProxy('ALMemory', '127.0.0.1', 9559)
-
 #we first insert some data that coach needs to know about every Nao
 #prefix everything with DNT, to have unique names
 #state is the gamestate (and also if the nao is penalized?)
@@ -42,15 +40,17 @@ class Coach(threading.Thread):
 #TODO: AlmemProxy dingen bekijken om data te exchangen
 # http://users.aldebaran-robotics.com/docs/site_en/bluedoc/ALmemProxy.html
     
-    def __init__(self, name, ipList):
+    def __init__(self, name, ipList, memProxy):
         threading.Thread.__init__(self)
         self.name = name
+        self.memProxy = memProxy
         self.on = True
         #data the coach should display to the other nao's
         memProxy.insertListData([['dnt1', '', 0], ['dnt2', '', 0], ['dnt3', '', 0], ['dnt4', '', 0]])
         #make a proxy dict containing proxys of all the other nao's
         self.proxyDict = {}
         for ip in ipList:
+            # TODO send a reference to memproxies of other players instead
             self.proxyDict[ip] = ALProxy('ALmemProxy', ip, 9559)
 
     def __del__(self):
@@ -110,7 +110,7 @@ class Coach(threading.Thread):
                 messageOut.append( ['dnt' + str(n), action, 0] )
             
             # 'Send' messages 
-            memProxy.insertListData(messageOut)
+            self.memProxy.insertListData(messageOut)
             
             # pause for a short time
             time.sleep(1)
