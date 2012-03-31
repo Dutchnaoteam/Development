@@ -39,8 +39,6 @@ class Coach(threading.Thread):
 #Als er een Nao bezig is met naar de bal gaan moet die dat constant uitzenden
 #Als hij de bal schopt stopt hij daarmee. En dan moet er weer een nieuwe cycle beginnen van zoeken naar de bal
 #Het programma moet dan een message sturen aan de rest om te stoppen met lopen en een bal te gaan zoeken
-#TODO: AlmemProxy dingen bekijken om data te exchangen
-# http://users.aldebaran-robotics.com/docs/site_en/bluedoc/ALmemProxy.html
     
     def __init__(self, name, ipList):
         threading.Thread.__init__(self)
@@ -52,6 +50,7 @@ class Coach(threading.Thread):
         self.proxyDict = {}
         for ip in ipList:
             self.proxyDict[ip] = ALProxy('ALmemProxy', ip, 9559)
+        self.ownProxy = ALProxy('ALmemProxy', '127.0.0.1', 9559)
 
     def __del__(self):
         self.on = False
@@ -90,7 +89,7 @@ class Coach(threading.Thread):
             print 'Saw ball: ', ballSeen, 'Closest: ' ,closestNao           
             messageOut = list()
             # For every nao (including keeper, might come in handy later)
-            for n in range(1,5):
+            for n in xrange(1,5):
                 # if keeper, dont alter actions
                 if n == 1:
                     action = ''
@@ -115,3 +114,5 @@ class Coach(threading.Thread):
             # pause for a short time
             time.sleep(1)
 
+    def getCoachData(self, data):
+        return self.ownProxy.getData(data)

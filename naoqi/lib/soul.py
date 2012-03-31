@@ -70,25 +70,30 @@ robot = sc.getRobotNumber()
 memProxy = ALProxy('ALMemory', '127.0.0.1', 9559)
 memProxy.insertListData([['dntBallDist', '', 0], ['dntPhase', 0, 0], ['dntNaoNum', robot, 0]])
 
-# specify the coach here!
-try:
-   coachproxy = ALProxy('ALMemory', '192.168.1.14', 9559)
-except: 
-    pass
+#At first, we only connected to one coach
+#try:
+#   coachproxy = ALProxy('ALMemory', '192.168.1.14', 9559)
+#except: 
+#    pass
+#Now, we will let the coach connect to all other naos,
+#and see which action we have to take
     
 # If keeper -> different style of play
 playerType = 0
 if (robot == 1):
     playerType = 1
-    
-    # Keeper coaches other naos
-    try:
-        # specify all playing naos here!
-        coachThread = coach.Coach('coach', ['192.168.1.14', '192.168.1.13'])
-        coachThread.start()
-        print 'Coaching started' 
-    except:
-        pass
+
+# All naos have a coach module now
+#TODO: implement something to find IP's with by searching for services
+#broadcasting a certain name with avahi
+try:
+    # specify all playing naos here!
+    playingNaos = ['192.168.1.14', '192.168.1.13']
+    coachThread = coach.Coach('coach', playingNaos)
+    coachThread.start()
+    print 'Coaching started' 
+except:
+    pass
         
 # If gameController is connected then initialize the teamColor, kickOff and penalty mode. Otherwise, use the button interface.
 teamColor = None
@@ -354,12 +359,13 @@ def Playing():
         # position = particleFilter.meanState
         pass
     try:
-        coachPhase = coachproxy.getData('dnt'+str(robot))
+        coachPhase = coachThread.getCoachData('dnt'+str(robot))
         if coachPhase:
             print 'Coach says: ', coachPhase
             phase = coachPhase
-    except:
-        pass
+    except Exception as e:
+        #Should come here if all proxys are offline
+        print e.value
     # Execute the phase as specified by phase variable
     phases.get(phase)()
 
