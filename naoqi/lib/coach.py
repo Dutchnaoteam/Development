@@ -24,24 +24,15 @@ from naoqi import ALProxy
 #phase is what the nao is currently doing (going for the ball, attacking, defending)
 
 class Coach(threading.Thread):
-#nao's sturen een dict/json met hun nummer en balloc/afstand
-#run blijft even luisteren voor een tijdje tot er iets binnen komt
-#onthoudt alleen de nao op die het dichtst bij de bal is.
-#geeft die nao de order om naar de bal te gaan.
-#als de keeper (op wie dit programma zal runnen) de bal heeft gezien
-#dan moet iedereen naar het eigen doel proberen te komen
-#anders moet iedereen in de aanval
-#stuur boodschappen naar naos.
 #TODO: als er nog een actie bezig is om de bal te gaan onderscheppen, pass
 #Als er een Nao bezig is met naar de bal gaan moet die dat constant uitzenden
 #Als hij de bal schopt stopt hij daarmee. En dan moet er weer een nieuwe cycle beginnen van zoeken naar de bal
 #Het programma moet dan een message sturen aan de rest om te stoppen met lopen en een bal te gaan zoeken
-#TODO: AlmemProxy dingen bekijken om data te exchangen
-# http://users.aldebaran-robotics.com/docs/site_en/bluedoc/ALmemProxy.html
     
     def __init__(self, name, ipList, memProxy):
         threading.Thread.__init__(self)
         self.name = name
+        #proxy of the nao itself. used to check which action has to be taken
         self.memProxy = memProxy
         self.on = True
         #data the coach should display to the other nao's
@@ -67,20 +58,14 @@ class Coach(threading.Thread):
             minDist = 10 
             keeperSawBall = False
             
-            # #################### messageIn = self.receiveMessage() WHAT DOES THIS LINE DO?!!
-            #ga er hier vanuit dat we een python dict/JSON krijgen
             ballSeen = list()
+            #see which nao is closest
             for ip in self.proxyDict: 
             
                 # 'receive' messages
                 proxy = self.proxyDict[ip]                       
                 currentDist = proxy.getData('dntBallDist')
                 currentNao = proxy.getData('dntNaoNum')
-                
-                #DEBUG
-                # if self.ownNaoNum == currentNao:
-                    # currentDist = 1
-                #END DEBUG
                 
                 # track naos that have seen the ball
                 if currentDist:
