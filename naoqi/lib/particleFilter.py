@@ -3,6 +3,8 @@ from math import *
 import time
 import threading
 
+#motProxy = ALProxy('ALMotion', '127.0.0.1', 9559)
+
 class ParticleFilter(threading.Thread):
 
     # Field Parameters

@@ -97,10 +97,10 @@ def run(image, yawHead, color):
     
     # Form a dict of vertical lines.
     lines = {}
-    for x in xrange(width):                                              # for every vertical line
+    for x in range(width):                                              # for every vertical line
         
         checker = False
-        for y in xrange(10,height,10):                                   # iterate from top down steps of ten pixels (start at ten)
+        for y in range(10,height,10):                                   # iterate from top down steps of ten pixels (start at ten)
             if (image[y,x] > threshold):                                # when a true pixel is found 
                 ry = y - 9                                              # go back nine pixels
                 while(image[ry,x] <= threshold):                               # start iterating by one pixel until a true pixel is found
@@ -108,7 +108,7 @@ def run(image, yawHead, color):
                 
                 checker = False
                 
-                for checky in xrange(ry, min(ry + 15, height)):          # count until 15 pixels are found in a row or until a false pixel is found
+                for checky in range(ry, min(ry + 15, height)):          # count until 15 pixels are found in a row or until a false pixel is found
                     if (image[checky,x] <= 70):
                         break
                     elif (checky == ry+14):
@@ -116,13 +116,13 @@ def run(image, yawHead, color):
             if checker: 
                 break
         if checker:               # when a line of true pixels is found do the same from the bottom up
-            for by in xrange(height-10,0,-10):                   # iterate from top down steps of ten pixels (start at ten)
+            for by in range(height-10,0,-10):                   # iterate from top down steps of ten pixels (start at ten)
                 if (image[by,x] > threshold):                   # when a true pixel is found 
                     bry = by + 9                                # go back nine pixels
                     while(image[bry,x] <= threshold):           # start iterating by one pixel until a true pixel is found
                         bry = bry - 1
                     checker = False
-                    for checky in xrange(max(bry-15,0), bry):    # count until 15 pixels in this column are found or until a false pixel is found
+                    for checky in range(max(bry-15,0), bry):    # count until 15 pixels in this column are found or until a false pixel is found
                         if (image[checky,x] <= 70):
                             break
                         elif checky == bry-14 or checky == ry:  # also stop if lines overlap 
@@ -147,7 +147,7 @@ def run(image, yawHead, color):
     posMax = None
     posNotQuiteAsMax = None
     
-    for i in xrange(len(lines)-1):                                       # iterate from left to right (only where a line is found)
+    for i in range(len(lines)-1):                                       # iterate from left to right (only where a line is found)
         if (currentBlob == 'empty'):                                    # remember first line
             currentBlob = 'full'
             underline = sortedlines[i]

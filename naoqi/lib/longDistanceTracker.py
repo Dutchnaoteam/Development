@@ -24,13 +24,13 @@ def run(im, headInfo):
     (cam, head) = headInfo
     # convert the image 
     im = convertImage(im)
-    #cv.SaveImage('a.jpg', im)
+    # cv.SaveImage('a.jpg', im)
     # filter the image
     im = filterImage(im)
-    #cv.SaveImage('b.jpg', im)
+    # cv.SaveImage('b.jpg', im)
     # blur the image
     cv.Smooth(im, im, cv.CV_BLUR, 5, 5)
-    #cv.SaveImage('c.jpg', im)
+    # cv.SaveImage('c.jpg', blurredImage)
     # find the max value in the image    
     (minVal, maxValue, minLoc, maxLocation) = cv.MinMaxLoc(im)
     #print maxValue/256.0
@@ -64,7 +64,7 @@ def calcPosition(coord, cam):
     xAngle = xCoord * radiusPerPixel
     yAngle = yCoord * radiusPerPixel
     if -1 < xAngle < 1 and -1 < yAngle < 1:
-        motion.changeAngles(['HeadPitch', 'HeadYaw'], [0.6*yAngle, 0.6*xAngle], 0.4)  # 0.7*angles for smoother movements, optional. Smoothinggg. 
+        motion.changeAngles(['HeadPitch', 'HeadYaw'], [0.5*yAngle, 0.5*xAngle], 0.4)  # 0.5*angles for smoother movements, optional. Smoothinggg. 
 
     #print 'angle from camera: ' + str(xAngle) + ', ' + str(yAngle)
 

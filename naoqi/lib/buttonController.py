@@ -6,6 +6,8 @@ import time
 
 class buttonController():
     # VARIABLES
+    memProxy = ALProxy("ALMemory","127.0.0.1", 9559)
+    ttsProxy = ALProxy("ALTextToSpeech", "127.0.0.1", 9559)
     chestButtonPressed = False
     manual = True
     teamColor = 0
@@ -13,13 +15,11 @@ class buttonController():
     kickOff = 0
 
     # CONSTRUCTOR
-    def __init__(self, ttsProxy, memProxy, interval=0.5):
+    def __init__(self, interval=0.5):
         self.interval = interval
         #self.chestButtonPressed = False
         self.manual = True
-        self.memProxy = memProxy
-        self.ttsProxy = ttsProxy
-
+    
     # FUNCTIONS
     def chestButton(self):
         return not(self.memProxy.getData("ChestButtonPressed", 0) == 0.0)

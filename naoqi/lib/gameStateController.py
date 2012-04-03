@@ -16,13 +16,13 @@ class stateController(threading.Thread):
     state = 0
     gcActive = True
     lastCheck = 0
+    bc = buttonC.buttonController()
+    gc = gameC.gameController(team)
 
-    def __init__(self, name, ttsProxy, memProxy ):
+    def __init__(self, name):
         threading.Thread.__init__(self)
         self.name = name
         self.running = True
-        self.bc = buttonC.buttonController( ttsProxy, memProxy )
-        self.gc = gameC.gameController( self.team )
 
     def __del__(self):
         self.running = False
@@ -31,8 +31,10 @@ class stateController(threading.Thread):
     def run(self):
         gcState = 0
         buttonState = 0
+        counter = 0
         now = time.time()
         while(self.running):
+            counter += 1
             # if gamecontroller active
             if self.gc.controlledRefresh():
                 gcState = self.gc.getGameState()                # get state from GameController
@@ -44,12 +46,14 @@ class stateController(threading.Thread):
                     self.state = gcState
             # if gamecontroller not active, listen to buttons for some time (10 seconds) then try refreshing
             else: 
-                print 'Gc, not active, listen to buttonInterface'
+                print 'else'
                 now = time.time()
                 while time.time() - now < 10.0:
                     self.state = self.listenToButtons(buttonState)
-                    buttonState = self.state
-            #print 'gamecontroller state : ', self.state
+            print 'gamecontroller state : ', self.state
+            if counter % 100 == 0:
+                print 'Time for 100 iterations: ', (time.time()-now) / 100.0
+                now = time.time()
                 
     def getState(self):
         return self.state
