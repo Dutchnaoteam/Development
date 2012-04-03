@@ -18,8 +18,6 @@ import time
 import threading
 from naoqi import ALProxy
 
-memProxy = ALProxy('ALMemory', '127.0.0.1', 9559)
-
 #we first insert some data that coach needs to know about every Nao
 #prefix everything with DNT, to have unique names
 #state is the gamestate (and also if the nao is penalized?)
@@ -39,18 +37,21 @@ class Coach(threading.Thread):
 #Als er een Nao bezig is met naar de bal gaan moet die dat constant uitzenden
 #Als hij de bal schopt stopt hij daarmee. En dan moet er weer een nieuwe cycle beginnen van zoeken naar de bal
 #Het programma moet dan een message sturen aan de rest om te stoppen met lopen en een bal te gaan zoeken
+#TODO: AlmemProxy dingen bekijken om data te exchangen
+# http://users.aldebaran-robotics.com/docs/site_en/bluedoc/ALmemProxy.html
     
-    def __init__(self, name, ipList):
+    def __init__(self, name, ipList, memProxy):
         threading.Thread.__init__(self)
         self.name = name
+        self.memProxy = memProxy
         self.on = True
         #data the coach should display to the other nao's
         memProxy.insertListData([['dnt1', '', 0], ['dnt2', '', 0], ['dnt3', '', 0], ['dnt4', '', 0]])
         #make a proxy dict containing proxys of all the other nao's
         self.proxyDict = {}
         for ip in ipList:
+            # TODO send a reference to memproxies of other players instead
             self.proxyDict[ip] = ALProxy('ALmemProxy', ip, 9559)
-        self.ownProxy = ALProxy('ALmemProxy', '127.0.0.1', 9559)
 
     def __del__(self):
         self.on = False
@@ -89,27 +90,25 @@ class Coach(threading.Thread):
             print 'Saw ball: ', ballSeen, 'Closest: ' ,closestNao           
             messageOut = list()
             # For every nao (including keeper, might come in handy later)
-            for n in xrange(1,5):
-                # if keeper, dont alter actions
-                if n == 1:
-                    action = ''
-                # else if player which is the closest nao, prcoeed
-                elif closestNao == n:
-                    action = ''      
-                # else if player which is not the closest nao, standby (or possibly retreat)
-                elif n in ballSeen:
-                    if keeperSawBall:
-                        #action = 'Retreat'
-                        action = 'Standby'
-                    else:
-                        action = 'Standby'
-                # all other cases, proceed as usual        
+            # if keeper, dont alter actions
+            if self.ownNaoNum == 1:
+                action = ''
+            # else if player which is the closest nao, prcoeed
+            elif closestNao == self.ownNaoNum:
+                action = ''      
+            # else if player which is not the closest nao, standby (or possibly retreat)
+            elif self.ownNaoNum in ballSeen:
+                if keeperSawBall:
+                    #action = 'Retreat'
+                    action = 'KeepDistance'
                 else:
-                    action = ''
-                messageOut.append( ['dnt' + str(n), action, 0] )
+                    action = 'KeepDistance'
+            # all other cases, proceed as usual        
+            else:
+                action = ''
             
             # 'Send' messages 
-            memProxy.insertListData(messageOut)
+            memProxy.insertListData( ['dnt' + str(self.ownNaoNum), action, 0] )
             
             # pause for a short time
             time.sleep(1)
