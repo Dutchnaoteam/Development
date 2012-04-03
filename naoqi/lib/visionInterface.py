@@ -181,16 +181,15 @@ class VisionInterface():
         
         current = self.motProxy.getAngles(['HeadPitch', 'HeadYaw'], True)
         # move head to starting position
-        self.motProxy.angleInterpolationWithSpeed(['HeadPitch',                 'HeadYaw'], \
-                                    [-0.5,                        yawRange[0] ], \
-                                    1.0, True)
+        self.motProxy.setAngles(['HeadPitch', 'HeadYaw'], \
+                                    [-0.55, 0], 0.8)
         
         increment = math.copysign(0.25, yawRange[1])
         for yaw in xfrange( yawRange[0] + increment, yawRange[1] + increment, increment):
             # take a snapshot..
             (image, headinfo) = self.snapShot()
             # then start headmovement
-            self.motProxy.setAngles('HeadYaw', yaw, 0.9)
+            self.motProxy.setAngles(['HeadPitch', 'HeadYaw'], [-0.55, yaw], 0.9)
             # finally, start calculations
             goal = self.getGoal(image, headinfo)
             if goal:

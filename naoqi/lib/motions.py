@@ -442,9 +442,10 @@ class Motions():
                         [ 0.67960, [ 3, -0.20000, 0.00000], [ 3, 0.20000, 0.00000]],
                         [ 0.27751, [ 3, -0.20000, 0.04933], [ 3, 0.63333, -0.15622]],
                         [ 0.0, [ 3, -0.63333, 0.00000], [ 3, 0.00000, 0.00000]]])
-        
+        self.motProxy.setFallManagerEnabled(False)
         self.motProxy.angleInterpolationBezier(names, times, angles)
-
+        self.motProxy.setFallManagerEnabled(True)
+        
     # Stand up from belly
     def bellyToStand(self):
         names = list()
@@ -704,8 +705,9 @@ class Motions():
                         [ -0.09507, [ 3, -0.36667, 0.00000], [ 3, 0.43333, 0.00000]],
                         [ 0.03532, [ 3, -0.43333, -0.02825], [ 3, 0.36667, 0.02390]],
                         [ 0.0, [ 3, -0.36667, 0.00000], [ 3, 0.00000, 0.00000]]])
-
+        self.motProxy.setFallManagerEnabled(False)
         self.motProxy.angleInterpolationBezier(names, times, angles)
+        self.motProxy.setFallManagerEnabled(True)
         
     # non blocking call, relative
     def changeHead(self, yaw,pitch):
@@ -1548,16 +1550,21 @@ class Motions():
 
     # stand up if fallen down, return fallen==True
     def standUp(self):
+        
         fallen = False
         pose = self.getPose()
         if pose == 'Back':
+            self.motProxy.setFallManagerEnabled(False)
             self.stiff()
             self.backToStand()
             fallen = True
+            self.motProxy.setFallManagerEnabled(True)
         elif pose == 'Belly':
+            self.motProxy.setFallManagerEnabled(False)
             self.stiff()
             self.bellyToStand()
             fallen = True
+            self.motProxy.setFallManagerEnabled(True)
         return fallen
 
     # activate stiffness

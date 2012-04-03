@@ -4,6 +4,7 @@ CONTENT: markGoalCV, calcXangle, convertImage, run
 '''
 import cv
 import math
+import time
 
 def markGoalCV(im, color):
     ''' 
@@ -23,9 +24,9 @@ def markGoalCV(im, color):
     if(color == 'blue'):
         hueMin = 116
         hueMax = 130
-        saturationMin = 185 
+        saturationMin = 117 
         saturationMax = 255 
-        valueMin = 75 
+        valueMin = 134 
         valueMax = 210
     if(color == 'yellow'):
         hueMin = 20 
@@ -87,8 +88,11 @@ def run(image, yawHead, color):
 
     # Filter an image based on color.
     image = convertImage(image)
+    #cv.SaveImage('raw' + str(time.time()) +  '.jpg', image)
     image = markGoalCV(image, color)
+    #cv.SaveImage('filter' + str(time.time()) +  '.jpg', image)
     cv.Smooth(image, image, cv.CV_GAUSSIAN, 5,5)
+    #cv.SaveImage('smooth' + str(time.time()) +  '.jpg', image)
     
     threshold = 70   # threshold for the grayscale
     (width, height) = (160,120) # resolution of the input images
