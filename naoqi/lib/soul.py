@@ -36,15 +36,11 @@ ttsProxy = ALProxy('ALTextToSpeech', '127.0.0.1', 9559)
 vidProxy = ALProxy('ALVideoDevice', '127.0.0.1', 9559)
 
 # specify the coach here by entering the coaches ip!
-coachIP = '192.168.1.14'
-try:
-   coachproxy = ALProxy('ALMemory', coachIP, 9559)
-except: 
-    print 'Coach not available, ip' + coachIP
+coachProxy = memProxy
 
 # Creating classes: Protocol is first three letters with exception gameStateController (gsc)
 # Motion class: motion functions etc.
-mot = motions.Motions( motProxy, posProxy ) 
+mot = motions.Motions( motProxy, posProxy  ) 
 
 # VisionInterface class: goalscans, ballscans
 vis = visionInterface.VisionInterface( motProxy, vidProxy, memProxy )
@@ -310,7 +306,7 @@ def Set():
     # Head movements allowed in the set state
     # FIND A BALL #
     if phase != 'BallFound' and phase != 'BallFoundKeep':
-        ball = vis.scanCircle(visThread, 0.2)
+        ball = vis.scanCircle(visThread)
         if ball: 
             kalmanFilterBall.setFirstCall( True, ball )
             control = [0,0,0]
@@ -321,14 +317,15 @@ def Set():
 
     # Keep finding the ball, it might move (or does it?)
     else:
-        ballScan = visThread.findBall()
-        ball = kalmanFilterBall.iterate( ballScan , [0,0,0] )
-        print 'Kalmanposition: ', ball
-        if not ballScan:
+        ball = visThread.findBall()
+        if not ball:
             if playerType == 0:
                 phase = 'BallNotFound'
             else:
                 phase = 'BallNotFoundKeep'
+        kalmanFilterBall.setFirstCall( True, ball )
+        ball = kalmanFilterBall.iterate( ball , [0,0,0] )
+        print 'Kalmanposition: ', ball
         
 # Playing state: play game according to phase transitions
 # ledProxy:  Chest Green
@@ -371,7 +368,7 @@ def Playing():
         pass
     # Execute the phase as specified by phase variable
     phases.get(phase)()
-
+    
 # Penalized state
 # ledProxy:  Chest Red
 def Penalized():
@@ -557,7 +554,7 @@ def BallNotFoundKeep():
     global ball_loc
     
     # if a ball is found
-    if vis.scanCircle(visThread, 0.2):
+    if vis.scanCircle(visThread):
         # reinitialize
         ball_loc = dict()
         phase = 'BallFoundKeep'
@@ -653,6 +650,7 @@ def BallFound():
     if firstCall['BallFound']:
         ledProxy.fadeRGB('RightFaceLeds', 0x0000ff00, 0)
         firstCall['BallFound'] = False
+        firstCall['BallNotFound'] = True
         # initialize mean mu for kalman filter
         if seen:
             kalmanFilterBall.setFirstCall(True, ball)
@@ -663,7 +661,7 @@ def BallFound():
     memProxy.insertData('dntPhase', 'BallFound')
     memProxy.insertData('dntBallDist', math.sqrt(x**2 + y**2))
     
-    if seen and x < 0.16 and -0.015 < y < 0.015:
+    if seen and x < 0.17 and -0.02 < y < 0.02:
         print 'Kick'
         # BLOCKING CALL: FIND BALL WHILE STANDING STILL FOR ACCURATE CORRECTION
         mot.killWalk()
@@ -716,6 +714,26 @@ def BallFound():
         # TODO somehow influence kalman mu based on turn
         phase = 'BallNotFound'
 
+def KeepDistance():
+    global phase
+    firstCall['BallFound'] = True
+    firstCall['BallNotFound'] = True
+    ball = visThread.findBall()
+    if ball:
+        (x,y) = ball
+        memProxy.insertData('dntPhase', 'KeepDistance')
+        memProxy.insertData('dntBallDist', math.sqrt(x**2 + y**2))        
+
+        theta = math.atan(y/x)
+        # hacked influencing of perception, causing walking forward to have priority
+        theta = theta / 2.5  if theta > 0.4    else theta / 5.5
+        x = (2.0 * x - 0.4) if x > 0.5        else (x - 0.4) * 1.3
+        y = 0.5 * y          if -0.1 < y < 0.1 else 2.0 * y    
+        mot.setWalkTargetVelocity(x , y, theta, 1.0)
+        phase = 'BallFound'    
+    else:
+        phase = 'BallNotFound'
+
 def BallNotFound():
     global ball_loc
     global phase
@@ -727,11 +745,12 @@ def BallNotFound():
         memProxy.insertData('dntBallDist', 0)    
         ledProxy.fadeRGB('RightFaceLeds',0x00ff0000, 0) # no ball, led turns red
         mot.killWalk()
+        firstCall['BallFound'] = True
         firstCall['BallNotFound'] = False
         control = [0,0,0]
         
     # try to find a ball
-    ball = vis.scanCircle(visThread, 0.2)
+    ball = vis.scanCircle(visThread)
     if ball:
         kalmanFilterBall.setFirstCall(True, ball )
         control = [0,0,0]
@@ -821,22 +840,36 @@ def Kick():
         else:                    
             # Case 4, other player's goal is found.
             # Kick towards it. 
-            if kickangle > 1.1:
-                kickangle = 1.1
-            if kickangle < -1.1:
-                kickangle = -1.1
             
-            # conversion to real kickangle
-            convert = 1.1 # (60 degrees rad)
-            
-            # kick either left or right
-            if kickangle <= 0:
-                mot.walkTo(0, -0.04 + ball[1], 0)
-                mot.lKickAngled(kickangle/ -convert)
-            elif kickangle > 0:
-                mot.walkTo(0, 0.04 + ball[1], 0)
-                mot.rKickAngled(kickangle/ convert)
-            
+        
+            # Uses cartesian coordinates (only x and y as input though) to create a semi-dynamic kick. 
+            # Makes use of 6D vectors describing target positions that are calculated using a 
+            # eenheidscirkel (..?). 
+            ball  = visThread.findBall()
+            if ball:
+                (x,y) = ball
+                x-=0.1
+                if y < -0.02:
+                    self.cartesianRight( kickangle, x, y + 0.04 )
+                elif y > 0.02:
+                    self.cartesianLeft( kickangle, x, y - 0.04 )
+                elif kickangle > 0:
+                    self.setFootSteps( ['RLeg', 'LLeg'], [[0, 0.07, 0],[0, 0.07, 0]], [0.5, 1.0], clearExisting = True )
+                    while self.isWalking():
+                        ball = visThread.findBall() 
+                    if ball:
+                        (x,y) = ball
+                        x-= 0.1
+                        self.cartesianRight( kickangle, x , y + 0.04 )
+                else:
+                    self.setFootSteps( ['LLeg', 'RLeg'], [[0, -0.07, 0],[0, -0.07, 0]], [0.5, 1.0], clearExisting = True )
+                    while self.isWalking():
+                        ball = visThread.findBall()
+                    if ball:
+                        (x,y) = ball
+                        x-=0.1
+                        self.cartesianLeft( kickangle, x , y - 0.04 )
+                    
             ledProxy.fadeRGB('LeftFaceLeds',0x00000000, 0)
         phase = 'BallNotFound'
 
@@ -861,7 +894,7 @@ def ReturnField():
     global phase
     if mot.isWalking():
         # ..search for a ball
-        if vis.scanCircle(visThread, 0.2):
+        if vis.scanCircle(visThread):
             phase = 'BallFound'
     else:
         phase = 'BallNotFound'
@@ -908,7 +941,7 @@ phases =     {
     'Standby': Standby
 }
 
-#awakeSoul()
+awakeSoul()
 
 # DEBUG #
 def testPhase(phase, interval):

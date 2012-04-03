@@ -71,8 +71,9 @@ class VisionThread(threading.Thread):
     # return last found ballloc (none if none found)
     def findBall(self):
         # while there is no 'new' balllocation available, wait
-        while self.checked or self.lock.locked():
-            pass
+        now = time.time()
+        while self.checked and time.time() - now < 0.5:
+            time.sleep(0.01)
         with self.lock:
             self.checked = True
         return self.ballLoc
@@ -148,24 +149,22 @@ class VisionInterface():
         
     
     # scan movement to find ball
-    def scanCircle(self, vis, interval):            
+    def scanCircle(self, vis):            
         loc = None
         
         # extra check to stop the head from making unnecessary movements
         ball = vis.findBall()
         if ball:
             return ball
-        for angles in [(-1.1, -0.4), (-0.75, -0.4), (-0.5, -0.4), (-0.25, -0.4), ( 0, -0.4), (0.25, -0.4), ( 0.5, -0.4), ( 1.1, -0.4), \
-                       ( 1,  0.1  ), (0.75, 0.1), ( 0.5,  0.1  ), (0.25, 0.1), ( 0,  0.1  ), (-0.25, 0.1), (-0.5,  0.1  ), (-0.75, 0.1), (-1,  0.1  ), \
-                       (-1,  0.4), (-0.5,  0.4),  ( 0,  0.5),  ( 0.5,  0.4),( 1,  0.4), (0,0) ]: # last one is to make successive scans easier
+        for angles in [(-1,  0.4), (-0.5,  0.4), (0.0, 0.5),   (0.5,  0.4), (1,  0.4),  \
+                       ( 1,  0.1), ( 0.75, 0.1), (0.5, 0.1  ), (0.25, 0.1), (0,  0.1), (-0.25, 0.1), (-0.5,  0.1), (-0.75, 0.1), (-1,  0.1  ), \
+                       (-1.1, -0.4), (-0.75, -0.4), (-0.5, -0.4), (-0.25, -0.4), ( 0, -0.4), (0.25, -0.4), ( 0.5, -0.4), ( 1.1, -0.4),(0,0) ]: # last one is to make successive scans easier
             self.motProxy.setAngles(['HeadYaw', 'HeadPitch'], [angles[0], angles[1]], 0.6)
         
             # look for the ball in a given timespan
-            now = time.time()
-            while time.time() - now < interval and not(loc):
-                loc = vis.findBall()
+            loc = vis.findBall()
             if loc: 
-                break
+                 break
         
         return loc
                 
@@ -182,16 +181,15 @@ class VisionInterface():
         
         current = self.motProxy.getAngles(['HeadPitch', 'HeadYaw'], True)
         # move head to starting position
-        self.motProxy.angleInterpolationWithSpeed(['HeadPitch',                 'HeadYaw'], \
-                                    [-0.5,                        yawRange[0] ], \
-                                    1.0, True)
+        self.motProxy.setAngles(['HeadPitch', 'HeadYaw'], \
+                                    [-0.55, 0], 0.8)
         
         increment = math.copysign(0.25, yawRange[1])
         for yaw in xfrange( yawRange[0] + increment, yawRange[1] + increment, increment):
             # take a snapshot..
             (image, headinfo) = self.snapShot()
             # then start headmovement
-            self.motProxy.setAngles('HeadYaw', yaw, 0.9)
+            self.motProxy.setAngles(['HeadPitch', 'HeadYaw'], [-0.55, yaw], 0.9)
             # finally, start calculations
             goal = self.getGoal(image, headinfo)
             if goal:
@@ -236,8 +234,6 @@ class VisionInterface():
         f = 0      
         while time.time() - now < 1:
             find = vis.findBall()
-            while vis.findBall() == find: 
-                pass
             f += 1
         return f
         
