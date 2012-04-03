@@ -19,7 +19,23 @@ def markGoalCV(im, color):
     hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
     filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
     
-    # Goalfilter values (made in Istanbul 06/07/2011)
+    # Goalfilter values (made in Iran 2012)
+    if(color == 'blue'):
+        hueMin = 116
+        hueMax = 121
+        saturationMin =  117
+        saturationMax = 168 
+        valueMin = 134 
+        valueMax = 125
+    if(color == 'yellow'):
+        hueMin = 19 
+        hueMax = 25 
+        saturationMin = 124 
+        saturationMax = 165
+        valueMin = 135
+        valueMax = 254 
+ 
+    '''  Goalfilter values (made in Istanbul 06/07/2011)
     if(color == 'blue'):
         hueMin = 116
         hueMax = 130
@@ -33,7 +49,7 @@ def markGoalCV(im, color):
         saturationMin = 55 
         saturationMax = 255
         valueMin = 60
-        valueMax = 210 
+        valueMax = 210 '''
         
     hsvMin1 = cv.Scalar(hueMin, saturationMin, valueMin, 0)
     hsvMax1 = cv.Scalar(hueMax, saturationMax, valueMax, 0)

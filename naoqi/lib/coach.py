@@ -11,7 +11,6 @@
 # Notulen
 # - Alle data in keeper, naos lezen uit. Reden: Keeper valt uit dan geen problemen met oude waarden. 
 
-import socket
 import sys
 import struct
 import time
@@ -78,6 +77,11 @@ class Coach(threading.Thread):
                 currentDist = proxy.getData('dntBallDist')
                 currentNao = proxy.getData('dntNaoNum')
                 
+                #DEBUG
+                # if self.ownNaoNum == currentNao:
+                    # currentDist = 1
+                #END DEBUG
+                
                 # track naos that have seen the ball
                 if currentDist:
                     ballSeen.append( currentNao )
@@ -88,22 +92,26 @@ class Coach(threading.Thread):
                     if currentDist < minDist:
                         minDist = currentDist
                         closestNao = currentNao
-            print 'Saw ball: ', ballSeen, 'Closest: ' ,closestNao           
+            print 'Saw ball: ', ballSeen, 'Closest: ' ,closestNao , 'at: ',minDist          
             messageOut = list()
             # For every nao (including keeper, might come in handy later)
             # if keeper, dont alter actions
             if self.ownNaoNum == 1:
                 action = ''
-            # else if player which is the closest nao, prcoeed
+            # else if the player is the closest nao, proceed with getting the ball
             elif closestNao == self.ownNaoNum:
                 action = ''      
-            # else if player which is not the closest nao, standby (or possibly retreat)
+            # else if the player is not the closest nao, walk somewhere near the ball (or possibly retreat)
             elif self.ownNaoNum in ballSeen:
+                '''
                 if keeperSawBall:
                     #action = 'Retreat'
                     action = 'KeepDistance'
                 else:
                     action = 'KeepDistance'
+                '''
+                #Commented out the if, as it doesn't do anything right now
+                action = 'KeepDistance'
             # all other cases, proceed as usual        
             else:
                 action = ''
@@ -112,7 +120,7 @@ class Coach(threading.Thread):
             self.memProxy.insertData( 'dnt' + str(self.ownNaoNum), action )
             
             # pause for a short time
-            time.sleep(1)
+            time.sleep(0.3)
 
     def getCoachData(self, data):
-        return self.ownProxy.getData(data)
+        return self.memProxy.getData(data)

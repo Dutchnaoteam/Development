@@ -36,7 +36,6 @@ ttsProxy = ALProxy('ALTextToSpeech', '127.0.0.1', 9559)
 vidProxy = ALProxy('ALVideoDevice', '127.0.0.1', 9559)
 
 # specify the coach here by entering the coaches ip!
-coachProxy = memProxy
 
 # Creating classes: Protocol is first three letters with exception gameStateController (gsc)
 # Motion class: motion functions etc.
@@ -92,8 +91,8 @@ playerType = 1 if robot == 1 else 0
 
 try:
     # specify all playing naos here! TODO find them automatically
-    coachThread = coach.Coach('coach', ['10.0.0.16', \
-                                        '10.0.0.6'], memProxy)
+    coachThread = coach.Coach('coach', ['10.0.0.8', \
+                                        '10.0.0.5'], memProxy)
     coachThread.start()
     print 'Coaching started' 
 except Exception as inst:
@@ -325,7 +324,7 @@ def Set():
                 phase = 'BallNotFoundKeep'
         kalmanFilterBall.setFirstCall( True, ball )
         ball = kalmanFilterBall.iterate( ball , [0,0,0] )
-        print 'Kalmanposition: ', ball
+        #print 'Kalmanposition: ', ball
         
 # Playing state: play game according to phase transitions
 # ledProxy:  Chest Green
@@ -360,13 +359,17 @@ def Playing():
         # position = particleFilter.meanState
         pass
     try:
-        coachPhase = coachproxy.getData('dnt'+str(robot))
+        coachPhase = coachThread.getCoachData('dnt'+str(robot))
+        print 'got phase!'
         if coachPhase:
             print 'Coach says: ', coachPhase
             phase = coachPhase
-    except:
+    except Exception as inst:
+        print 'could not get a action'
+        print inst
         pass
     # Execute the phase as specified by phase variable
+    print 'phase is: ', phase
     phases.get(phase)()
     
 # Penalized state
@@ -483,7 +486,7 @@ def BallFoundKeep():
             distnew = math.sqrt(xnew**2 + ynew**2)
             speed = distold - distnew
             
-            print 'Ball moving from ', xold, yold, 'to', xnew, ynew, '(mean). Speed', speed
+            #print 'Ball moving from ', xold, yold, 'to', xnew, ynew, '(mean). Speed', speed
             
             # calculate direction if speed is high enough
             if speed > 0.225:
@@ -640,13 +643,12 @@ def Standby():
 def BallFound():
     global phase
     global control
-    
     # FIND A BALL #
     seen = False    
     ball = visThread.findBall()
     if ball:
         seen = True
-        print 'RealPosition', ball
+        #print 'RealPosition', ball
     if firstCall['BallFound']:
         ledProxy.fadeRGB('RightFaceLeds', 0x0000ff00, 0)
         firstCall['BallFound'] = False
@@ -670,7 +672,7 @@ def BallFound():
         phase = 'Kick'           
     else:            
         if seen:
-            print 'Kalman position', x,y
+            #print 'Kalman position', x,y
             theta = math.atan(y/x)
             # hacked influencing of perception, causing walking forward to have priority
             theta = theta / 2.5  if theta > 0.4    else theta / 5.5
@@ -678,7 +680,7 @@ def BallFound():
             y = 0.5 * y          if -0.1 < y < 0.1 else 2.0 * y    
             
         else:
-            print 'Not seen ball', x, y
+            #print 'Not seen ball', x, y
             # TODO determine where ball is in headposition and look there instead of random places
             
             head = mot.getHeadPos( False )
@@ -708,8 +710,8 @@ def BallFound():
         
     # If covariance becomes too large, when?
     if kalmanFilterBall.Sigma[0][0] > 0.05:
-        print 'Sigma kalmanfilter: ' , kalmanFilterBall.Sigma
-        print 'Perhaps the ball is lost, turning ', theta,'to find it' 
+        #print 'Sigma kalmanfilter: ' , kalmanFilterBall.Sigma
+        #print 'Perhaps the ball is lost, turning ', theta,'to find it' 
         mot.postWalkTo(0,0, theta)
         # TODO somehow influence kalman mu based on turn
         phase = 'BallNotFound'
@@ -727,8 +729,13 @@ def KeepDistance():
         theta = math.atan(y/x)
         # hacked influencing of perception, causing walking forward to have priority
         theta = theta / 2.5  if theta > 0.4    else theta / 5.5
-        x = (2.0 * x - 0.4) if x > 0.5        else (x - 0.4) * 1.3
-        y = 0.5 * y          if -0.1 < y < 0.1 else 2.0 * y    
+        x = (2.0 * (x-0.4))  if x > 0.5        else (x - 0.4) * 1.3
+        y = 0.5 * y          if -0.1 < y < 0.1 else 2.0 * y
+
+        x = max(-1, min(1, x))
+        y = max(-1, min(1, y))
+        theta = max(-1, min(1, theta))
+        
         mot.setWalkTargetVelocity(x , y, theta, 1.0)
         phase = 'BallFound'    
     else:
@@ -785,14 +792,14 @@ def Kick():
     # Something of a mean, ...
     ball = visThread.findBall()
     
-    print 'Found ball: ', ball
+    #print 'Found ball: ', ball
     #ball = kalmanFilterBall.iterate( ball, [0,0,0] )
     if not ball:
-        print 'Ball gone'
+        #print 'Ball gone'
         phase = 'BallNotFound'
     elif ball[0] > 0.25 or ball[1] > 0.1 or ball[1] < -0.1:
         ledProxy.fadeRGB('RightFaceLeds', 0x00ff0000, 0)  #right led turns green
-        print 'Ball too far'
+        #print 'Ball too far'
         phase = 'BallFound'
     elif ball and not goal:
         ledProxy.fadeRGB('RightFaceLeds', 0x00ff0000, 0)  #right led turns green
@@ -938,7 +945,8 @@ phases =     {
     'BallNotFoundKeep': BallNotFoundKeep,
     'Unpenalized': Unpenalized,
     'ReturnField': ReturnField,
-    'Standby': Standby
+    'Standby': Standby,
+    'KeepDistance': KeepDistance
 }
 
 awakeSoul()

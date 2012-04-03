@@ -34,8 +34,8 @@ class KalmanBall():
 
     def setFirstCall(self, arg = True, initial = (1,0)):
         self.firstCall = arg
-	 if not initial :
-		initial = (1,0)
+        if not initial :
+            initial = (1,0)
         self.mu = [[ initial[0] ],[ initial[1] ]]
         self.Sigma = [[0.1,0],[0,0.1]]
         self.timeStamp = time.time()
@@ -64,7 +64,7 @@ class KalmanBall():
         # step forward using control vector u
         self.u[0][0] = nao_movement_x
         self.u[1][0] = nao_movement_y
-        print 'Increment control ', self.u 
+        #print 'Increment control ', self.u 
         muBelief = self.mu
         
         # ________ PREDICTION ________
