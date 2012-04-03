@@ -27,8 +27,8 @@ class KalmanBall():
 
     firstCall = bool
     
-    def init(self, measurement = (1,0)):
-        self.firstCall = True
+    def __init__(self, measurement = (1,0)):
+        self.setFirstCall( True, measurement )
         self.mu[0][0] = measurement[0]
         self.mu[1][0] = measurement[1]
 

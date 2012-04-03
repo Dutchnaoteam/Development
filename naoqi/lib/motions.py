@@ -1,5 +1,6 @@
 import time
 import math
+import almath
 
 # Create a motion class with the correct input
 def debug():
@@ -1608,3 +1609,174 @@ class Motions():
     # blocking walk call
     def walkTo(self, x,y,angle):
         self.motProxy.walkTo(x,y,angle,self.gaitConfig)
+        
+    def cartesianRight( self, angle, x,y ):
+        # maxima input:
+        # angle -> -0.3 to 0.5 (with x = 0.05, y =  0.00) 
+        #          -0.1 to 0.7 (with x = 0.05, y =  0.03)
+        #          -1.0        (with x = 0.05, y = -0.20 but do try -1.4, 0.0, -0.2 with the ball right next to nao) 
+        #               to 0.1 (with x = 0.10, y = -0.08 though 0.3, -0.2, -0.08 has similar results)
+        #          -0.2 to 0.5 (with x = 0.30, y =  0.00)
+        
+        if y > 0:
+            angle = min( max( angle, -0.1), 0.7 )
+            y = 0.03 if y > 0.03 else y
+        elif y < -0.1:
+            angle = min( max( angle, -1.0), 0.1 )
+        if x > 0.2:
+            angle = min( max( angle, -0.2), 0.5 )
+        elif x < 0:
+            x = 0
+        if not -1 < angle < 1:
+            angle = min( max( angle, -1 ), 1 )
+            
+            
+        # move the torso above the standing leg for balance
+        space = 2
+        currentTorso = self.motProxy.getPosition( 'Torso', space, True)          
+
+        targetTorso  = [ 
+        currentTorso[0] + 0.0, 
+        currentTorso[1] + 0.04, 
+        currentTorso[2] + 0.01, 
+        currentTorso[3] + 0.0, 
+        currentTorso[4] + 0.0, 
+        currentTorso[5] + 0.0 ] 
+        
+        # current position in the world, used to calculate translation and rotation matrices
+        currentRLeg = self.motProxy.getPosition( 'RLeg', 1, True )
+        
+        self.motProxy.setPosition( 'Torso', space, targetTorso, 0.8, almath.AXIS_MASK_ALL)
+        time.sleep(0.4)
+        # Balance on one leg, use arms for even more balance 
+        self.motProxy.setAngles(['LAnkleRoll', 'RAnkleRoll'], [0.325, 0.325], 0.2)
+        self.motProxy.setAngles(['LShoulderRoll', 'RShoulderRoll'], [0.55, -0.35], 0.2)
+        time.sleep(0.5)
+        
+        # convert target vectors to worldcoordinates 
+        targets = list()
+        z = currentRLeg[5]
+        
+        sz = math.sin(z) # used for rotation around the vertical z-axis
+        cz = math.cos(z) # idem dito
+        sa = math.sin(angle)
+        ca = math.cos(angle)
+        
+        # ball is at position x,y,0.03. 
+        # First step: Move leg backwards depending on the angle a. Default (a=0) gives x' = -0.15 + x, y' = -y, z' = 0.1
+        # (Note, to do this the vector has to be converted to worldcoordinates)
+        targets.append( [ 
+        currentRLeg[0] + ( x + 0.1 - 0.25 * ca ) * cz     + (-y + 0.25 * sa) * sz,
+        currentRLeg[1] - ( ( x + 0.1 - 0.25 * ca ) * -sz  + (-y + 0.25 * sa) * cz ),
+        currentRLeg[2] + 0.1, 
+        currentRLeg[3] + 0.0, 
+        currentRLeg[4] + 0.0, 
+        currentRLeg[5] + minimizedAngle( angle ) ] ) 
+        
+        # Second step: Move leg towards the ball while respecting angle. Default (a=0) gives x'' = x, y'' = -y, z'' = 0.03
+        targets.append( [ # Note, -y because right y is negative. 
+        currentRLeg[0] + ( x + 0.1 - 0.1 * ca ) * cz   + (-y + 0.1 * sa) * sz,
+        currentRLeg[1] - ( ( x + 0.1 - 0.1 * ca ) * -sz  + (-y + 0.1 * sa) * cz ),
+        currentRLeg[2] + 0.03, 
+        currentRLeg[3] + 0.0, 
+        currentRLeg[4] + 0.0, 
+        currentRLeg[5] + minimizedAngle( angle ) ] )
+        
+        dur = 0.2 + abs(angle) * 0.125
+        # move leg back
+        self.motProxy.setPosition( 'RLeg', 1, targets[0], 0.4, almath.AXIS_MASK_ALL )
+        time.sleep(1)
+        # simultaneously move arm back and leg forward
+        self.motProxy.setAngles('RShoulderPitch', 2, 0.9)
+        self.motProxy.positionInterpolation( 'RLeg', 1, targets[1], almath.AXIS_MASK_ALL, [dur], True)
+        time.sleep(0.5)
+        self.normalPose()
+
+    def cartesianLeft( self, angle, x, y ):
+        # maxima input:
+        # angle -> -0.5 to 0.3 (with x = 0.05, y =  0.00) 
+        #          -0.7 to 0.1 (with x = 0.05, y =  -0.03)
+        #           1.0        (with x = 0.05, y = 0.20 but do try -1.4, 0.0, 0.2 with the ball right next to nao) 
+        #              to -0.1 (with x = 0.10, y = 0.08 though -0.3, 0.2, 0.08 has similar results)
+        #          -0.5 to 0.2 (with x = 0.30, y =  0.00)
+        
+        if y < 0:
+            angle = min( max( angle, -0.7), 0.1 )
+            y = -0.03 if y < -0.03 else y
+        elif y > -0.1:
+            angle = min( max( angle, -0.1), 1.0 )
+        if x > 0.2:
+            angle = min( max( angle, -0.5), 0.2 )
+        elif x < 0:
+            x = 0
+        if not -1 < angle < 1:
+            angle = min( max( angle, -1 ), 1 )
+            
+            
+        # move the torso above the standing leg for balance
+        space = 2
+        currentTorso = self.motProxy.getPosition( 'Torso', space, True)          
+
+        targetTorso  = [ 
+        currentTorso[0] + 0.0, 
+        currentTorso[1] - 0.04, 
+        currentTorso[2] + 0.01, 
+        currentTorso[3] + 0.0, 
+        currentTorso[4] + 0.0, 
+        currentTorso[5] + 0.0 ] 
+        
+        # current position in the world, used to calculate translation and rotation matrices
+        currentLLeg = self.motProxy.getPosition( 'LLeg', 1, True )
+        
+        self.motProxy.setPosition( 'Torso', space, targetTorso, 0.8, almath.AXIS_MASK_ALL)
+        time.sleep(0.4)
+        # Balance on one leg, use arms for even more balance 
+        self.motProxy.setAngles(['LAnkleRoll', 'RAnkleRoll'], [-0.325, -0.325], 0.2)
+        self.motProxy.setAngles(['LShoulderRoll', 'RShoulderRoll'], [0.35, -0.55], 0.2)
+        time.sleep(0.5)
+        
+        # convert target vectors to worldcoordinates 
+        targets = list()
+        z = currentLLeg[5]
+        
+        sz = math.sin(z) # used for rotation around the vertical z-axis
+        cz = math.cos(z) # idem dito
+        sa = math.sin(angle)
+        ca = math.cos(angle)
+        
+        # ball is at position x,y,0.03. 
+        # First step: Move leg backwards depending on the angle a. Default (a=0) gives x' = -0.15 + x, y' = y, z' = 0.1
+        # (Note, to do this the vector has to be converted to worldcoordinates)
+        targets.append( [ 
+        currentLLeg[0] + ( x + 0.1 - 0.25 * ca ) * cz     + (-y + 0.25 * sa) * sz,
+        currentLLeg[1] - ( ( x + 0.1 - 0.25 * ca ) * -sz  + (-y + 0.25 * sa) * cz ),
+        currentLLeg[2] + 0.1, 
+        currentLLeg[3] + 0.0, 
+        currentLLeg[4] + 0.0, 
+        currentLLeg[5] + minimizedAngle( angle ) ] ) 
+        
+        # Second step: Move leg towards the ball while respecting angle. Default (a=0) gives x'' = x, y'' = y, z'' = 0.03
+        targets.append( [ # Note, -y because right y is negative. 
+        currentLLeg[0] + ( x + 0.1 - 0.1 * ca ) * cz   + (-y + 0.1 * sa) * sz,
+        currentLLeg[1] - ( ( x + 0.1 - 0.1 * ca ) * -sz  + (-y + 0.1 * sa) * cz ),
+        currentLLeg[2] + 0.03, 
+        currentLLeg[3] + 0.0, 
+        currentLLeg[4] + 0.0, 
+        currentLLeg[5] + minimizedAngle( angle ) ] )
+        
+        dur = 0.2 + abs(angle) * 0.125
+        # move leg back
+        self.motProxy.setPosition( 'LLeg', 1, targets[0], 0.4, almath.AXIS_MASK_ALL )
+        time.sleep(1)
+        # simultaneously move arm back and leg forward
+        self.motProxy.setAngles('LShoulderPitch', 2, 0.9)
+        self.motProxy.positionInterpolation( 'LLeg', 1, targets[1], almath.AXIS_MASK_ALL, [dur], True)
+        time.sleep(0.5)
+        self.normalPose()
+        
+def minimizedAngle( angle ) :
+    if angle > math.pi:
+        angle -= 2*math.pi
+    if angle <= -math.pi:
+        angle += 2*math.pi
+    return angle

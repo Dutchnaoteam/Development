@@ -48,6 +48,7 @@ class stateController(threading.Thread):
                 now = time.time()
                 while time.time() - now < 10.0:
                     self.state = self.listenToButtons(buttonState)
+                    buttonState = self.state
             #print 'gamecontroller state : ', self.state
                 
     def getState(self):
