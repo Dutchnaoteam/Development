@@ -92,12 +92,13 @@ playerType = 1 if robot == 1 else 0
 
 try:
     # specify all playing naos here! TODO find them automatically
-    coachThread = coach.Coach('coach', ['192.168.1.14', \
-                                        '192.168.1.13'])
+    coachThread = coach.Coach('coach', ['10.0.0.16', \
+                                        '10.0.0.6'], memProxy)
     coachThread.start()
     print 'Coaching started' 
-except:
+except Exception as inst:
     print 'Could not coach, wrong ip?'
+    print inst
         
 ## STATES (Gamestates)
 # Initial()

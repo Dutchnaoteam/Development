@@ -34,6 +34,8 @@ class KalmanBall():
 
     def setFirstCall(self, arg = True, initial = (1,0)):
         self.firstCall = arg
+	 if not initial :
+		initial = (1,0)
         self.mu = [[ initial[0] ],[ initial[1] ]]
         self.Sigma = [[0.1,0],[0,0.1]]
         self.timeStamp = time.time()

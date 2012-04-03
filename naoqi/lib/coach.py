@@ -46,12 +46,13 @@ class Coach(threading.Thread):
         self.memProxy = memProxy
         self.on = True
         #data the coach should display to the other nao's
-        memProxy.insertListData([['dnt1', '', 0], ['dnt2', '', 0], ['dnt3', '', 0], ['dnt4', '', 0]])
+        self.memProxy.insertListData([['dnt1', '', 0], ['dnt2', '', 0], ['dnt3', '', 0], ['dnt4', '', 0]])
         #make a proxy dict containing proxys of all the other nao's
         self.proxyDict = {}
         for ip in ipList:
             # TODO send a reference to memproxies of other players instead
-            self.proxyDict[ip] = ALProxy('ALmemProxy', ip, 9559)
+            self.proxyDict[ip] = ALProxy('ALMemory', ip, 9559)
+        self.ownNaoNum = self.memProxy.getData('dntNaoNum')
 
     def __del__(self):
         self.on = False
@@ -108,7 +109,7 @@ class Coach(threading.Thread):
                 action = ''
             
             # 'Send' messages 
-            memProxy.insertListData( ['dnt' + str(self.ownNaoNum), action, 0] )
+            self.memProxy.insertData( 'dnt' + str(self.ownNaoNum), action )
             
             # pause for a short time
             time.sleep(1)
