@@ -234,7 +234,7 @@ class hsvGlade(wx.Frame):
 
         (hMin,sMin,vMin) = self.rgbToHsv(minColour)
         (hMax,sMax,vMax) = self.rgbToHsv(maxColour)
-
+        
         #TODO bal ranges could be in 2 ranges
         # e.g. hue is 170-180 and 0-10
 
@@ -258,8 +258,14 @@ class hsvGlade(wx.Frame):
             self.sMax.SetValue(sMax)
             self.vMin.SetValue(vMin)
             self.vMax.SetValue(vMax)
-
+            
         # TODO send hsv-ranges to Nao
+        '''
+        message = str([[hMin,sMin,vMin], [hMax,sMax,vMax]])
+        if hMax-hMin > 90:
+            message = str([[0,], [], [], []])
+            message = str([180-hMax,sMax,vMax, hMin,sMin,vMin])
+        '''
         try:
             message = "hsv "
             message += str(self.hMin.GetValue()) + " "
@@ -483,7 +489,7 @@ class PreviewImage(wx.Panel):
     def __init__(self, parent, id=wx.ID_ANY,
                  pos=wx.DefaultPosition, size=(-1,-1)):#size=wx.DefaultSize):
         wx.Panel.__init__(self, parent, id, pos, size)
-        self.image = wx.Image('./ball2.png', wx.BITMAP_TYPE_PNG)
+        self.image = wx.Image('./ball.png', wx.BITMAP_TYPE_PNG)
         self.SetMinSize(self.image.GetSize())
         wx.EVT_PAINT(self, self.OnPaint) 
 
