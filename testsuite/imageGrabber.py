@@ -64,13 +64,18 @@ def convertImage(picture):
     # convert the type to OpenCV
     image = cv.CreateImageHeader(size, cv.IPL_DEPTH_8U, 3)
     cv.SetData(image, picture.tostring(), picture.size[0]*3)
-    return image    
+    return image   
+
+def run(hsvMin = (0,0,0), hsvMax = (0,0,0)):
+    im = snapShot("python_GVM")
+    imCv = convertImage(im)
+    filterIm = filter(imCv, hsvMin, hsvMax)
+    return (im, filterIm)
     
 if __name__ == "__main__":
-    print 'hi'
-    im = snapShot("python_GVM")
-    im.save("image.png")
-    im = convertImage(im)
-    filterIm = filter(im, (0, 55, 60), (120, 255, 255))
+    (im, filterIm) = run((0, 55, 60), (120, 255, 255))
     # save images
+    im.save("image.png")
     filterIm.save("filter.png")
+    
+    

@@ -6,6 +6,7 @@
 # Download wx at: www.wxpython.org
 # (Optional) Download wxGlade at: wxglade.sourceforge.net
 
+from PIL import Image
 import wx
 import colorsys
 import magicWand
@@ -57,7 +58,7 @@ class hsvGlade(wx.Frame):
         self.minText = wx.StaticText(self, -1, "Min:")
         self.maxText = wx.StaticText(self, -1, "Max:")
         self.hText = wx.StaticText(self, -1, "Hue:")
-        self.hMin = wx.SpinCtrl(self, -1, "", min=0, max=180)
+        self.hMin = wx.SpinCtrl(self, -1, "", min=-90, max=180)
         self.hMax = wx.SpinCtrl(self, -1, "", min=0, max=180)
         self.sText = wx.StaticText(self, -1, "Saturation:")
         self.sMin = wx.SpinCtrl(self, -1, "", min=0, max=255)
@@ -190,10 +191,18 @@ class hsvGlade(wx.Frame):
 
     #>> TEST <<
     def test(self, event):
-        testImage = wx.Image('./ballTest.png', wx.BITMAP_TYPE_PNG)
-        self.imageWindow.image = testImage
+        pilImage = Image.open('./ballTest.png')
+        image = self.pilToWx(pilImage)
+        #image = wx.Image('./ballTest.png', wx.BITMAP_TYPE_PNG)
+        self.imageWindow.image = image
         self.imageWindow.Refresh()
     #>> END <<
+
+    def pilToWx(self, pilImage):
+        image = wx.EmptyImage(pilImage.size[0], pilImage.size[1])
+        image.SetData(pilImage.convert("RGB").tostring())
+        image.SetAlphaData(pilImage.convert("RGBA").tostring()[3::4])
+        return image
 
     def setStatusText(self, status):
         for i in range(len(status)):
@@ -225,6 +234,9 @@ class hsvGlade(wx.Frame):
 
         (hMin,sMin,vMin) = self.rgbToHsv(minColour)
         (hMax,sMax,vMax) = self.rgbToHsv(maxColour)
+
+        #TODO bal ranges could be in 2 ranges
+        # e.g. hue is 170-180 and 0-10
 
         if not self.addColourButton.IsEnabled() and not self.allZeros():    #extend range
             if hMin < self.hMin.GetValue():
@@ -363,6 +375,8 @@ class hsvGlade(wx.Frame):
             self.setStatusText(["T_T Could not disconnect."])
 
     def hsvSpinCtrl(self, event):
+        pass
+        '''
         focus = self.FindFocus()
         if focus == self.hMin and self.hMin.GetValue() > self.hMax.GetValue():
             self.hMax.SetValue(self.hMin.GetValue())
@@ -379,6 +393,7 @@ class hsvGlade(wx.Frame):
         #print "hsvSpinCtrl"
         #self.Refresh()
         #self.paintGradient(None)
+        '''
 
     def paintGradient(self, event):
         print "paintGradient"
@@ -468,7 +483,7 @@ class PreviewImage(wx.Panel):
     def __init__(self, parent, id=wx.ID_ANY,
                  pos=wx.DefaultPosition, size=(-1,-1)):#size=wx.DefaultSize):
         wx.Panel.__init__(self, parent, id, pos, size)
-        self.image = wx.Image('./ball.png', wx.BITMAP_TYPE_PNG)
+        self.image = wx.Image('./ball2.png', wx.BITMAP_TYPE_PNG)
         self.SetMinSize(self.image.GetSize())
         wx.EVT_PAINT(self, self.OnPaint) 
 
@@ -515,7 +530,7 @@ class Client(threading.Thread):
             data = self.sock.recv(10240)  #receive 2 images
             if data!=None:
                 #TODO update images
-                #self.gui.imageWindow.image = testImage
+                #self.gui.imageWindow.image = image
                 #self.gui.imageWindow.Refresh()
                 pass    
             time.sleep(1)

@@ -123,4 +123,5 @@ def startServer(connections = 1, interval = 9999999999):
         rec.stopRec()
         print "Server stopped"
 
-startServer()
+if __name__=="__main__":
+    startServer()
