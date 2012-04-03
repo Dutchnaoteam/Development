@@ -26,16 +26,20 @@ def find_some_edgels(filename):
         while y < hsv.height:
     
     # transitions with xvalues
-    A = cv.CreateMat(len(transition), 2)
-    B = cv.CreateMat(len(transition), 1))
+    A = cv.CreateMat(len(transition), 2, cv.32FC1)
+    B = cv.CreateMat(len(transition), 1, cv.32FC1)
     for i in xrange(0, len(transitions)):
         A[i, 0] = transitions[i][0]
         B[0] = transitions[i][1]
 
     for i in xrange(0, len(transitions))
         A[i, 1] = 1
+
+    X = cv.CreateMat(2,1 cv.CV_32FC1)
     # transitions with yvalues
-    solution = cv.Solve(A, B, cv.CV_LU )
+    solution = cv.Solve(A, B, X, cv.CV_LU)
+    
+
 
 
     # debugging
