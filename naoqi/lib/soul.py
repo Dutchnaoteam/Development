@@ -360,7 +360,6 @@ def Playing():
         pass
     try:
         coachPhase = coachThread.getCoachData('dnt'+str(robot))
-        print 'got phase!'
         if coachPhase:
             print 'Coach says: ', coachPhase
             phase = coachPhase
@@ -369,7 +368,6 @@ def Playing():
         print inst
         pass
     # Execute the phase as specified by phase variable
-    print 'phase is: ', phase
     phases.get(phase)()
     
 # Penalized state
