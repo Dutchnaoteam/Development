@@ -1,4 +1,5 @@
 import cv
+import math
 
 def find_some_edgels(filename):
     # loading the image
@@ -19,11 +20,43 @@ def find_some_edgels(filename):
     for x in xrange(0, hsv.width, 10):
         greens_in_a_row = 0
         whites_in_a_row = 0
+        tuple_index = []
         y = 0
+        finalcoords = []
         while y < hsv.height:
             # if color is green
-            if(hsv[x,y] > green_min and hsv[x,y] < greem_max):
+            if(green_min < hsv[x,y] < greem_max):
+                # check if we had a white streak 
+                if (whites_in_a_row > 4 and whites_in_a_row < 10 ):
+            )       final_coords = tuple_index[math.ceil(len(tuple_index)/2)] 
                 whites_in_a_row= 0 
+                greens_in_a_row +=1
+            # if color is white:
+            elif(white_min < hsv[x,y] < white_max ):
+                whites_in_a_row += 1
+                tuple_index = tuple_index + [(x,y)]
+            # no green, no white 
+            else:
+                whites_in_a_row = 0
+                greens_in_a_row = 0
+                tuple_index = []
+            # check if there is any white in the image at the given points
+            if (whites_in_a_row > 4 and whites_in_a_row < 10 ):
+                final_coords = tuple_index[math.ceil(len(tuple_index)/2)] 
+            whites_in_a_row = 0 
+            greens_in_a_row = 0
+            tuple_index = []
+    solution = cv.CreateMat(len(transitions), 2, cv.CV_32FC1)
+    solution =  leastSquares(final_coords)
+    point1x = 5 
+    point1y = solution[0,0] * point1x + solution[1,0]
+    point2x = 50
+    point2y = solution[0,0] * point2x + solution[1,0]
+    cv.Line(img,(point1x, point1y), (point2x, point2y),(0,0,255) ,2,8, 2)
+    cv.SaveImage('newImage.jpg',img )
+
+        
+
     return transitions
 
 def leastSquares(transitions):
