@@ -89,17 +89,13 @@ penalty = None
 
 # If keeper -> different style of play
 playerType = 1 if robot == 1 else 0
-'''
-try:
-    # specify all playing naos here! TODO find them automatically
-    coachThread = coach.Coach('coach', ['10.0.0.8', \
-                                        '10.0.0.5'], memProxy)
-    coachThread.start()
-    print 'Coaching started' 
-except Exception as inst:
-    print 'Could not coach, wrong ip?'
-    print inst
-'''     
+
+
+## Coach lists
+# Specify all the names of the playing nao's here (add .local)
+nameList = ['camlal.local', 'nao.local']
+ipList = list()
+
 ## STATES (Gamestates)
 # Initial()
 # Ready()
@@ -149,6 +145,16 @@ def Initial():
         firstCall['Set']       = True
         firstCall['Playing']   = True
         firstCall['Penalized'] = True
+        
+    #setting up coach iplist
+    while nameList:
+        for name in nameList:
+            try:    
+                ipList.append( socket.gethostbyname(name))
+                nameList.remove(name)
+            except:
+                print name ,' is not connected'
+    print 'ipList set: ', ipList
 
 # Ready state: possible positioning
 # ledProxy:  Chest Blue
@@ -272,6 +278,11 @@ def Set():
 
     # if the first iteration
     if firstCall['Set']:
+        #start the coach thread
+        coachThread = coach.Coach('coach', ipList, memProxy)      
+        coachThread.start()
+        print 'coaching started'
+        
         mot.killWalk()
         # update info about team, it is possible that game is started in set phase
         (teamColor, kickOff, penalty) = gsc.getMatchInfo()    
