@@ -18,11 +18,15 @@ class Motions():
                          ['StepHeight', 0.02], \
                          ['TorsoWx', 0.0], \
                          ['TorsoWy', 0.05]]
-
+    
     def __init__(self, motProxy, posProxy):
         self.motProxy = motProxy
         self.posProxy = posProxy
         self.setGaitConfigSimple( 0.06 , 0.14, 0.5, 0.01, 30, 20 )
+        self.motProxy.setFallManagerEnabled(False)
+        
+    def setFME(self, arg):
+        self.motProxy.setFallManagerEnabled(arg)
         
     # set parts of the footgaitconfig, order is important but it does not
     # have to contain each and every option (if no value found for an option
@@ -442,9 +446,9 @@ class Motions():
                         [ 0.67960, [ 3, -0.20000, 0.00000], [ 3, 0.20000, 0.00000]],
                         [ 0.27751, [ 3, -0.20000, 0.04933], [ 3, 0.63333, -0.15622]],
                         [ 0.0, [ 3, -0.63333, 0.00000], [ 3, 0.00000, 0.00000]]])
-        self.motProxy.setFallManagerEnabled(False)
+        
         self.motProxy.angleInterpolationBezier(names, times, angles)
-        self.motProxy.setFallManagerEnabled(True)
+        
         
     # Stand up from belly
     def bellyToStand(self):
@@ -705,9 +709,9 @@ class Motions():
                         [ -0.09507, [ 3, -0.36667, 0.00000], [ 3, 0.43333, 0.00000]],
                         [ 0.03532, [ 3, -0.43333, -0.02825], [ 3, 0.36667, 0.02390]],
                         [ 0.0, [ 3, -0.36667, 0.00000], [ 3, 0.00000, 0.00000]]])
-        self.motProxy.setFallManagerEnabled(False)
+        
         self.motProxy.angleInterpolationBezier(names, times, angles)
-        self.motProxy.setFallManagerEnabled(True)
+        
         
     # non blocking call, relative
     def changeHead(self, yaw,pitch):
@@ -1322,11 +1326,14 @@ class Motions():
         if angle >= 0.9:
             self.sideRightKick()
         elif angle >= 0:
+            self.walkTo( 0, coordinates[1] + 0.04, 0 )
             self.rKickAngled( angle )
         elif -0.5 <= angle <= 0:
-            self.cartesianLeft( angle, min( coordinates[0], 0.2), max ( min( coordinates[1], 0.1 ), -0.01 ) )
+            print 'Cartesianleft = ',  angle, min( coordinates[0], 0.2), max ( min( coordinates[1], 0.1 ), -0.01 ) 
+            self.cartesianLeft( angle, min( coordinates[0], 0.2), max ( min( coordinates[1], 0.1 ), 0.03 ) )
         elif -1 <= angle:
             self.lKickAngled( - angle )
+            self.walkTo( 0, coordinates[1] - 0.04, 0 )
         elif angle <= -1:
             self.sideLeftKick()
     
@@ -1380,7 +1387,7 @@ class Motions():
     # stop walking if active    
     def killWalk(self):
         if self.motProxy.walkIsActive():
-            self.postWalkTo(0,0,0.00001)
+            self.walkTo(0,0,0.00001)
         
     # left kick with inputangle
     def lKickAngled(self, angle):
@@ -1563,21 +1570,22 @@ class Motions():
 
     # stand up if fallen down, return fallen==True
     def standUp(self):
-        
+        self.setFME(False)
         fallen = False
         pose = self.getPose()
         if pose == 'Back':
-            self.motProxy.setFallManagerEnabled(False)
+            
             self.stiff()
             self.backToStand()
             fallen = True
-            self.motProxy.setFallManagerEnabled(True)
+            
         elif pose == 'Belly':
-            self.motProxy.setFallManagerEnabled(False)
+            
             self.stiff()
             self.bellyToStand()
             fallen = True
-            self.motProxy.setFallManagerEnabled(True)
+        self.setFME(True)
+    
         return fallen
 
     # activate stiffness
@@ -1631,7 +1639,7 @@ class Motions():
         self.motProxy.walkTo(x,y,angle,self.gaitConfig)
         
     def cartesianRight( self, angle, x,y ):
-        self.motProxy.setFallManagerEnabled(False)
+        
         # maxima input:
         # angle -> -0.3 to 0.5 (with x = 0.05, y =  0.00) 
         #          -0.1 to 0.7 (with x = 0.05, y =  0.03)
@@ -1712,10 +1720,10 @@ class Motions():
         self.motProxy.positionInterpolation( 'RLeg', 1, targets[1], almath.AXIS_MASK_ALL, [dur], True)
         time.sleep(0.5)
         self.normalPose()
-        self.motProxy.setFallManagerEnabled(True)
+        
         
     def cartesianLeft( self, angle, x, y , interval1 = 0.1, interval2 = 0.1, interval3 = 0.1 ):
-        #self.motProxy.setFallManagerEnabled(False)
+        #
         # maxima input:
         # angle -> -0.5 to 0.3 (with x = 0.05, y =  0.00) 
         #          -0.7 to 0.1 (with x = 0.05, y =  -0.03)
@@ -1811,7 +1819,7 @@ class Motions():
         self.motProxy.positionInterpolation( 'LLeg', 1, targets[2], almath.AXIS_MASK_ALL, [dur ], True)
         
         self.normalPose(True)
-        #self.motProxy.setFallManagerEnabled(True)
+        #
         
 def minimizedAngle( angle ) :
     if angle > math.pi:

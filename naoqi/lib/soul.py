@@ -44,6 +44,7 @@ vis = visionInterface.VisionInterface( motProxy, vidProxy, memProxy )
 # Start the vision (ballfinding) thread
 visThread = visionInterface.VisionThread( vis )
 visThread.start()
+visThread.stopScan()
 
 # stateController class: robot state, penalized, etc.
 gsc = gameStateController.stateController('stateController', ttsProxy, memProxy )
@@ -83,7 +84,10 @@ teamColor = None
 kickOff = None
 penalty = None
 
-(teamColor, kickOff, penalty) = gsc.getMatchInfo()   
+#(teamColor, kickOff, penalty) = gsc.getMatchInfo()   
+teamColor = 0
+kickOff = 0
+penalty = 1    
     
 # If keeper -> different style of play , coaches other naos
 
@@ -409,6 +413,7 @@ def Penalized():
         firstCall['Set']       = True
         firstCall['Playing']   = True
         firstCall['Penalized'] = False
+        print phase
                 
 def Finished():
   
@@ -439,7 +444,7 @@ def BallFoundKeep():
         mot.stance()
         firstCall['BallFoundKeep'] = False
         
-    maxlength = 6
+    maxlength = 4
     halfmaxlength = (maxlength/2.0)
 
     #  FIND A BALL  #
@@ -497,7 +502,7 @@ def BallFoundKeep():
             print 'Ball moving from ', xold, yold, 'to', xnew, ynew, '(mean). Speed', speed
             
             # calculate direction if speed is high enough
-            if speed > 0.225:
+            if speed > 0.1:
                 #mot.stiffKnees()
                 
                 # This is all triangular magic using similarity between two triangles formed by balllocations and Nao.
@@ -532,19 +537,19 @@ def BallFoundKeep():
                 #                      dir   = A*C/B - ynew
                 
                 dir = (yold - ynew ) * xnew / (xold - xnew) - ynew
-                
+                print 'Direction', dir
                 # if a direction has been found, clear all variables 
                 
-                if dir >= 0.25:
+                if dir >= 0.5:
                     print 'Dive right'
                     mot.diveRight()
-                elif dir <= -0.25:
+                elif dir <= -0.5:
                     print 'Dive left'
                     mot.diveLeft()
-                elif dir < 0.25 and dir >= 0:
+                elif dir < 0.5 and dir >= 0:
                     print 'Step right'
                     mot.footRight()
-                elif dir > -0.25 and dir < 0:
+                elif dir > -0.5 and dir < 0:
                     print 'Step left'
                     mot.footLeft()
                 phase = 'BallNotFoundKeep'
@@ -563,7 +568,7 @@ def BallFoundKeep():
 def BallNotFoundKeep():
     global phase
     global ball_loc
-    
+    visThread.startScan()
     # if a ball is found
     if vis.scanCircle(visThread):
         # reinitialize
@@ -659,6 +664,7 @@ def BallFound():
         seen = True
         #print 'RealPosition', ball
     if firstCall['BallFound']:
+        mot.setFME(True)
         ledProxy.fadeRGB('RightFaceLeds', 0x0000ff00, 0)
         firstCall['BallFound'] = False
         firstCall['BallNotFound'] = True
@@ -672,7 +678,7 @@ def BallFound():
     memProxy.insertData('dntPhase', 'BallFound')
     memProxy.insertData('dntBallDist', math.sqrt(x**2 + y**2))
     
-    if seen and x < 0.18 and -0.06 < y < 0.02:
+    if seen and x < 0.19 and -0.02 < y < 0.02:
         print 'Kick'
         # BLOCKING CALL: FIND BALL WHILE STANDING STILL FOR ACCURATE CORRECTION
         mot.killWalk()
@@ -685,8 +691,8 @@ def BallFound():
             theta = math.atan(y/x)
             # hacked influencing of perception, causing walking forward to have priority
             theta = theta / 2.5  #if theta > 0.4    else theta / 5.5
-            x = (2.0 * x - 0.2) #if x > 0.5        else (x - 0.16) * 1.3
-            y = 0.5 * y + 0.04          #if -0.1 < y < 0.1 else 2.0 * y    
+            x = (2.5 * (x - 0.2)) #if x > 0.5        else (x - 0.16) * 1.3
+            y = 0.5 * y           #if -0.1 < y < 0.1 else 2.0 * y    
             
         else:
             print 'Not seen ball', x, y
@@ -773,6 +779,8 @@ def BallNotFound():
     
 def Kick():
     global phase
+    mot.setFME(False)
+
     memProxy.insertData('dntPhase', 'Kick')
     visThread.stopScan()
     
@@ -783,20 +791,16 @@ def Kick():
     goal = vis.scanCircleGoal()
     print 'Kick phase: ', goal
     mot.setHead(0, 0.5)
-    time.sleep(0.2)
     visThread.startScan()
+    time.sleep(0.5)
     
     # Case 0 : Ball stolen/lost.
-    # Check if the ball is still there, wait until ball is found or 1 second has passed
-    now = time.time()
-    while time.time() - now < 2.0 and not(visThread.findBall()):
-        pass    
-    
-    time.sleep(0.1)
+    # Check if the ball is still there, wait until ball is found has passed
     # Something of a mean, ...
     ball = visThread.findBall()
     
     print 'Found ball: ', ball
+    
     #ball = kalmanFilterBall.iterate( ball, [0,0,0] )
     if not ball:
         print 'Ball gone'
@@ -828,9 +832,9 @@ def Kick():
         else:
             goalColor = 1
             ledProxy.fadeRGB('LeftFaceLeds',0x00ff3000, 0) # yellow goal , anyone got a better value?
-        print 'Goalcolor', goalColor
-        
+        print 'Goalcolor', goalColor, 'KickAngle', kickangle
         # Cases 1-3, if you see your own goal, kick to the other side
+        
         if goalColor == teamColor:
             # Case 1, goal is left, kick to the right. 
             if kickangle >= 0.7:
@@ -848,7 +852,7 @@ def Kick():
             
             # general kick interface distributes kick
             ledProxy.fadeRGB('RightFaceLeds', 0x00ff0000, 0)  #right led turns green
-            kick(kickangle, kalmanFilterBall.iterate(ball))    
+            mot.kick(kickangle, kalmanFilterBall.iterate(ball, [0,0,0]))    
         ledProxy.fadeRGB('LeftFaceLeds',0x00000000, 0)
         phase = 'BallNotFound'
 
