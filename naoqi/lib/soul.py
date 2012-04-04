@@ -1,4 +1,3 @@
-
 ## NOTES TO EDITORS
 # todo: Implement New Gamecontroller
 # TODO: Fix locategoal
