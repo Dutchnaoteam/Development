@@ -27,9 +27,6 @@ def find_some_edgels(filename):
     for x in xrange(0, hsv.width, 10):
         y = 0
         while y < hsv.height:
-            # if color is green
-            if(hsv[x,y] > green_min and hsv[x,y] < greem_max):
-                whites_in_a_row= 0 
     return transitions
 
 def leastSquares(transitions):
@@ -40,7 +37,6 @@ def leastSquares(transitions):
     for i in xrange(0, len(transitions)):
         A[i, 0] = transitions[i][0]
         B[i,0] = transitions[i][1]
-
 
     for i in xrange(0, len(transitions)):
         A[i, 1] = 1
