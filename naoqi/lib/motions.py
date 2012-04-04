@@ -22,12 +22,14 @@ class Motions():
     def __init__(self, motProxy, posProxy):
         self.motProxy = motProxy
         self.posProxy = posProxy
-        self.setGaitConfigSimple( 0.06 , 0.14, 0.5, 0.01, 30, 20 )
-        self.motProxy.setFallManagerEnabled(False)
+        self.setGaitConfigSimple( 0.05 , 0.15, 0.4, 0.014, 40, 20 )
+        self.setFME(False)
         
     def setFME(self, arg):
-        self.motProxy.setFallManagerEnabled(arg)
-        
+        try:
+            self.motProxy.setFallManagerEnabled(arg)
+        except:
+            print 'Could not switch off FallManager. '
     # set parts of the footgaitconfig, order is important but it does not
     # have to contain each and every option (if no value found for an option
     # it will use earlier specified values)
@@ -1819,7 +1821,7 @@ class Motions():
         self.motProxy.positionInterpolation( 'LLeg', 1, targets[2], almath.AXIS_MASK_ALL, [dur ], True)
         
         self.normalPose(True)
-        #
+        
         
 def minimizedAngle( angle ) :
     if angle > math.pi:

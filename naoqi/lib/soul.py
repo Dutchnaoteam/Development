@@ -54,11 +54,12 @@ kalmanFilterBall = kalman.KalmanBall()
 # control vector containing x,y,theta-velocity
 control = [0,0,0]
 # ball location(s)
-ball_loc = dict()
+ball_loc = list()
 
 #particleFilter   = particle.ParticleFilter()
 #particleFilter.start()
 
+goalPosKnown = (False, None)
 
 # Initialization of state and phase , defining gameState and robotPhase
 state = 0
@@ -85,21 +86,25 @@ kickOff = None
 penalty = None
 
 #(teamColor, kickOff, penalty) = gsc.getMatchInfo()   
-teamColor = 0
-kickOff = 0
-penalty = 1    
-    
+teamColor =0
+penalty = 1
+kickOff = 0 
+ 
 # If keeper -> different style of play , coaches other naos
 
 # If keeper -> different style of play
 playerType = 1 if robot == 1 else 0
-
-
-## Coach lists
-# Specify all the names of the playing nao's here (add .local)
-nameList = ['camlal.local', 'nao.local']
-ipList = list()
-
+'''
+try:
+    # specify all playing naos here! TODO find them automatically
+    coachThread = coach.Coach('coach', ['10.0.0.8', \
+                                        '10.0.0.5'], memProxy)
+    coachThread.start()
+    print 'Coaching started' 
+except Exception as inst:
+    print 'Could not coach, wrong ip?'
+    print inst
+'''     
 ## STATES (Gamestates)
 # Initial()
 # Ready()
@@ -123,7 +128,7 @@ def Initial():
         print 'TeamColor: ' , teamColor                    # print the teamcolor as a check
 
         # Empty variables
-        ball_loc = dict()
+        ball_loc = list()
         
         # Team color must be displayed on left foot (Reference to rules)        
         ledProxy.off('AllLeds')       
@@ -149,16 +154,6 @@ def Initial():
         firstCall['Set']       = True
         firstCall['Playing']   = True
         firstCall['Penalized'] = True
-        
-    #setting up coach iplist
-    while nameList:
-        for name in nameList:
-            try:    
-                ipList.append( socket.gethostbyname(name))
-                nameList.remove(name)
-            except:
-                print name ,' is not connected'
-    print 'ipList set: ', ipList
 
 # Ready state: possible positioning
 # ledProxy:  Chest Blue
@@ -282,11 +277,6 @@ def Set():
 
     # if the first iteration
     if firstCall['Set']:
-        #start the coach thread
-        coachThread = coach.Coach('coach', ipList, memProxy)      
-        coachThread.start()
-        print 'coaching started'
-        
         mot.killWalk()
         # update info about team, it is possible that game is started in set phase
         (teamColor, kickOff, penalty) = gsc.getMatchInfo()    
@@ -375,12 +365,12 @@ def Playing():
         # position = particleFilter.meanState
         pass
     try:
-        coachPhase = coachproxy.getCoachData('dnt'+str(robot))
+        coachPhase = memproxy.getCoachData('dnt'+str(robot)) 
         if coachPhase:
             print 'Coach says: ', coachPhase
             phase = coachPhase
     except:
-        print 'Could not get an avtion'
+        print 'Could not get an action'
     # Execute the phase as specified by phase variable
     phases.get(phase)()
     
@@ -456,53 +446,52 @@ def BallFoundKeep():
         #    visThread.findBall()
         #    return True
         (x,y) = ball
-        memProxy.insertData('dntBallDist', math.sqrt(x**2 + y**2))
 
-        if len(ball_loc) == 0:
-            ball_loc[ 0 ] = ball
-            
-        elif len(ball_loc) < maxlength:
-            # add to dict, key being a number from maxlength to 0. Last position is position 8 (key 7)
-            # but only if ball_loc is already filled and ball is a new location
-            if ball != ball_loc[ len(ball_loc) - 1 ]:
-                ball_loc[ len(ball_loc) ] = ball
-        
-        elif ball != ball_loc[ maxlength - 1 ]:
+        length = len(ball_loc)
+        if length == maxlength:
+            ball_loc = ball_loc[1:]
+            ball_loc.append(ball)
+        else:
+            ball_loc.append( ball )
+        if length == maxlength:
             xold = 0
             yold = 0
             xnew = 0
             ynew = 0
 
             # shift elements sidewards, newest ballloc becomes nr <maxlength>, oldest is thrown away
-            for number in ball_loc:
+            for number in range(maxlength):
                 (x,y) = ball_loc[number]
-                if number != 0:
-                    ball_loc[number-1] = (x,y)
                             
                 # add to xold/new and yold/new variables, number 0 is oldest, number <maxlength> most recent ballloc
-                if number == 0:
-                    pass
-                elif 0 < number < halfmaxlength + 1:
-                    xold += x / halfmaxlength
-                    yold += y / halfmaxlength
+                if 0 <= number < halfmaxlength:
+                    xold += x
+                    yold += y
                 else:
-                    xnew += x / halfmaxlength
-                    ynew += y / halfmaxlength
-            
-            xnew += ball[0] / halfmaxlength
-            ynew += ball[1] / halfmaxlength
-            ball_loc[maxlength-1] = ball
-                
+                    xnew += x
+                    ynew += y
+            # calculate the mean of measurements
+            xold /= halfmaxlength
+            yold /= halfmaxlength
+            xnew /= halfmaxlength
+            ynew /= halfmaxlength
+                                    
+            xlast, ylast = ball_loc[-1]
+            xpenultimate, ypenultimate = ball_loc[-2]
 
+            distlast = math.sqrt(xlast**2 + ylast**2)
+            distpenultimate = math.sqrt(xpenultimate **2 + ypenultimate **2)
+            speedlast = distpenultimate  - distlast
+            
             # calc diff in distance
             distold = math.sqrt(xold**2 + yold**2)
             distnew = math.sqrt(xnew**2 + ynew**2)
             speed = distold - distnew
             
-            print 'Ball moving from ', xold, yold, 'to', xnew, ynew, '(mean). Speed', speed
+            print 'Ball moving from ', xold, yold, 'to', xnew, ynew, '(mean). Speed', speed, 'Speedlast', speedlast
             
             # calculate direction if speed is high enough
-            if speed > 0.1:
+            if speed > 0.1 or speedlast > 0.1:
                 #mot.stiffKnees()
                 
                 # This is all triangular magic using similarity between two triangles formed by balllocations and Nao.
@@ -554,7 +543,7 @@ def BallFoundKeep():
                     mot.footLeft()
                 phase = 'BallNotFoundKeep'
                 
-                ball_loc = dict()
+                ball_loc = list()
                 visThread.clearCache()
                 firstCall['BallFoundKeep'] = True
                 print 'Direction', dir
@@ -572,7 +561,7 @@ def BallNotFoundKeep():
     # if a ball is found
     if vis.scanCircle(visThread):
         # reinitialize
-        ball_loc = dict()
+        ball_loc = list()
         phase = 'BallFoundKeep'
         firstCall['BallNotFoundKeep'] = True
     elif firstCall['BallNotFoundKeep']:
@@ -656,6 +645,7 @@ def Standby():
 def BallFound():
     global phase
     global control
+    global goalPosKnown
     
     # FIND A BALL #
     seen = False    
@@ -713,6 +703,8 @@ def BallFound():
         y = max(-1, min(1, y))
         theta = max(-1, min(1, theta))
         mot.setWalkTargetVelocity(x , y, theta, 1.0)
+        goalPosKnown = False, None
+    
         
         # maxXSpeed 0.117 m / s for nao , backwards a lot less
         vX = x * 0.120 if x > 0 else x * 0.079
@@ -755,6 +747,7 @@ def BallNotFound():
     global ball_loc
     global phase
     global control
+    global goalPosKnown
     
     # if this is the first time the ball is not founnd
     if firstCall['BallNotFound']:
@@ -776,9 +769,11 @@ def BallNotFound():
     else:
         # if no ball is found circle slowly while searching for it
         mot.postWalkTo(0, 0, 1.3)
+        goalPosKnown = False, None
     
 def Kick():
     global phase
+    global goalPosKnown
     mot.setFME(False)
 
     memProxy.insertData('dntPhase', 'Kick')
@@ -788,16 +783,22 @@ def Kick():
     ledProxy.fadeRGB('RightFaceLeds', 0x00ff0000, 0)       # no ball anymore, right led turns red
     
     # scan for a goal
-    goal = vis.scanCircleGoal()
+    goal = None
+    if goalPosKnown[0]:
+        goal = goalPosKnown[1]
+    else:
+        goal = vis.scanCircleGoal()
+    if goal:
+        goalPosKnown = (True, goal)
+        
     print 'Kick phase: ', goal
-    mot.setHead(0, 0.5)
+    mot.setHead(0, 0.45)
     visThread.startScan()
-    time.sleep(0.5)
+    ball = vis.scanCircle(visThread)
     
     # Case 0 : Ball stolen/lost.
     # Check if the ball is still there, wait until ball is found has passed
     # Something of a mean, ...
-    ball = visThread.findBall()
     
     print 'Found ball: ', ball
     
