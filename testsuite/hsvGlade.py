@@ -293,29 +293,46 @@ class hsvGlade(wx.Frame):
 
         (hMin,sMin,vMin) = self.rgbToHsv((self.rMin,self.gMin,self.bMin))
         (hMax,sMax,vMax) = self.rgbToHsv((self.rMax,self.gMax,self.bMax))
-
-        self.hMin.SetValue(hMin)
-        self.hMax.SetValue(hMax)
-        self.sMin.SetValue(sMin)
-        self.sMax.SetValue(sMax)
-        self.vMin.SetValue(vMin)
-        self.vMax.SetValue(vMax)
+        
+        (h1,s1,v1) = self.rgbToHsv((self.rMin,self.gMin,self.bMin))
+        (h2,s2,v2) = self.rgbToHsv((self.rMax,self.gMax,self.bMax))
+        # choose smallest range for Hue
+        # e.g.: range(min=170,max=10)=20 < range(min=10,max=170)=160
+        print str(h2)+"-"+str(h1)+"="+str(h2-h1)+", 180-"+str(h2)+"+"+str(h1)+"="+str(180-h2+h1)
+        
+        if h2-h1 < 180-h2+h1:
+            print 'h2-h1<180-h2+h1'
+            self.hMin.SetValue(hMin)
+            self.hMax.SetValue(hMax)
+        else:
+            print 'NOT h2-h1<180-h2+h1'
+            self.hMin.SetValue(hMax)
+            self.hMax.SetValue(hMin)
+        if s2 > s1:
+            self.sMin.SetValue(sMin)
+            self.sMax.SetValue(sMax)
+        else:
+            self.sMin.SetValue(sMax)
+            self.sMax.SetValue(sMin)
+        if v2 > v1:
+            self.vMin.SetValue(vMin)
+            self.vMax.SetValue(vMax)
+        else:
+            self.vMin.SetValue(vMax)
+            self.vMax.SetValue(vMin)
  
         # TODO send hsv-ranges to Nao
+        if self.hMin > self.hMax:
+            message = str([[self.hMin.GetValue(),self.sMin.GetValue(),self.vMin.GetValue()], [self.hMax.GetValue(),self.sMax.GetValue(),vMax.GetValue()]])
+        else:
+            message = str([[self.hMin.GetValue(),self.sMin.GetValue(),self.vMin.GetValue()], [180,self.sMax.GetValue(),self.vMax.GetValue()], [0,sMin.GetValue(),vMin.GetValue()], [hMax.GetValue(),sMax.GetValue(),vMax.GetValue()]])
         try:
-            message = "hsv "
-            message += str(self.hMin.GetValue()) + " "
-            message += str(self.hMax.GetValue()) + " "
-            message += str(self.sMin.GetValue()) + " "
-            message += str(self.sMax.GetValue()) + " "
-            message += str(self.vMin.GetValue()) + " "
-            message += str(self.vMax.GetValue())
             self.client.send(message)
         except Exception as e:
             print "There is no Nao receiving this hsv-range."
-            print type(e)
-            print e.args
-            print e
+            #print type(e)
+            #print e.args
+            #print e
 
     def allZeros(self):
         return self.hMin.GetValue()==self.hMax.GetValue()== \
@@ -333,7 +350,7 @@ class hsvGlade(wx.Frame):
         (r, g, b) = colorsys.rgb_to_hsv(h/180.0, s/255.0, v/255.0)
         r *= 255
         g *= 255
-        v *= 255
+        b *= 255
         return (r,g,b)
 
     # add a colour to the HSV-range using eyedropper
@@ -391,10 +408,10 @@ class hsvGlade(wx.Frame):
                 self.disconnectButton.Enable()
                 self.setStatusText(["^_^ Connected to " + ip + "."])
             except Exception as e:
-                print "Could not connect."
-                print type(e)
-                print e.args
-                print e
+                print "Could not connect to " + ip + "."
+                #print type(e)
+                #print e.args
+                #print e
                 self.setStatusText(["Could not connect to " + ip + "."])
         else:
             self.setStatusText(["T_T First add an IP"])
@@ -411,9 +428,9 @@ class hsvGlade(wx.Frame):
             self.setStatusText(["^_^ Disconnected."])
         except Exception as e:
             print "Could not disconnect."
-            print type(e)
-            print e.args
-            print e
+            #print type(e)
+            #print e.args
+            #print e
             self.setStatusText(["T_T Could not disconnect."])
 
     def hsvSpinCtrl(self, event):
