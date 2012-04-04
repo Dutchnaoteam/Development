@@ -32,6 +32,7 @@ class hsvGlade(wx.Frame):
         self.hsvRangeSizer_staticbox = wx.StaticBox(self, -1, "Set HSV range")
         self.connectSizer_staticbox = wx.StaticBox(self, -1, "Connect")
         self.naoVisionSizer_staticbox = wx.StaticBox(self, -1, "Nao Vision")
+        
         # Menu Bar
         self.TestSuite_menubar = wx.MenuBar()
         wxglade_tmp_menu = wx.Menu()
@@ -58,7 +59,7 @@ class hsvGlade(wx.Frame):
         self.minText = wx.StaticText(self, -1, "Min:")
         self.maxText = wx.StaticText(self, -1, "Max:")
         self.hText = wx.StaticText(self, -1, "Hue:")
-        self.hMin = wx.SpinCtrl(self, -1, "", min=-90, max=180)
+        self.hMin = wx.SpinCtrl(self, -1, "", min=0, max=180)
         self.hMax = wx.SpinCtrl(self, -1, "", min=0, max=180)
         self.sText = wx.StaticText(self, -1, "Saturation:")
         self.sMin = wx.SpinCtrl(self, -1, "", min=0, max=255)
@@ -70,6 +71,7 @@ class hsvGlade(wx.Frame):
         self.addColourButton = wx.Button(self, -1, "Add Colour")
         self.removeColourButton = wx.Button(self, -1, "Remove Colour")
         self.testButton = wx.Button(self, -1, "testButton")
+        self.magicRatioTextCtrl = wx.TextCtrl(self, -1, "0.125")
         self.ipListBox = wx.ListBox(self, -1, choices=[], style=wx.LB_HSCROLL|wx.LB_SORT)
         self.ipTextCtrl = wx.TextCtrl(self, -1, "")
         self.addIPButton = wx.Button(self, -1, "Add IP")
@@ -90,6 +92,7 @@ class hsvGlade(wx.Frame):
         self.bMax = 0
 
         # events
+        self.magicRatioTextCtrl.Bind(wx.EVT_TEXT_ENTER, self.setMagicRatio)
         self.ipTextCtrl.Bind(wx.EVT_TEXT_ENTER, self.addIP)
         self.addIPButton.Bind(wx.EVT_BUTTON, self.addIP)
         self.removeIPButton.Bind(wx.EVT_BUTTON, self.removeIP)
@@ -179,6 +182,7 @@ class hsvGlade(wx.Frame):
         eyedropperButtonsSizer.Add(self.addColourButton, 0, 0, 0)
         eyedropperButtonsSizer.Add(self.removeColourButton, 0, 0, 0)
         eyedropperButtonsSizer.Add(self.testButton, 0, 0, 0)
+        eyedropperButtonsSizer.Add(self.magicRatioTextCtrl, 0, 0, 0)
         eyedropperSizer.Add(eyedropperButtonsSizer, 1, wx.EXPAND, 0)
         hsvRangeSizer.Add(eyedropperSizer, 1, wx.EXPAND, 0)
         mainSizer.Add(hsvRangeSizer, 0, wx.EXPAND, 0)
@@ -211,6 +215,23 @@ class hsvGlade(wx.Frame):
         self.imageWindow.image = image
         self.imageWindow.Refresh()
     #>> END <<
+    
+    def setMagicRatio(self, evt):
+        ratio = self.magicRatioTextCtrl.GetValue()
+        invalid = False
+        status = ["^_^"]
+        try:
+            ratio = float(ratio)
+            if ratio<0.0 or ratio>1.0:
+                invalid = True
+        except:
+            invalid = True
+        if invalid:
+            print "Invalid argument: Enter a float x, where 0.0<=x<=1.0."
+            status = ["T_T Enter a float x, where 0.0<=x<=1.0."]
+            self.magicRatioTextCtrl.SetValue('0.125')
+
+        self.setStatusText(status)
 
     def pilToWx(self, pilImage):
         image = wx.EmptyImage(pilImage.size[0], pilImage.size[1])
@@ -242,7 +263,8 @@ class hsvGlade(wx.Frame):
         self.paletteWindow.updatePreview()  #update selected colour
         image = self.imageWindow.image
         pos = self.imageWindow.ScreenToClient(wx.GetMousePosition())
-        ratio = 0.125
+        ratio = self.magicRatioTextCtrl.GetValue()
+        print ratio
         ((rMin,gMin,bMin), (rMax,gMax,bMax)) = magicWand.magic(image, pos, ratio)
         #(minColour, maxColour)= magicWand.magic(image, pos, ratio)
 
@@ -267,7 +289,6 @@ class hsvGlade(wx.Frame):
             self.bMin = bMin
             self.bMax = bMax
 
-        print rMin,gMin,bMin, "-", rMax,gMax,bMax
 
         (hMin,sMin,vMin) = self.rgbToHsv((self.rMin,self.gMin,self.bMin))
         (hMax,sMax,vMax) = self.rgbToHsv((self.rMax,self.gMax,self.bMax))
