@@ -16,6 +16,7 @@ class stateController(threading.Thread):
     state = 0
     gcActive = True
     lastCheck = 0
+    secondaryState = 0
 
     def __init__(self, name, ttsProxy, memProxy ):
         threading.Thread.__init__(self)
@@ -89,16 +90,20 @@ class stateController(threading.Thread):
         return self.gc.getKickOff()
 
     def getSecondaryState(self):
-        return self.gc.getSecondaryState()
+        if self.gc.controlledRefresh():
+            return self.gc.getSecondaryState()
+        return self.secondaryState
 
     def getMatchInfo(self):
+        teamColor = kickOff = penalty = 0
         if self.gc.controlledRefresh():
             teamColor = self.gc.getTeamColor('we')
-            kickOff = self.gc.getKickOff()
             penalty = self.gc.getSecondaryState()
+            kickOff = self.gc.getKickOff()
         else:
-            (teamColor, kickOff, penalty) = self.bc.getSetup()
-        return (teamColor, kickOff, penalty)
+            (teamColor, penalty, kickOff) = self.bc.getSetup()
+        self.secondaryState = penalty
+        return (teamColor, penalty, kickOff)
 
 
     # Closes thread
