@@ -1,6 +1,19 @@
 import cv
 import math
 
+# the white/green hsv values
+GREEN_MIN = (0, 25, 25)
+GREEN_MAX = (50, 100, 255)
+
+WHITE_MIN = (0, 0, 240)
+WHITE_MAX = (180, 15, 255)
+
+def is_green(color):
+    return GREEN_MIN < color < GREEN_MAX
+
+def is_white(color):
+    return WHITE_MIN < color < WHITE_MAX
+
 def find_some_edgels(filename):
     # loading the image
     img = cv.LoadImage(filename)
@@ -9,10 +22,6 @@ def find_some_edgels(filename):
     hsv = cv.CreateImage(cv.GetSize(img), 8, 3)
     cv.CvtColor(img, hsv, cv.CV_BGR2HSV)
 
-    # the white/green hsv values
-    
-    white_min = (0, 0, 240)
-    white_max = (180, 15, 255)
 
     transitions = []
 
