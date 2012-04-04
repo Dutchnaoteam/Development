@@ -22,7 +22,6 @@ def find_some_edgels(filename):
     hsv = cv.CreateImage(cv.GetSize(img), 8, 3)
     cv.CvtColor(img, hsv, cv.CV_BGR2HSV)
 
-
     transitions = []
 
     # scanning for green/white/green transitions
@@ -34,14 +33,14 @@ def find_some_edgels(filename):
         finalcoords = []
         while y < hsv.height:
             # if color is green
-            if(green_min < hsv[x,y] < greem_max):
+            if(is_green(hsv[y,x]) ):
                 # check if we had a white streak 
                 if (whites_in_a_row > 4 and whites_in_a_row < 10 ):
-            )       final_coords = tuple_index[math.ceil(len(tuple_index)/2)] 
+                    finalcoords = tuple_index[math.ceil(len(tuple_index)/2)] 
                 whites_in_a_row= 0 
                 greens_in_a_row +=1
-            # if color is white:
-            elif(white_min < hsv[x,y] < white_max ):
+            # if color is white
+            elif(is_white(hsv[y,x])):
                 whites_in_a_row += 1
                 tuple_index = tuple_index + [(x,y)]
             # no green, no white 
@@ -51,12 +50,13 @@ def find_some_edgels(filename):
                 tuple_index = []
             # check if there is any white in the image at the given points
             if (whites_in_a_row > 4 and whites_in_a_row < 10 ):
-                final_coords = tuple_index[math.ceil(len(tuple_index)/2)] 
+                finalcoords = tuple_index[math.ceil(len(tuple_index)/2)] 
             whites_in_a_row = 0 
             greens_in_a_row = 0
             tuple_index = []
+            y+=1
     solution = cv.CreateMat(len(transitions), 2, cv.CV_32FC1)
-    solution =  leastSquares(final_coords)
+    solution =  leastSquares(finalcoords)
     point1x = 5 
     point1y = solution[0,0] * point1x + solution[1,0]
     point2x = 50
