@@ -24,13 +24,13 @@ def run(im, headInfo):
     (cam, head) = headInfo
     # convert the image 
     im = convertImage(im)
-    #cv.SaveImage('a.jpg', im)
+    #cv.SaveImage('b1.jpg', im)
     # filter the image
     im = filterImage(im)
-    #cv.SaveImage('b.jpg', im)
+    #cv.SaveImage('b2.jpg', im)
     # blur the image
-    cv.Smooth(im, im, cv.CV_BLUR, 5, 5)
-    #cv.SaveImage('c.jpg', im)
+    cv.Smooth(im, im, cv.CV_BLUR, 2, 2)
+    #cv.SaveImage('b3.jpg', im)
     # find the max value in the image    
     (minVal, maxValue, minLoc, maxLocation) = cv.MinMaxLoc(im)
     #print maxValue/256.0
@@ -42,14 +42,14 @@ def run(im, headInfo):
     # calculate the angles to the ball
     #(xAngle, yAngle) = calcAngles((xcoord, ycoord ), cam)
     # calculate the position of the ball
-    position = calcPosition(maxLocation, cam)
+    position = calcPosition(maxLocation, cam, head)
     (xPos, yPos, xAngle, yAngle) = position
     
     #print position
     #track(position)
     return (xPos, yPos)
 
-def calcPosition(coord, cam):
+def calcPosition(coord, cam, headInfo):
     (width, height) = size
     #print 'size: ', width, ', ', height
     # coord with origin in the upperleft corner of the image
@@ -64,7 +64,8 @@ def calcPosition(coord, cam):
     xAngle = xCoord * radiusPerPixel
     yAngle = yCoord * radiusPerPixel
     if -1 < xAngle < 1 and -1 < yAngle < 1:
-        motion.changeAngles(['HeadPitch', 'HeadYaw'], [0.6*yAngle, 0.6*xAngle], 0.4)  # 0.7*angles for smoother movements, optional. Smoothinggg. 
+        yAngle = -0.47 - headInfo[0] if yAngle + headInfo[0] < -0.47 else yAngle
+        motion.changeAngles(['HeadPitch', 'HeadYaw'], [0.6*yAngle, 0.6*xAngle], 0.3)  # 0.7*angles for smoother movements, optional. Smoothinggg. 
 
     #print 'angle from camera: ' + str(xAngle) + ', ' + str(yAngle)
 
@@ -112,17 +113,17 @@ def filterImage(im):
     filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
     filter2 = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
     
-    hsvMin1 = cv.Scalar(0,  90,  130, 0)
-    hsvMax1 = cv.Scalar(12, 256, 256, 0)
+    hsvMin1 = cv.Scalar(4,  140,  140, 0)
+    hsvMax1 = cv.Scalar(9,  255,  256, 0)
     
-    hsvMin2 = cv.Scalar(170,  90,  130, 0)
-    hsvMax2 = cv.Scalar(200, 256, 256, 0)
+    #hsvMin2 = cv.Scalar(170,  90,  130, 0)
+    #hsvMax2 = cv.Scalar(200, 256, 256, 0)
 
     # Color detection using HSV
     cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
     cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filter)
-    cv.InRangeS(hsvFrame, hsvMin2, hsvMax2, filter2)
-    cv.Or(filter, filter2, filter)
+    #cv.InRangeS(hsvFrame, hsvMin2, hsvMax2, filter2)
+    #cv.Or(filter, filter2, filter)
     return filter
     
 def zero(m,n):

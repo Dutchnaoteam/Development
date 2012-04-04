@@ -35,9 +35,6 @@ posProxy = ALProxy('ALRobotPose', '127.0.0.1', 9559)
 ttsProxy = ALProxy('ALTextToSpeech', '127.0.0.1', 9559)
 vidProxy = ALProxy('ALVideoDevice', '127.0.0.1', 9559)
 
-# specify the coach here by entering the coaches ip!
-coachProxy = memProxy
-
 # Creating classes: Protocol is first three letters with exception gameStateController (gsc)
 # Motion class: motion functions etc.
 mot = motions.Motions( motProxy, posProxy  ) 
@@ -85,21 +82,24 @@ memProxy.insertListData([['dntBallDist', '', 0], ['dntPhase', 0, 0], ['dntNaoNum
 teamColor = None
 kickOff = None
 penalty = None
+
 (teamColor, kickOff, penalty) = gsc.getMatchInfo()   
     
 # If keeper -> different style of play , coaches other naos
 
-playerType = (robot == 1)
-if playerType == 1:    
-    try:
-        # specify all playing naos here! TODO find them automatically
-        coachThread = coach.Coach('coach', ['192.168.1.14', \
-                                            '192.168.1.13'])
-        coachThread.start()
-        print 'Coaching started' 
-    except:
-        print 'Could not coach, wrong ip?'
-        
+# If keeper -> different style of play
+playerType = 1 if robot == 1 else 0
+'''
+try:
+    # specify all playing naos here! TODO find them automatically
+    coachThread = coach.Coach('coach', ['10.0.0.8', \
+                                        '10.0.0.5'], memProxy)
+    coachThread.start()
+    print 'Coaching started' 
+except Exception as inst:
+    print 'Could not coach, wrong ip?'
+    print inst
+'''     
 ## STATES (Gamestates)
 # Initial()
 # Ready()
@@ -360,12 +360,12 @@ def Playing():
         # position = particleFilter.meanState
         pass
     try:
-        coachPhase = coachproxy.getData('dnt'+str(robot))
+        coachPhase = coachproxy.getCoachData('dnt'+str(robot))
         if coachPhase:
             print 'Coach says: ', coachPhase
             phase = coachPhase
     except:
-        pass
+        print 'Could not get an avtion'
     # Execute the phase as specified by phase variable
     phases.get(phase)()
     
@@ -388,7 +388,7 @@ def Penalized():
         if playerType == 0:                                # if a player, goto unpenalized phase
             phase = 'Unpenalized'
         else:                                              # if a keeper, go to ballnotfoundkeep.. 
-            if gsc.getSecondaryState():                    # if penalty shootout
+            if gsc.getSecondaryState() or penalty:         # if penalty shootout
                 phase = 'BallNotFoundKeep'
             else:                                          # else, become a player
                 phase = 'Unpenalized'
@@ -646,7 +646,7 @@ def BallFound():
     ball = visThread.findBall()
     if ball:
         seen = True
-        print 'RealPosition', ball
+        #print 'RealPosition', ball
     if firstCall['BallFound']:
         ledProxy.fadeRGB('RightFaceLeds', 0x0000ff00, 0)
         firstCall['BallFound'] = False
@@ -661,7 +661,7 @@ def BallFound():
     memProxy.insertData('dntPhase', 'BallFound')
     memProxy.insertData('dntBallDist', math.sqrt(x**2 + y**2))
     
-    if seen and x < 0.17 and -0.02 < y < 0.02:
+    if seen and x < 0.18 and -0.06 < y < 0.02:
         print 'Kick'
         # BLOCKING CALL: FIND BALL WHILE STANDING STILL FOR ACCURATE CORRECTION
         mot.killWalk()
@@ -673,9 +673,9 @@ def BallFound():
             print 'Kalman position', x,y
             theta = math.atan(y/x)
             # hacked influencing of perception, causing walking forward to have priority
-            theta = theta / 2.5  if theta > 0.4    else theta / 5.5
-            x = (2.0 * x - 0.17) if x > 0.5        else (x - 0.16) * 1.3
-            y = 0.5 * y          if -0.1 < y < 0.1 else 2.0 * y    
+            theta = theta / 2.5  #if theta > 0.4    else theta / 5.5
+            x = (2.0 * x - 0.2) #if x > 0.5        else (x - 0.16) * 1.3
+            y = 0.5 * y + 0.04          #if -0.1 < y < 0.1 else 2.0 * y    
             
         else:
             print 'Not seen ball', x, y
@@ -772,13 +772,13 @@ def Kick():
     goal = vis.scanCircleGoal()
     print 'Kick phase: ', goal
     mot.setHead(0, 0.5)
-    time.sleep(0.3)
+    time.sleep(0.2)
     visThread.startScan()
     
     # Case 0 : Ball stolen/lost.
     # Check if the ball is still there, wait until ball is found or 1 second has passed
     now = time.time()
-    while time.time() - now < 1.5 and not(visThread.findBall()):
+    while time.time() - now < 2.0 and not(visThread.findBall()):
         pass    
     
     time.sleep(0.1)
@@ -823,54 +823,22 @@ def Kick():
         if goalColor == teamColor:
             # Case 1, goal is left, kick to the right. 
             if kickangle >= 0.7:
-                mot.walkTo(0, -0.04 + ball[1], 0)
-                mot.rKickAngled(1)
+                mot.kick(-1.1)
             # Case 2, goal is right, kick to the left.
             if kickangle <= -0.7:
-                mot.walkTo(0, 0.04 + ball[1], 0)
-                mot.rKickAngled(1)
+                mot.kick(1.1)
             else:
             # Case 3, goal is straight forward, HAK
-                mot.walkTo(0,0.04 + ball[1],0)
-                #mot.normalPose()
-                #time.sleep(0.5)
-                ledProxy.fadeRGB('LeftFaceLeds',0x00000000, 0) # led turns black
-                #mot.hakje(kickangle * -0.1)
-                print ' Hakkkk '
+                mot.sideLeftKick()
+                
         else:                    
             # Case 4, other player's goal is found.
             # Kick towards it. 
             
-        
-            # Uses cartesian coordinates (only x and y as input though) to create a semi-dynamic kick. 
-            # Makes use of 6D vectors describing target positions that are calculated using a 
-            # eenheidscirkel (..?). 
-            ball  = visThread.findBall()
-            if ball:
-                (x,y) = ball
-                x-=0.1
-                if y < -0.02:
-                    self.cartesianRight( kickangle, x, y + 0.04 )
-                elif y > 0.02:
-                    self.cartesianLeft( kickangle, x, y - 0.04 )
-                elif kickangle > 0:
-                    self.setFootSteps( ['RLeg', 'LLeg'], [[0, 0.07, 0],[0, 0.07, 0]], [0.5, 1.0], clearExisting = True )
-                    while self.isWalking():
-                        ball = visThread.findBall() 
-                    if ball:
-                        (x,y) = ball
-                        x-= 0.1
-                        self.cartesianRight( kickangle, x , y + 0.04 )
-                else:
-                    self.setFootSteps( ['LLeg', 'RLeg'], [[0, -0.07, 0],[0, -0.07, 0]], [0.5, 1.0], clearExisting = True )
-                    while self.isWalking():
-                        ball = visThread.findBall()
-                    if ball:
-                        (x,y) = ball
-                        x-=0.1
-                        self.cartesianLeft( kickangle, x , y - 0.04 )
-                    
-            ledProxy.fadeRGB('LeftFaceLeds',0x00000000, 0)
+            # general kick interface distributes kick
+            ledProxy.fadeRGB('RightFaceLeds', 0x00ff0000, 0)  #right led turns green
+            kick(kickangle, kalmanFilterBall.iterate(ball))    
+        ledProxy.fadeRGB('LeftFaceLeds',0x00000000, 0)
         phase = 'BallNotFound'
 
 # When unpenalized, a player starts at the side of the field

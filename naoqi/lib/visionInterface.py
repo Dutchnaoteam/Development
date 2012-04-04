@@ -158,7 +158,7 @@ class VisionInterface():
             return ball
         for angles in [(-1,  0.4), (-0.5,  0.4), (0.0, 0.5),   (0.5,  0.4), (1,  0.4),  \
                        ( 1,  0.1), ( 0.75, 0.1), (0.5, 0.1  ), (0.25, 0.1), (0,  0.1), (-0.25, 0.1), (-0.5,  0.1), (-0.75, 0.1), (-1,  0.1  ), \
-                       (-1.1, -0.4), (-0.75, -0.4), (-0.5, -0.4), (-0.25, -0.4), ( 0, -0.4), (0.25, -0.4), ( 0.5, -0.4), ( 1.1, -0.4),(0,0) ]: # last one is to make successive scans easier
+                       (-1.1, -0.4), (-0.75, -0.4), (-0.5, -0.4), (-0.25, -0.4), (-0.125, -0.4), ( 0, -0.4), (0.125, -0.4), (0.25, -0.4), ( 0.5, -0.4), (0.75, -0.4), ( 1.1, -0.4),(0,0) ]: # last one is to make successive scans easier
             self.motProxy.setAngles(['HeadYaw', 'HeadPitch'], [angles[0], angles[1]], 0.6)
         
             # look for the ball in a given timespan
@@ -182,14 +182,14 @@ class VisionInterface():
         current = self.motProxy.getAngles(['HeadPitch', 'HeadYaw'], True)
         # move head to starting position
         self.motProxy.setAngles(['HeadPitch', 'HeadYaw'], \
-                                    [-0.55, 0], 0.8)
+                                    [-0.47, 0], 0.8)
         
         increment = math.copysign(0.25, yawRange[1])
         for yaw in xfrange( yawRange[0] + increment, yawRange[1] + increment, increment):
             # take a snapshot..
             (image, headinfo) = self.snapShot()
             # then start headmovement
-            self.motProxy.setAngles(['HeadPitch', 'HeadYaw'], [-0.55, yaw], 0.9)
+            self.motProxy.setAngles(['HeadPitch', 'HeadYaw'], [-0.47, yaw], 0.9)
             # finally, start calculations
             goal = self.getGoal(image, headinfo)
             if goal:
