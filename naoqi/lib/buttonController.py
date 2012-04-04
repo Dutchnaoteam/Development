@@ -25,7 +25,7 @@ class buttonController():
         return not(self.memProxy.getData("ChestButtonPressed", 0) == 0.0)
         
     def bumperButton(self):
-        return not((self.memProxy.getData("LeftBumperPressed", 0) == 0.0) or (self.memProxy.getData("RightBumperPressed", 0) == 0.0))
+        return ( (self.memProxy.getData("LeftBumperPressed", 0) != 0.0) or (self.memProxy.getData("RightBumperPressed", 0) != 0.0) )
     
     # THE FUNCTIONS TO SETUP THE NAO
     def getSetup(self):
