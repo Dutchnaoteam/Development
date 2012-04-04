@@ -264,9 +264,10 @@ class hsvGlade(wx.Frame):
         image = self.imageWindow.image
         pos = self.imageWindow.ScreenToClient(wx.GetMousePosition())
         ratio = self.magicRatioTextCtrl.GetValue()
-        print ratio
-        ((rMin,gMin,bMin), (rMax,gMax,bMax)) = magicWand.magic(image, pos, ratio)
-        #(minColour, maxColour)= magicWand.magic(image, pos, ratio)
+        (minColour, maxColour)= magicWand.magic(image, pos, ratio)
+        (rMin,gMin,bMin) = minColour
+        (rMax,gMax,bMax) = maxColour
+        print "hsvGlade:",minColour,maxColour
 
         if not self.addColourButton.IsEnabled() and not self.allZeros():
             if rMin < self.rMin:
@@ -299,39 +300,8 @@ class hsvGlade(wx.Frame):
         self.sMax.SetValue(sMax)
         self.vMin.SetValue(vMin)
         self.vMax.SetValue(vMax)
-
-        '''
-        #TODO bal ranges could be in 2 ranges
-        # e.g. hue is 170-180 and 0-10
-
-        if not self.addColourButton.IsEnabled() and not self.allZeros():    #extend range
-            if hMin < self.hMin.GetValue():
-                self.hMin.SetValue(hMin)
-            if hMax > self.hMax.GetValue():
-                self.hMax.SetValue(hMax)
-            if sMin < self.sMin.GetValue():
-                self.sMin.SetValue(sMin)
-            if sMax > self.sMax.GetValue():
-                self.sMax.SetValue(sMax)
-            if vMin < self.vMin.GetValue():
-                self.vMin.SetValue(sMin)
-            if vMax > self.vMax.GetValue():
-                self.vMax.SetValue(vMax)
-        else:                                   #new range
-            self.hMin.SetValue(hMin)
-            self.hMax.SetValue(hMax)
-            self.sMin.SetValue(sMin)
-            self.sMax.SetValue(sMax)
-            self.vMin.SetValue(vMin)
-            self.vMax.SetValue(vMax)
-        '''    
+ 
         # TODO send hsv-ranges to Nao
-        '''
-        message = str([[hMin,sMin,vMin], [hMax,sMax,vMax]])
-        if hMax-hMin > 90:
-            message = str([[0,], [], [], []])
-            message = str([180-hMax,sMax,vMax, hMin,sMin,vMin])
-        '''
         try:
             message = "hsv "
             message += str(self.hMin.GetValue()) + " "
