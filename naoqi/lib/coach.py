@@ -77,103 +77,35 @@ class Coach(threading.Thread):
             #print 'dict:' ,self.proxyDict
             
             print self.activeIPs
-            for ip in self.ipList: 
-                
-                try:
-                    # 'receive' messages
-                    proxy = self.proxyDict[ip]                       
-                    currentDist = proxy.getData('dntBallDist')
-                    currentNao = proxy.getData('dntNaoNum')
-                    self.activeIPs[ip]=currentNao
-                    self.ear.playerOn(currentNao)
-                    # track naos that have seen the ball
-                    if currentDist:
-                        ballSeen.append( currentNao )
-                        if currentNao == 1:
-                            keeperSawBall = True
-                    
-                        # update closest nao
-                        if currentDist < minDist:
-                            minDist = currentDist
-                            closestNao = currentNao
-                except:
-                    self.ipList.remove(ip)
-                    self.failedIpList.append(ip)
-                    try:
-                        self.ear.playerOff(self.activeIPs[ip])
-                        del(self.activeIPs[ip])
-                    except:
-                        pass
-                    
-                    
-            
-               
-            #check every minute the ip's that could not connect
-            if time.time()-now > 60 and self.failedIpList:
-                now = time.time()
-                self.ipList = self.failedIpList
-                self.failedIpList = list()
-                for ip in self.ipList: 
-                    print '********* RETESTING ', ip, '*********'
-                    try:
-                        # 'receive' messages
-                        proxy = self.proxyDict[ip]                       
-                        currentDist = proxy.getData('dntBallDist')
-                        currentNao = proxy.getData('dntNaoNum')
-                        self.activeIPs[ip]=currentNao
-                        self.ear.playerOn(currentNao)
-                        #self.ear.playerOn(currentNao)
-                        # track naos that have seen the ball
-                        if currentDist:
-                            ballSeen.append( currentNao )
-                            if currentNao == 1:
-                                keeperSawBall = True
-                        
-                            # update closest nao
-                            if currentDist < minDist:
-                                minDist = currentDist
-                                closestNao = currentNao
-                    except:
-                        self.ipList.remove(ip)
-                        self.failedIpList.append(ip)
-                        try:
-                            self.ear.playerOff(self.activeIPs[ip])
-                            del(self.activeIPs[ip])
-                        except:
-                            pass
-                            
-                
-            
-            print 'Saw ball: ', ballSeen, 'Closest: ' ,closestNao , 'at: ',minDist          
+            for ip in self.ipList:                 
+                    # update closest nao
+                    if currentDist < minDist:
+                        minDist = currentDist
+                        closestNao = currentNao
+            print 'Saw ball: ', ballSeen, 'Closest: ' ,closestNao           
             messageOut = list()
             # For every nao (including keeper, might come in handy later)
-            # if keeper, dont alter actions
-            if self.ownNaoNum == 1:
-                action = ''
-            # else if the player is the closest nao, proceed with getting the ball
-            elif closestNao == self.ownNaoNum:
-                action = ''      
-            # else if the player is not the closest nao, walk somewhere near the ball (or possibly retreat)
-            elif self.ownNaoNum in ballSeen:
-                '''
-                if keeperSawBall:
-                    #action = 'Retreat'
-                    action = 'KeepDistance'
+            for n in range(1,5):
+                # if keeper, dont alter actions
+                if n == 1:
+                    action = ''
+                # else if player which is the closest nao, prcoeed
+                elif closestNao == n:
+                    action = ''      
+                # else if player which is not the closest nao, standby (or possibly retreat)
+                elif n in ballSeen:
+                    if keeperSawBall:
+                        #action = 'Retreat'
+                        action = 'Standby'
+                    else:
+                        action = 'Standby'
+                # all other cases, proceed as usual        
                 else:
-                    action = 'KeepDistance'
-                '''
-                #Commented out the if, as it doesn't do anything right now
-                action = 'KeepDistance'
-            # all other cases, proceed as usual        
-            else:
-                action = ''
+                    action = ''
+                messageOut.append( ['dnt' + str(n), action, 0] )
             
             # 'Send' messages 
-            self.memProxy.insertData( 'dnt' + str(self.ownNaoNum), action )
+            self.memProxy.insertListData(messageOut)
             
             # pause for a short time
-            time.sleep(0.5)
-
-    def getCoachData(self, data):
-        return self.memProxy.getData(data)
-        
+            time.sleep(1)

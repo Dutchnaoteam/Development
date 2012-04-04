@@ -81,6 +81,14 @@ class hsvGlade(wx.Frame):
         self.__do_layout()
         # end wxGlade
 
+        # set rgb range
+        self.rMin = 0
+        self.rMax = 0
+        self.gMin = 0
+        self.gMax = 0
+        self.bMin = 0
+        self.bMax = 0
+
         # events
         self.ipTextCtrl.Bind(wx.EVT_TEXT_ENTER, self.addIP)
         self.addIPButton.Bind(wx.EVT_BUTTON, self.addIP)
@@ -104,6 +112,7 @@ class hsvGlade(wx.Frame):
 
         # test event
         self.testButton.Bind(wx.EVT_BUTTON, self.test)
+        self.testImageS = "old"
 
         # cursor image
         self.cursorCross = False
@@ -191,7 +200,12 @@ class hsvGlade(wx.Frame):
 
     #>> TEST <<
     def test(self, event):
-        pilImage = Image.open('./ballTest.png')
+        if self.testImageS == 'old':
+            pilImage = Image.open('./ballTest.png')
+            self.testImageS = 'new'
+        else:
+            pilImage = Image.open('./ball2.png')
+            self.testImageS = 'old'
         image = self.pilToWx(pilImage)
         #image = wx.Image('./ballTest.png', wx.BITMAP_TYPE_PNG)
         self.imageWindow.image = image
@@ -225,16 +239,47 @@ class hsvGlade(wx.Frame):
         self.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
 
     def pickColour(self, event):
+        self.paletteWindow.updatePreview()  #update selected colour
         image = self.imageWindow.image
         pos = self.imageWindow.ScreenToClient(wx.GetMousePosition())
         ratio = 0.125
-        (minColour, maxColour) = magicWand.magic(image, pos, ratio)
+        ((rMin,gMin,bMin), (rMax,gMax,bMax)) = magicWand.magic(image, pos, ratio)
+        #(minColour, maxColour)= magicWand.magic(image, pos, ratio)
 
-        self.paletteWindow.updatePreview()
+        if not self.addColourButton.IsEnabled() and not self.allZeros():
+            if rMin < self.rMin:
+                self.rMin = rMin
+            if rMax > self.rMax:
+                self.rMax = rMax
+            if gMin < self.gMin:
+                self.gMin = gMin
+            if gMax > self.gMax:
+                self.gMax = gMax
+            if bMin < self.bMin:
+                self.bMin = bMin
+            if bMax > self.bMax:
+                self.bMax = bMax
+        else:
+            self.rMin = rMin
+            self.rMax = rMax
+            self.gMin = gMin
+            self.gMax = gMax
+            self.bMin = bMin
+            self.bMax = bMax
 
-        (hMin,sMin,vMin) = self.rgbToHsv(minColour)
-        (hMax,sMax,vMax) = self.rgbToHsv(maxColour)
-        
+        print rMin,gMin,bMin, "-", rMax,gMax,bMax
+
+        (hMin,sMin,vMin) = self.rgbToHsv((self.rMin,self.gMin,self.bMin))
+        (hMax,sMax,vMax) = self.rgbToHsv((self.rMax,self.gMax,self.bMax))
+
+        self.hMin.SetValue(hMin)
+        self.hMax.SetValue(hMax)
+        self.sMin.SetValue(sMin)
+        self.sMax.SetValue(sMax)
+        self.vMin.SetValue(vMin)
+        self.vMax.SetValue(vMax)
+
+        '''
         #TODO bal ranges could be in 2 ranges
         # e.g. hue is 170-180 and 0-10
 
@@ -258,7 +303,7 @@ class hsvGlade(wx.Frame):
             self.sMax.SetValue(sMax)
             self.vMin.SetValue(vMin)
             self.vMax.SetValue(vMax)
-            
+        '''    
         # TODO send hsv-ranges to Nao
         '''
         message = str([[hMin,sMin,vMin], [hMax,sMax,vMax]])
@@ -489,7 +534,7 @@ class PreviewImage(wx.Panel):
     def __init__(self, parent, id=wx.ID_ANY,
                  pos=wx.DefaultPosition, size=(-1,-1)):#size=wx.DefaultSize):
         wx.Panel.__init__(self, parent, id, pos, size)
-        self.image = wx.Image('./ball.png', wx.BITMAP_TYPE_PNG)
+        self.image = wx.Image('./ball2.png', wx.BITMAP_TYPE_PNG)
         self.SetMinSize(self.image.GetSize())
         wx.EVT_PAINT(self, self.OnPaint) 
 
