@@ -1,0 +1,7 @@
+<project name="swig_example">
+  <!-- Add your project dependencies here -->
+
+  <!--
+  <depends names="foo" />
+  -->
+</project>
