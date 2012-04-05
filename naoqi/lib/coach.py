@@ -15,6 +15,7 @@ import sys
 import struct
 import time
 import threading
+import earlights
 from naoqi import ALProxy
 
 #we first insert some data that coach needs to know about every Nao
@@ -29,7 +30,7 @@ class Coach(threading.Thread):
 #Als hij de bal schopt stopt hij daarmee. En dan moet er weer een nieuwe cycle beginnen van zoeken naar de bal
 #Het programma moet dan een message sturen aan de rest om te stoppen met lopen en een bal te gaan zoeken
     
-    def __init__(self, name, ipList, memProxy):
+    def __init__(self, name, ipList, memProxy, earProxy):
         threading.Thread.__init__(self)
         self.name = name
         #proxy of the nao itself. used to check which action has to be taken
@@ -39,11 +40,19 @@ class Coach(threading.Thread):
         self.memProxy.insertListData([['dnt1', '', 0], ['dnt2', '', 0], ['dnt3', '', 0], ['dnt4', '', 0]])
         #make a proxy dict containing proxys of all the other nao's
         self.proxyDict = {}
+        self.failedIpList = list()
+        self.ipList = ipList
         for ip in ipList:
             # TODO send a reference to memproxies of other players instead
             self.proxyDict[ip] = ALProxy('ALMemory', ip, 9559)
         self.ownNaoNum = self.memProxy.getData('dntNaoNum')
-
+        self.ear = earlights.EarLights('', earProxy)
+        self.activeIPs = {}
+        self.ear.playerOffAll()
+        
+    def isActive(self):
+        return self.on
+        
     def __del__(self):
         self.on = False
     
@@ -53,6 +62,8 @@ class Coach(threading.Thread):
     def run(self):
         #Keep listening for some time.
         #If no field player has reported that it found a ball, keep listening until one does 
+        now = time.time()
+        
         while self.on:
             if len(self.proxyDict) == 0:
                 self.close()
@@ -63,13 +74,18 @@ class Coach(threading.Thread):
             
             ballSeen = list()
             #see which nao is closest
-            for ip in self.proxyDict: 
+            #print 'dict:' ,self.proxyDict
+            
+            print self.activeIPs
+            for ip in self.ipList: 
+                
                 try:
                     # 'receive' messages
                     proxy = self.proxyDict[ip]                       
                     currentDist = proxy.getData('dntBallDist')
                     currentNao = proxy.getData('dntNaoNum')
-                    
+                    self.activeIPs[ip]=currentNao
+                    self.ear.playerOn(currentNao)
                     # track naos that have seen the ball
                     if currentDist:
                         ballSeen.append( currentNao )
@@ -81,7 +97,53 @@ class Coach(threading.Thread):
                             minDist = currentDist
                             closestNao = currentNao
                 except:
-                    del(self.proxyDict[ip])
+                    self.ipList.remove(ip)
+                    self.failedIpList.append(ip)
+                    try:
+                        self.ear.playerOff(self.activeIPs[ip])
+                        del(self.activeIPs[ip])
+                    except:
+                        pass
+                    
+                    
+            
+               
+            #check every minute the ip's that could not connect
+            if time.time()-now > 60 and self.failedIpList:
+                now = time.time()
+                self.ipList = self.failedIpList
+                self.failedIpList = list()
+                for ip in self.ipList: 
+                    print '********* RETESTING ', ip, '*********'
+                    try:
+                        # 'receive' messages
+                        proxy = self.proxyDict[ip]                       
+                        currentDist = proxy.getData('dntBallDist')
+                        currentNao = proxy.getData('dntNaoNum')
+                        self.activeIPs[ip]=currentNao
+                        self.ear.playerOn(currentNao)
+                        #self.ear.playerOn(currentNao)
+                        # track naos that have seen the ball
+                        if currentDist:
+                            ballSeen.append( currentNao )
+                            if currentNao == 1:
+                                keeperSawBall = True
+                        
+                            # update closest nao
+                            if currentDist < minDist:
+                                minDist = currentDist
+                                closestNao = currentNao
+                    except:
+                        self.ipList.remove(ip)
+                        self.failedIpList.append(ip)
+                        try:
+                            self.ear.playerOff(self.activeIPs[ip])
+                            del(self.activeIPs[ip])
+                        except:
+                            pass
+                            
+                
+            
             print 'Saw ball: ', ballSeen, 'Closest: ' ,closestNao , 'at: ',minDist          
             messageOut = list()
             # For every nao (including keeper, might come in handy later)
@@ -110,7 +172,8 @@ class Coach(threading.Thread):
             self.memProxy.insertData( 'dnt' + str(self.ownNaoNum), action )
             
             # pause for a short time
-            time.sleep(0.3)
+            time.sleep(0.5)
 
     def getCoachData(self, data):
         return self.memProxy.getData(data)
+        

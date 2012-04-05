@@ -34,8 +34,8 @@ while time.time() - start < 2:
 # Activate soul
 if soul:
     ttsProxy.say("Activating soul")
-    sentinel.enableDefaultActionSimpleClick(False)
-    sentinel.enableDefaultActionDoubleClick(False)
+    senProxy.enableDefaultActionSimpleClick(False)
+    senProxy.enableDefaultActionDoubleClick(False)
     os.system("python /home/nao/naoqi/lib/soul.py")
 else:
     ttsProxy.say("I am ready for another great day")

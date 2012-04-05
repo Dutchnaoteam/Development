@@ -22,6 +22,7 @@ import coach
 import kalmanFilter as kalman
 import time
 import math  
+import socket
 #import particleFilter as particle
 
 
@@ -49,6 +50,9 @@ vis = visionInterface.VisionInterface( motProxy, vidProxy, memProxy )
 visThread = visionInterface.VisionThread( vis )
 visThread.start()
 visThread.stopScan()
+
+
+coachThread = None
 
 # stateController class: robot state, penalized, etc.
 gsc = gameStateController.stateController('stateController', ttsProxy, memProxy )
@@ -95,17 +99,12 @@ penalty = None
 
 # If keeper -> different style of play
 playerType = 1 if robot == 1 else 0
-'''
-try:
-    # specify all playing naos here! TODO find them automatically
-    coachThread = coach.Coach('coach', ['10.0.0.8', \
-                                        '10.0.0.5'], memProxy)
-    coachThread.start()
-    print 'Coaching started' 
-except Exception as inst:
-    print 'Could not coach, wrong ip?'
-    print inst
-'''     
+
+
+ipList  = list()
+nameList = []
+#nameList = ['camlal.local', 'frank.local', 'elpresidente.local']
+
 ## STATES (Gamestates)
 # Initial()
 # Ready()
@@ -121,7 +120,11 @@ def Initial():
     global phase                                           # to change, call global, else not possible
     global ball_loc
     global firstCall
-    
+    global coachThread
+    global nameList
+
+    failedList = list()
+
     if firstCall['Initial']:
         mot.killWalk()
         print 'In initial state'
@@ -155,7 +158,18 @@ def Initial():
         firstCall['Set']       = True
         firstCall['Playing']   = True
         firstCall['Penalized'] = True
-
+        
+    for name in nameList:
+        try:
+            ipList.append(socket.gethostbyname( name ))
+            print 'Connected to ', name
+        except Exception as inst:
+            failedList.append(name)
+            print name, 'is not connected.'
+            print '     ', inst
+    nameList = failedList
+    print 'ipList set', ipList
+        
 # Ready state: possible positioning
 # ledProxy:  Chest Blue
 def Ready():
@@ -275,9 +289,9 @@ def Set():
     global phase
     global firstCall
     global control
-
     # if the first iteration
     if firstCall['Set']:
+        memProxy.insertData('dntBallDist', 0)
         mot.killWalk()
         # update info about team, it is possible that game is started in set phase
         (teamColor, kickOff, penalty) = gsc.getMatchInfo()    
@@ -338,8 +352,19 @@ def Set():
 def Playing():
     global phase
     global firstCall
+    global coachThread
     
     if firstCall['Playing']:
+        visThread.startScan()
+        try:
+            coachThread.isActive()
+        except:            
+            try:
+                coachThread = coach.Coach('coach', ipList, memProxy, ledProxy)
+                coachThread.start()    
+                print 'coaching started'
+            except:
+                pass
         print 'In playing state'
         ledProxy.fadeRGB('ChestLeds', 0x0000ff00, 0)
         firstCall['Initial']   = True   
@@ -366,11 +391,12 @@ def Playing():
         # position = particleFilter.meanState
         pass
     try:
-        coachPhase = memproxy.getCoachData('dnt'+str(robot)) 
+        coachPhase = coachThread.getCoachData('dnt'+str(robot)) 
         if coachPhase:
             print 'Coach says: ', coachPhase
             phase = coachPhase
-    except:
+    except Exception as inst:
+        print inst
         print 'Could not get an action'
     # Execute the phase as specified by phase variable
     phases.get(phase)()
@@ -380,8 +406,10 @@ def Playing():
 def Penalized():
     global phase
     global firstCall
-    
+    memProxy.insertData('dntBallDist', 0)
+        
     if firstCall['Penalized']:
+        
         print 'In penalized state'
         ledProxy.fadeRGB('ChestLeds',0x00ff0000, 0)        # ledProxy on chest: red
         mot.killWalk()                                     # stop walking
@@ -729,6 +757,7 @@ def KeepDistance():
     firstCall['BallFound'] = True
     firstCall['BallNotFound'] = True
     ball = visThread.findBall()
+    print 'KeepDist'
     if ball:
         (x,y) = ball
         memProxy.insertData('dntPhase', 'KeepDistance')
@@ -738,7 +767,12 @@ def KeepDistance():
         # hacked influencing of perception, causing walking forward to have priority
         theta = theta / 2.5  if theta > 0.4    else theta / 5.5
         x = (2.0 * x - 0.4) if x > 0.5        else (x - 0.4) * 1.3
-        y = 0.5 * y          if -0.1 < y < 0.1 else 2.0 * y    
+        y = 0.5 * y          if -0.1 < y < 0.1 else 2.0 * y  
+
+        x = min( 1, max( -1, x))
+        y = min( 1, max( -1, y))
+        theta = min( 1, max( -1, theta))
+        
         mot.setWalkTargetVelocity(x , y, theta, 1.0)
         phase = 'BallFound'    
     else:
@@ -888,6 +922,7 @@ def ReturnField():
 # The soul of the robot
 
 def awakeSoul():
+    global coachThread
     gsc.start()
     state = 0
     while(state != 4 or gsc.getSecondaryState()):
@@ -923,7 +958,8 @@ phases =     {
     'BallNotFoundKeep': BallNotFoundKeep,
     'Unpenalized': Unpenalized,
     'ReturnField': ReturnField,
-    'Standby': Standby
+    'Standby': Standby,
+    'KeepDistance' : KeepDistance
 }
 
 awakeSoul()
