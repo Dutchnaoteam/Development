@@ -84,7 +84,8 @@ firstCall = {'Initial' : True,
              'BallFoundKeep' : True,
              'BallNotFoundKeep' : True,
              'BallFound' : True,
-             'BallNotFound' : True}
+             'BallNotFound' : True,
+             'FirstPress' : True}
 
 # Robots own variables
 robot = gsc.getRobotNumber()
@@ -190,6 +191,7 @@ def Ready():
         firstCall['Set']     = True
         firstCall['Playing'] = True
         firstCall['Penalized'] = True
+        firstCall['FirstPress'] = True
     
         # Feed the particle filter the nao's current position (remember, we already know it!)
         # numberOfSamples = 100
@@ -422,7 +424,7 @@ def Penalized():
         if playerType == 0:                                # if a player, goto unpenalized phase
             phase = 'Unpenalized'
         else:                                              # if a keeper, go to ballnotfoundkeep.. 
-            if gsc.getSecondaryState() or penalty:         # if penalty shootout
+            if gsc.getSecondaryState() or firstCall['FirstPress']:         # if penalty shootout
                 phase = 'BallNotFoundKeep'
             else:                                          # else, become a player
                 phase = 'Unpenalized'
@@ -432,6 +434,7 @@ def Penalized():
         firstCall['Set']       = True
         firstCall['Playing']   = True
         firstCall['Penalized'] = False
+        firstCall['FirstPress']= False
         print phase
                 
 def Finished():
