@@ -1,7 +1,8 @@
-LINK_LIBRARIES( boost_python )
-FIND_PACKAGE( OpenCV REQUIRED )
-INCLUDE_DIRECTORIES( "/usr/include/python2.7" )
-LINK_DIRECTORIES( "/usr/lib/python2.7" )
-ADD_LIBRARY( goaltracker SHARED locateGoalzor.cpp )
-TARGET_LINK_LIBRARIES( goaltracker ${OpenCV_LIBS} )
+cmake_minimum_required(VERSION 2.8)
+project(goal_tracker)
 
+find_package(qibuild)
+include(qibuild/swig/python)
+
+qi_swig_wrap_python(goal_tracker goal_tracker.i 
+    SRC locateGoalzor.cpp)
