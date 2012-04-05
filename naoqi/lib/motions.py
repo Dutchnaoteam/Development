@@ -1331,12 +1331,12 @@ class Motions():
             self.walkTo( 0, coordinates[1] + 0.04, 0 )
             self.rKickAngled( angle )
         elif angle >= 0:
-            self.cartesianRight( angle, max( coordinates[0], -0.2), min ( max( coordinates[1], -0.1 ), 0.01 ) )
+            self.cartesianRight( angle, max( coordinates[0], -0.2), min ( max( coordinates[1], -0.1 ), 0.01 ) )            
         elif -0.5 <= angle <= 0:
             self.cartesianLeft( angle, min( coordinates[0], 0.2), max ( min( coordinates[1], 0.1 ), -0.01 ) )
         elif -1 <= angle:
-            self.lKickAngled( - angle )
             self.walkTo( 0, coordinates[1] - 0.04, 0 )
+            self.lKickAngled( - angle )
         elif angle <= -1:
             self.sideLeftKick()
     
@@ -1396,7 +1396,7 @@ class Motions():
     def lKickAngled(self, angle):
         self.motProxy.setAngles(['RShoulderRoll', 'RShoulderPitch', 'LShoulderRoll', 'LShoulderPitch',
                           'RElbowRoll', 'RElbowYaw', 'LElbowRoll', 'LElbowYaw'],
-                          [-0.5 - 0.2*angle, 0.8, 0.25, 0.8, 0, 0, 0, 0], 0.3)
+                          [-0.5 - 0.17*angle, 0.8, 0.25, 0.8, 0, 0, 0, 0], 0.3)
         # Turn on left foot
         self.motProxy.setAngles(['RAnkleRoll', 'LAnkleRoll'], [-0.195 - 0.025 * angle, -0.2], 0.2)    
         time.sleep(0.3)
@@ -1465,7 +1465,7 @@ class Motions():
     def rKickAngled(self, angle):
         self.motProxy.setAngles(['LShoulderRoll', 'LShoulderPitch', 'RShoulderRoll', 'RShoulderPitch', 
                                  'RElbowRoll', 'RElbowYaw', 'LElbowRoll', 'LElbowYaw'], 
-                                 [0.5 + 0.2*angle, 0.8, -0.25, 0.8, 0, 0, 0, 0], 0.3)
+                                 [0.5 + 0.17*angle, 0.8, -0.25, 0.8, 0, 0, 0, 0], 0.3)
         # Turn on left footm
         self.motProxy.setAngles(['LAnkleRoll', 'RAnkleRoll'], [0.195 + 0.025 * angle, 0.2], 0.2)    
         time.sleep(0.3)
@@ -1716,7 +1716,7 @@ class Motions():
         targets.append( [ # Note, -y because right y is negative. 
         currentRLeg[0] + 0.0,
         currentRLeg[1] + 0.0,
-        currentRLeg[2] + 0.02, 
+        currentRLeg[2] + 0.0175, 
         currentRLeg[3] + 0.0, 
         currentRLeg[4] + 0.0, 
         currentRLeg[5] + 0.0] )
@@ -1814,7 +1814,7 @@ class Motions():
         targets.append( [ # Note, -y because right y is negative. 
         currentLLeg[0] + 0.0,
         currentLLeg[1] + 0.0,
-        currentLLeg[2] + 0.02, 
+        currentLLeg[2] + 0.0175, 
         currentLLeg[3] + 0.0, 
         currentLLeg[4] + 0.0, 
         currentLLeg[5] + 0.0] )

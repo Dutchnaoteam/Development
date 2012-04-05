@@ -1,3 +1,4 @@
+
 ## NOTES TO EDITORS
 # todo: Implement New Gamecontroller
 # TODO: Fix locategoal
@@ -33,6 +34,10 @@ motProxy = ALProxy('ALMotion', '127.0.0.1', 9559)
 posProxy = ALProxy('ALRobotPose', '127.0.0.1', 9559)
 ttsProxy = ALProxy('ALTextToSpeech', '127.0.0.1', 9559)
 vidProxy = ALProxy('ALVideoDevice', '127.0.0.1', 9559)
+sentinel = ALProxy('ALSentinel', '127.0.0.1', 9559)
+
+# turn off sentinel
+sentinel.enableHeatMonitoring(False)
 
 # Creating classes: Protocol is first three letters with exception gameStateController (gsc)
 # Motion class: motion functions etc.
@@ -75,9 +80,7 @@ firstCall = {'Initial' : True,
              'BallFoundKeep' : True,
              'BallNotFoundKeep' : True,
              'BallFound' : True,
-             'BallNotFound' : True,
-             'firstPress' : True}
-
+             'BallNotFound' : True}
 
 # Robots own variables
 robot = gsc.getRobotNumber()
@@ -86,10 +89,7 @@ teamColor = None
 kickOff = None
 penalty = None
 
-#(teamColor, kickOff, penalty) = gsc.getMatchInfo()   
-teamColor =0
-penalty = 1
-kickOff = 0 
+(teamColor, kickOff, penalty) = gsc.getMatchInfo()   
  
 # If keeper -> different style of play , coaches other naos
 
@@ -176,7 +176,6 @@ def Ready():
         firstCall['Set']     = True
         firstCall['Playing'] = True
         firstCall['Penalized'] = True
-        firstCall['firstPress'] = True
     
         # Feed the particle filter the nao's current position (remember, we already know it!)
         # numberOfSamples = 100
@@ -395,7 +394,7 @@ def Penalized():
         if playerType == 0:                                # if a player, goto unpenalized phase
             phase = 'Unpenalized'
         else:                                              # if a keeper, go to ballnotfoundkeep.. 
-            if gsc.getSecondaryState() or firstCall['firstPress']:         # if penalty shootout
+            if gsc.getSecondaryState() or penalty:         # if penalty shootout
                 phase = 'BallNotFoundKeep'
             else:                                          # else, become a player
                 phase = 'Unpenalized'
@@ -405,7 +404,6 @@ def Penalized():
         firstCall['Set']       = True
         firstCall['Playing']   = True
         firstCall['Penalized'] = False
-        firstCall['firstPress'] = False
         print phase
                 
 def Finished():
@@ -683,9 +681,9 @@ def BallFound():
             print 'Kalman position', x,y
             theta = math.atan(y/x)
             # hacked influencing of perception, causing walking forward to have priority
-            theta = theta / 2.5  #if theta > 0.4    else theta / 5.5
-            x = (2.5 * (x - 0.2)) #if x > 0.5        else (x - 0.16) * 1.3
-            y = 0.5 * y           #if -0.1 < y < 0.1 else 2.0 * y    
+            theta = theta / 2.0  #if theta > 0.4    else theta / 5.5
+            x = (4.0 * (x - 0.19)) #if x > 0.5        else (x - 0.16) * 1.3
+            y = 0.6 * y           #if -0.1 < y < 0.1 else 2.0 * y    
             
         else:
             print 'Not seen ball', x, y
