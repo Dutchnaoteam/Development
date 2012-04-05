@@ -17,8 +17,8 @@ radians per pixel = 0.6073745796940266 / 120 = 0.005061454830783556
 import cv
 from math import *
 size = None
-from naoqi import ALProxy
-motion = ALProxy("ALMotion", "127.0.0.1", 9559)
+#from naoqi import ALProxy
+#motion = ALProxy("ALMotion", "127.0.0.1", 9559)
 
 def run(im, headInfo):
     (cam, head) = headInfo
@@ -113,19 +113,57 @@ def filterImage(im):
     filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
     filter2 = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
     
-    hsvMin1 = cv.Scalar(4,  140,  140, 0)
-    hsvMax1 = cv.Scalar(9,  255,  256, 0)
-    
-    #hsvMin2 = cv.Scalar(170,  90,  130, 0)
-    #hsvMax2 = cv.Scalar(200, 256, 256, 0)
+    hsvMin1 = cv.Scalar(72,  40,  113, 0)
+    hsvMax1 = cv.Scalar(78,  169,  176, 0)
+
+    # Color detection using HSV
+    cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
+    cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filter)
+    return filter
+
+
+def filterGreen(im):
+    size = (160, 120)
+    hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
+    filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
+    filter2 = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
+    ####################
+    # filters for green# 
+
+    hsvMin1 = cv.Scalar(72,  37,  113, 0)
+    hsvMax1 = cv.Scalar(83,  169,  186, 0)
 
     # Color detection using HSV
     cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
     cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filter)
     #cv.InRangeS(hsvFrame, hsvMin2, hsvMax2, filter2)
     #cv.Or(filter, filter2, filter)
+    cv.SaveImage('greenFilter.png', filter)
+
     return filter
-    
+
+def greenGaussianFiltered(im):
+    #greenpointsx = []
+    #greenpointsy = []
+    ## calculate maxpoints every 10 pixels
+    #for x in xrange(0, im.width, 10):
+    #    for y in xrange(0, im.height):
+    #        if( im[y,x] == 0):
+    #            greenpointsx = greenpointsx + [x]
+    #            greenpointsy = greenpointsy + [y]
+    #            break
+    #greenpoints = [greenpointsx] + [greenpointsy]
+    cv.Smooth(im,im,cv.CV_GAUSSIAN, 5, 1)
+    cv.SaveImage('filtersmooth.png',im)
+    return im
+
+def boundedBox(im_blurred, im_original):
+    print type(im_blurred)
+    bbox = cv.BoundingRect(im_blurred)
+    cv.SetImageROI(im_original,bbox)
+    cv.saveImage('ROI.png',im_original)
+    return im_original
+
 def zero(m,n):
     new_matrix = [[0 for row in range(n)] for col in range(m)]
     return new_matrix
