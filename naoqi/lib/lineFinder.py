@@ -1,3 +1,6 @@
+#steps to take
+
+
 '''
 TO DO:
 *Needs a filter that takes t-splisting out of the list if a corner is to close by
@@ -152,6 +155,10 @@ def setGlobals(pitch):
 #               run()
 ##########################        
 def run():
+    ################
+    # TODO
+    # Set head at right angle
+    ################
     global subscribe
     try:
         camProxy.unsubscribe("python_GVM")
@@ -170,6 +177,12 @@ def run():
     image = markFieldW('white')
     # get the lines
     lines = getLines(image)
+    lines= filterLines(lines)
+    #######
+    # TODO
+    # First check if there is a Tsplit
+    # in the way
+    #######
     maxlines = 0 
     maxpoint = ((), ())
     for i in lines:
@@ -183,20 +196,26 @@ def run():
     
     #find function through maxpoints
     (a,b)= findFunction(maxpoint)
-    print 'a en b'
-    print a
-    print b
-    keeperTurn(a)
+    #print 'a en b'
+    #print a
+    #print b
+    #make the keeper rotate
+    keeperRotate(a)
     cv.SaveImage("hough.jpg", hough)
+    #####################
+    #To do: uncomment keeperWiggle
+    #
+    ##################
+    #keeperWiggle()
 
-    lines = filterLines(lines)
-    final = scribble(lines)
+    #lines = filterLines(lines)
+    #final = scribble(lines)
     #print "test lines"
-   # print lines
-    cv.SaveImage("final.jpg", final)
+    #print lines
+    #cv.SaveImage("final.jpg", final)
     #corners, tSplitsing = cornersTsplits(lines)
     #print "corners", corners
-   # print "tSplitsing", tSplitsing
+    #print "tSplitsing", tSplitsing
     #corners.extend(tSplitsing)
     #foundCorners = dot([corners, tSplitsing])
     #cv.SaveImage("foundCorners.jpg", foundCorners)
@@ -207,29 +226,62 @@ def run():
     #camProxy.unsubscribe(subscribe)  
     #return [corners, tSplitsing, cam]
 
+# find function belonging to the twe given points
 def findFunction(point_tuple):
     a = point_tuple[1][1]- point_tuple[0][1] / point_tuple[1][0] - point_tuple[0][0]
     b = -a * point_tuple[0][0] + point_tuple[0][1]
     return (a,b)
 
 # keeperTurn uses the RC to determin which side to move to
-def keeperTurn(rc):
-    # determin when nao isn't looking straight at the line
-    while(rc < -0.5 or rc >0,5):
-        #turning of the nao.. Must still be calculated!!!!!
+def keeperRotate(rc):
+    if(rc < 0):
+        pastrc = 'negative'
+    else:
+        pastrc = 'positive'
+    # determine when nao isn't looking straight at the line
+    while(pastrc == 'negative' and rc < 0 or pastrc == 'positive' and rc > 0):
+        # turning the nao with real small steps
+        pastrc = 'positive' if rc >= 0 else 'negative'
         if(rc > 0):
-            motions.walkTo(0,0 , math.pi/4 ) 
+            motions.walkTo(0,0 , math.pi/8 ) 
         else:
-            motions.walkTo(0 ,0 ,-math.pi/4 )
-            allpoints= allpoints()
-            max =  maxpoints( )
-            (rc, b)
+            motions.walkTo(0 ,0 ,-math.pi/8 )
+        allpoints= allpoints()
+        maxim =  maxpoints(allpoints )
+        (rc, b)=findFunction(maxim)
 
+# keeperWiggle is used to centrate the Nap between the two poles
+#def keeperWiggle():
+
+#caluclates all lines in the image.
+# returns points
 def allpoints():
+	#2 = 640
+	#1 = 320
+	#0 = 160
+    # subscribe to the camera	
+    [headPitch , headYaw] = motionProxy.getAngles(["HeadPitch","HeadYaw"], True)
+    cam = motionProxy.getPosition('CameraBottom', 2, True)
+    #print head
+    setGlobals(headPitch)
+    # get the filtered image for the given colour
+    image = markFieldW('white')
+    # get the lines
+    lines = getLines(image)
+    lines = filterLines(lines)
+    print 'number of lines'
+    print len(lines)
+# find the longest line in the image.
+# returns the points of the longest line
+def maxpoints(lines):
+    for i in lines:
+        if( (i[0][0] - i[1][0])**2  + (i[1][0] -
+            i[1][0])**2 > maxlines ):
+            maxlines =  (i[0][0] - i[1][0])**2  + (i[1][0] -i[1][0])**2 
 
-def maxpoints():
-
-        
+            maxpoint = ((i[0][0], i[0][1]), (i[1][0],
+                i[1][1]))
+    return maxpoint
 
 
 def dot(stuff):
@@ -642,8 +694,6 @@ def mergeLines(line1, line2, deg):
             newPoint2 = (x2,y2)
         else:
             newPoint2 = (l2x2,l2y2)
-
-    
 
     newLine = (newPoint1, newPoint2)
     return newLine

@@ -2,6 +2,7 @@
 from naoqi import ALProxy
 import time
 import math
+import lineFinder
 
 motProxy = ALProxy('ALMotion', '127.0.0.1', 9559)
 posProxy = ALProxy('ALRobotPose', '127.0.0.1', 9559)
@@ -711,11 +712,15 @@ def diveLeft():
     motProxy.setStiffnesses('Body',0.8)
     if posProxy.getActualPoseAndTime()[0] == 'Back':
         backToStand()
-        walkTo(0.1, 0.05, 1.5)
+        # after getting up position right in the goal
+        lineFinder.run()
+        #walkTo(0.1, 0.05, 1.5)
 
     elif posProxy.getActualPoseAndTime()[0] == 'Belly':
         bellyToStand()
-        walkTo(-0.1, -0.05, -1.5)
+        # after getting up position right in the goal 
+        lineFinder.run()
+        #walkTo(-0.1, -0.05, -1.5)
     else:
         print 'What the heck, I do not have a pose!'
         
@@ -772,10 +777,12 @@ def diveRight():
     motProxy.setStiffnesses('Body',0.8)
     if posProxy.getActualPoseAndTime()[0] == 'Back':
         backToStand()
-        walkTo(0.1, -0.05, -1.5)
+        lineFinder.run()
+        #walkTo(0.1, -0.05, -1.5)
     elif posProxy.getActualPoseAndTime()[0] == 'Belly':
         bellyToStand()
-        walkTo(-0.1, 0.05, 1.5)
+        lineFinder.run()
+        #walkTo(-0.1, 0.05, 1.5)
     else:
         print 'What the heck, I do not have a pose!'
         
