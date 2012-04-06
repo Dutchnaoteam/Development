@@ -542,7 +542,7 @@ def BallFound():
         print 'Kick'
         # BLOCKING CALL: FIND BALL WHILE STANDING STILL FOR ACCURATE CORRECTION
         mot.killWalk()
-        time.sleep(10)
+        time.sleep(5)
         #mot.setFootSteps( ['LLeg', 'RLeg'], [[x-0.16, y, 0],[0,0,0]], [1.0, 2.0] )
         control = [0,0,0]
         phase = 'Kick'
