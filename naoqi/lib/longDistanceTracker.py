@@ -113,23 +113,25 @@ def convertImage(picture):
     return image
 
 def filterImage(im):
-    hsvFrame = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 3)
-    filter = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 1)
-    filter2 = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 1)
+    # Size of the images
+    (width, height) = size
     
-    hsvMin1 = cv.Scalar(0,  90,  130, 0)
-    hsvMax1 = cv.Scalar(12, 256, 256, 0)
+    hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
+    filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
+    filter2 = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
     
-    hsvMin2 = cv.Scalar(170,  90,  130, 0)
-    hsvMax2 = cv.Scalar(200, 256, 256, 0)
+    hsvMin1 = cv.Scalar(4,  140,  140, 0)
+    hsvMax1 = cv.Scalar(9,  255,  256, 0)
+    
+    #hsvMin2 = cv.Scalar(170,  90,  130, 0)
+    #hsvMax2 = cv.Scalar(200, 256, 256, 0)
 
     # Color detection using HSV
     cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
     cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filter)
-    cv.InRangeS(hsvFrame, hsvMin2, hsvMax2, filter2)
-    cv.Or(filter, filter2, filter)
+    #cv.InRangeS(hsvFrame, hsvMin2, hsvMax2, filter2)
+    #cv.Or(filter, filter2, filter)
     return filter
-
 
 def filterGreen(im):
     size = cv.GetSize(im)
