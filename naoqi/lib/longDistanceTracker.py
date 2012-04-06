@@ -120,7 +120,7 @@ def filterImage(im):
 
 
 def filterGreen(im):
-    size = (160, 120)
+    size = cv.GetSize(im)
     hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
     filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
     ####################
