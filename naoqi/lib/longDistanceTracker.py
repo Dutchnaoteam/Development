@@ -129,6 +129,10 @@ def filterImage(im):
     return filter
 
 def filterGreen(im):
+    """filterGreen(im) -> single-channel IplImage
+
+    Thresholds an image for the color green
+    """
     size = cv.GetSize(im)
     hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
     filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
@@ -146,21 +150,12 @@ def filterGreen(im):
 
     return filter
 
-def greenGaussianFiltered(im):
-    #greenpointsx = []
-    #greenpointsy = []
-    ## calculate maxpoints every 10 pixels
-    #for x in xrange(0, im.width, 10):
-    #    for y in xrange(0, im.height):
-    #        if( im[y,x] == 0):
-    #            greenpointsx = greenpointsx + [x]
-    #            greenpointsy = greenpointsy + [y]
-    #            break
-    #greenpoints = [greenpointsx] + [greenpointsy]
-    cv.Smooth(im,im,cv.CV_GAUSSIAN, 5, 1)
-    return im
-
 def boundedBox(im_blurred, im_orig):
+    """ boundedBox(im_blurred, im_orig) -> im_orig
+    
+    calculates a bounding box around the white pixels of a
+    single-channel thresholded image and sets it as ROI on
+    the original image"""
     bbox = cv.BoundingRect(cv.GetMat(im_blurred))
     cv.SetImageROI(im_orig, bbox)
     return im_orig
