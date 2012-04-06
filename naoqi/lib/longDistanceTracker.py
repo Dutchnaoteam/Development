@@ -25,6 +25,9 @@ def run(im, headInfo):
     # convert the image 
     im = convertImage(im)
     #cv.SaveImage('b1.jpg', im)
+    #use filterGreen to take only the image
+    green_thresh = filterGreen(im)
+    im = boundedBox(green_thresh, im)
     # filter the image
     im = filterImage(im)
     #cv.SaveImage('b2.jpg', im)
