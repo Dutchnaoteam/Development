@@ -19,21 +19,16 @@ from math import *
 size = None
 from naoqi import ALProxy
 motion = ALProxy("ALMotion", "127.0.0.1", 9559)
-i = 0
 
 def run(im, headInfo):
     global i
     (cam, head) = headInfo
     # convert the image 
     im = convertImage(im)
-    cv.SaveImage(str(i) + 'orig.png', im)
     #use filterGreen to take only the image
     green_thresh = filterGreen(im)
-    cv.SaveImage(str(i) + 'tresh.png', green_thresh)
 
     im = boundedBox(green_thresh, im)
-    cv.SaveImage(str(i) + 'final.png', im)
-    i += 1
     # filter the image
     im = filterImage(im)
     # blur the image
