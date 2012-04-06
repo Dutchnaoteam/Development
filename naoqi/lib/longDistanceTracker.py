@@ -36,7 +36,7 @@ def run(im, headInfo):
     im = filterImage(im)
     # blur the image
     cv.Smooth(im, im, cv.CV_BLUR, 2, 2)
-    cv.SetROI(im, bbox)
+    cv.SetImageROI(im, bbox)
     cv.SaveImage(str(i) + 'final.png', im)
     # find the max value in the image    
     (minVal, maxValue, minLoc, maxLocation) = cv.MinMaxLoc(im)
