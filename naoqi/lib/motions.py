@@ -22,12 +22,14 @@ class Motions():
     def __init__(self, motProxy, posProxy):
         self.motProxy = motProxy
         self.posProxy = posProxy
-        self.setGaitConfigSimple( 0.06 , 0.14, 0.5, 0.01, 30, 20 )
-        self.motProxy.setFallManagerEnabled(False)
+        self.setGaitConfigSimple( 0.05 , 0.15, 0.4, 0.014, 40, 20 )
+        self.setFME(False)
         
     def setFME(self, arg):
-        self.motProxy.setFallManagerEnabled(arg)
-        
+        try:
+            self.motProxy.setFallManagerEnabled(arg)
+        except:
+            print 'Could not switch off FallManager. '
     # set parts of the footgaitconfig, order is important but it does not
     # have to contain each and every option (if no value found for an option
     # it will use earlier specified values)
@@ -1325,15 +1327,16 @@ class Motions():
     def kick(self, angle, coordinates = (0.05, -0.01) ):
         if angle >= 0.9:
             self.sideRightKick()
-        elif angle >= 0:
+        elif angle >= 0.5:
             self.walkTo( 0, coordinates[1] + 0.04, 0 )
             self.rKickAngled( angle )
+        elif angle >= 0:
+            self.cartesianRight( angle, max( coordinates[0], -0.2), min ( max( coordinates[1], -0.1 ), 0.01 ) )            
         elif -0.5 <= angle <= 0:
-            print 'Cartesianleft = ',  angle, min( coordinates[0], 0.2), max ( min( coordinates[1], 0.1 ), -0.01 ) 
-            self.cartesianLeft( angle, min( coordinates[0], 0.2), max ( min( coordinates[1], 0.1 ), 0.03 ) )
+            self.cartesianLeft( angle, min( coordinates[0], 0.2), max ( min( coordinates[1], 0.1 ), -0.01 ) )
         elif -1 <= angle:
-            self.lKickAngled( - angle )
             self.walkTo( 0, coordinates[1] - 0.04, 0 )
+            self.lKickAngled( - angle )
         elif angle <= -1:
             self.sideLeftKick()
     
@@ -1393,7 +1396,7 @@ class Motions():
     def lKickAngled(self, angle):
         self.motProxy.setAngles(['RShoulderRoll', 'RShoulderPitch', 'LShoulderRoll', 'LShoulderPitch',
                           'RElbowRoll', 'RElbowYaw', 'LElbowRoll', 'LElbowYaw'],
-                          [-0.5 - 0.2*angle, 0.8, 0.25, 0.8, 0, 0, 0, 0], 0.3)
+                          [-0.5 - 0.17*angle, 0.8, 0.25, 0.8, 0, 0, 0, 0], 0.3)
         # Turn on left foot
         self.motProxy.setAngles(['RAnkleRoll', 'LAnkleRoll'], [-0.195 - 0.025 * angle, -0.2], 0.2)    
         time.sleep(0.3)
@@ -1462,7 +1465,7 @@ class Motions():
     def rKickAngled(self, angle):
         self.motProxy.setAngles(['LShoulderRoll', 'LShoulderPitch', 'RShoulderRoll', 'RShoulderPitch', 
                                  'RElbowRoll', 'RElbowYaw', 'LElbowRoll', 'LElbowYaw'], 
-                                 [0.5 + 0.2*angle, 0.8, -0.25, 0.8, 0, 0, 0, 0], 0.3)
+                                 [0.5 + 0.17*angle, 0.8, -0.25, 0.8, 0, 0, 0, 0], 0.3)
         # Turn on left footm
         self.motProxy.setAngles(['LAnkleRoll', 'RAnkleRoll'], [0.195 + 0.025 * angle, 0.2], 0.2)    
         time.sleep(0.3)
@@ -1638,7 +1641,7 @@ class Motions():
     def walkTo(self, x,y,angle):
         self.motProxy.walkTo(x,y,angle,self.gaitConfig)
         
-    def cartesianRight( self, angle, x,y ):
+    def cartesianRight( self, angle, x,y , interval1 = 0.1, interval2= 0.1, interval3 =0.1):
         
         # maxima input:
         # angle -> -0.3 to 0.5 (with x = 0.05, y =  0.00) 
@@ -1659,7 +1662,6 @@ class Motions():
         if not -1 < angle < 1:
             angle = min( max( angle, -1 ), 1 )
             
-            
         # move the torso above the standing leg for balance
         space = 2
         currentTorso = self.motProxy.getPosition( 'Torso', space, True)          
@@ -1678,8 +1680,8 @@ class Motions():
         self.motProxy.setPosition( 'Torso', space, targetTorso, 0.8, almath.AXIS_MASK_ALL)
         time.sleep(0.4)
         # Balance on one leg, use arms for even more balance 
-        self.motProxy.setAngles(['LAnkleRoll', 'RAnkleRoll'], [0.325, 0.325], 0.2)
-        self.motProxy.setAngles(['LShoulderRoll', 'RShoulderRoll'], [0.55, -0.35], 0.2)
+        self.motProxy.setAngles(['RAnkleRoll', 'LAnkleRoll'], [0.325, 0.325], 0.1)
+        self.motProxy.setAngles(['RShoulderRoll', 'LShoulderRoll', 'LShoulderPitch', 'LElbowRoll', 'LElbowYaw'], [-0.4, 0.3 + 10 * y - angle, 0.5, -1.5, 0.3], 0.4)
         time.sleep(0.5)
         
         # convert target vectors to worldcoordinates 
@@ -1692,35 +1694,45 @@ class Motions():
         ca = math.cos(angle)
         
         # ball is at position x,y,0.03. 
-        # First step: Move leg backwards depending on the angle a. Default (a=0) gives x' = -0.15 + x, y' = -y, z' = 0.1
+        # First step: Move leg backwards depending on the angle a. Default (a=0) gives x' = -0.15 + x, y' = y, z' = 0.1
         # (Note, to do this the vector has to be converted to worldcoordinates)
         targets.append( [ 
-        currentRLeg[0] + ( x + 0.1 - 0.25 * ca ) * cz     + (-y + 0.25 * sa) * sz,
-        currentRLeg[1] - ( ( x + 0.1 - 0.25 * ca ) * -sz  + (-y + 0.25 * sa) * cz ),
+        currentRLeg[0] + ( x + 0.1 - 0.3 * ca ) * cz     + (-y + 0.3 * sa) * sz,
+        currentRLeg[1] - ( ( x + 0.1 - 0.3 * ca ) * -sz  + (-y + 0.3 * sa) * cz ),
         currentRLeg[2] + 0.1, 
         currentRLeg[3] + 0.0, 
         currentRLeg[4] + 0.0, 
         currentRLeg[5] + minimizedAngle( angle ) ] ) 
         
-        # Second step: Move leg towards the ball while respecting angle. Default (a=0) gives x'' = x, y'' = -y, z'' = 0.03
+        # Second step: Move leg towards the ball while respecting angle. Default (a=0) gives x'' = x, y'' = y, z'' = 0.03
         targets.append( [ # Note, -y because right y is negative. 
-        currentRLeg[0] + ( x + 0.1 - 0.1 * ca ) * cz   + (-y + 0.1 * sa) * sz,
-        currentRLeg[1] - ( ( x + 0.1 - 0.1 * ca ) * -sz  + (-y + 0.1 * sa) * cz ),
-        currentRLeg[2] + 0.02, 
+        currentRLeg[0] + ( x + 0.1 - 0.1 * ca ) * cz   + (-y +0.1 * sa) * sz,
+        currentRLeg[1] - ( ( x + 0.1 - 0.1 * ca ) * -sz  + (-y  +0.1 * sa) * cz ),
+        currentRLeg[2] + 0.0275, 
         currentRLeg[3] + 0.0, 
         currentRLeg[4] + 0.0, 
         currentRLeg[5] + minimizedAngle( angle ) ] )
         
-        dur = 0.2 + abs(angle) * 0.125
+        targets.append( [ # Note, -y because right y is negative. 
+        currentRLeg[0] + 0.0,
+        currentRLeg[1] + 0.0,
+        currentRLeg[2] + 0.0175, 
+        currentRLeg[3] + 0.0, 
+        currentRLeg[4] + 0.0, 
+        currentRLeg[5] + 0.0] )
+                
+        
+        dur = 0.2 + abs(angle) * interval1 + abs(x) * interval2 + abs(y) * interval3 
         # move leg back
-        self.motProxy.setPosition( 'RLeg', 1, targets[0], 0.4, almath.AXIS_MASK_ALL )
-        time.sleep(1)
+        self.motProxy.setPosition( 'RLeg', 1, targets[0], 0.7, almath.AXIS_MASK_ALL )
+        time.sleep(0.7)
         # simultaneously move arm back and leg forward
         self.motProxy.setAngles('RShoulderPitch', 2, 0.9)
-        self.motProxy.positionInterpolation( 'RLeg', 1, targets[1], almath.AXIS_MASK_ALL, [dur], True)
-        time.sleep(0.5)
-        self.normalPose()
         
+        self.motProxy.positionInterpolation( 'RLeg', 1, targets[1], almath.AXIS_MASK_ALL, [dur], True)
+        self.motProxy.positionInterpolation( 'RLeg', 1, targets[2], almath.AXIS_MASK_ALL, [dur ], True)
+        
+        self.normalPose(True)
         
     def cartesianLeft( self, angle, x, y , interval1 = 0.1, interval2 = 0.1, interval3 = 0.1 ):
         #
@@ -1802,7 +1814,7 @@ class Motions():
         targets.append( [ # Note, -y because right y is negative. 
         currentLLeg[0] + 0.0,
         currentLLeg[1] + 0.0,
-        currentLLeg[2] + 0.02, 
+        currentLLeg[2] + 0.0175, 
         currentLLeg[3] + 0.0, 
         currentLLeg[4] + 0.0, 
         currentLLeg[5] + 0.0] )
@@ -1819,7 +1831,6 @@ class Motions():
         self.motProxy.positionInterpolation( 'LLeg', 1, targets[2], almath.AXIS_MASK_ALL, [dur ], True)
         
         self.normalPose(True)
-        #
         
 def minimizedAngle( angle ) :
     if angle > math.pi:
