@@ -25,6 +25,13 @@ def run(im, headInfo):
     (cam, head) = headInfo
     # convert the image 
     im = convertImage(im)
+
+    # white balance
+    r = 12
+    g = 255 - 187
+    b = 255 - 232
+    cv.AddS(im, (b, g, r), im)
+
     #use filterGreen to take only the image
     green_thresh = filterGreen(im)
 
