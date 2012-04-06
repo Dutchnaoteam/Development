@@ -26,18 +26,18 @@ def run(im, headInfo):
     (cam, head) = headInfo
     # convert the image 
     im = convertImage(im)
+    cv.SaveImage(str(i) + 'orig.png', im)
     #use filterGreen to take only the image
     green_thresh = filterGreen(im)
     cv.SaveImage(str(i) + 'tresh.png', green_thresh)
 
-    bbox = boundedBox(green_thresh)
+    im = boundedBox(green_thresh, im)
+    cv.SaveImage(str(i) + 'final.png', im)
     i += 1
     # filter the image
     im = filterImage(im)
     # blur the image
     cv.Smooth(im, im, cv.CV_BLUR, 2, 2)
-    cv.SetImageROI(im, bbox)
-    cv.SaveImage(str(i) + 'final.png', im)
     # find the max value in the image    
     (minVal, maxValue, minLoc, maxLocation) = cv.MinMaxLoc(im)
     #print maxValue/256.0
@@ -113,19 +113,21 @@ def convertImage(picture):
     return image
 
 def filterImage(im):
-    # Size of the images
-    (width, height) = size
+    hsvFrame = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 3)
+    filter = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 1)
+    filter2 = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 1)
     
-    hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
-    filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
-    filter2 = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
+    hsvMin1 = cv.Scalar(0,  90,  130, 0)
+    hsvMax1 = cv.Scalar(12, 256, 256, 0)
     
-    hsvMin1 = cv.Scalar(72,  40,  113, 0)
-    hsvMax1 = cv.Scalar(78,  169,  176, 0)
+    hsvMin2 = cv.Scalar(170,  90,  130, 0)
+    hsvMax2 = cv.Scalar(200, 256, 256, 0)
 
     # Color detection using HSV
     cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
     cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filter)
+    cv.InRangeS(hsvFrame, hsvMin2, hsvMax2, filter2)
+    cv.Or(filter, filter2, filter)
     return filter
 
 
@@ -161,9 +163,10 @@ def greenGaussianFiltered(im):
     cv.Smooth(im,im,cv.CV_GAUSSIAN, 5, 1)
     return im
 
-def boundedBox(im_blurred):
+def boundedBox(im_blurred, im_orig):
     bbox = cv.BoundingRect(cv.GetMat(im_blurred))
-    return bbox
+    cv.SetImageROI(im_orig, bbox)
+    return im_orig
 
 def zero(m,n):
     new_matrix = [[0 for row in range(n)] for col in range(m)]
