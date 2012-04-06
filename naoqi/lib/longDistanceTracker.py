@@ -126,18 +126,15 @@ def filterGreen(im):
     size = (160, 120)
     hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
     filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
-    filter2 = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
     ####################
     # filters for green# 
 
-    hsvMin1 = cv.Scalar(72,  37,  113, 0)
-    hsvMax1 = cv.Scalar(83,  169,  186, 0)
+    hsvMin1 = cv.Scalar(70,  30,  100, 0)
+    hsvMax1 = cv.Scalar(90,  180,  200, 0)
 
     # Color detection using HSV
     cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
     cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filter)
-    #cv.InRangeS(hsvFrame, hsvMin2, hsvMax2, filter2)
-    #cv.Or(filter, filter2, filter)
     cv.SaveImage('greenFilter.png', filter)
 
     return filter
@@ -158,10 +155,9 @@ def greenGaussianFiltered(im):
     return im
 
 def boundedBox(im_blurred, im_original):
-    print type(im_blurred)
-    bbox = cv.BoundingRect(im_blurred)
+    bbox = cv.BoundingRect(cv.GetMat(im_blurred))
     cv.SetImageROI(im_original,bbox)
-    cv.saveImage('ROI.png',im_original)
+    cv.SaveImage('ROI.png',im_original)
     return im_original
 
 def zero(m,n):
