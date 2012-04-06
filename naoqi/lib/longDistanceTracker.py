@@ -30,13 +30,14 @@ def run(im, headInfo):
     green_thresh = filterGreen(im)
     cv.SaveImage(str(i) + 'tresh.png', green_thresh)
 
-    im = boundedBox(green_thresh, im)
-    cv.SaveImage(str(i) + 'final.png', im)
-    i++
+    bbox = boundedBox(green_thresh)
+    i += 1
     # filter the image
     im = filterImage(im)
     # blur the image
     cv.Smooth(im, im, cv.CV_BLUR, 2, 2)
+    cv.SetROI(im, bbox)
+    cv.SaveImage(str(i) + 'final.png', im)
     # find the max value in the image    
     (minVal, maxValue, minLoc, maxLocation) = cv.MinMaxLoc(im)
     #print maxValue/256.0
@@ -160,10 +161,9 @@ def greenGaussianFiltered(im):
     cv.Smooth(im,im,cv.CV_GAUSSIAN, 5, 1)
     return im
 
-def boundedBox(im_blurred, im_original):
+def boundedBox(im_blurred):
     bbox = cv.BoundingRect(cv.GetMat(im_blurred))
-    cv.SetImageROI(im_original,bbox)
-    return im_original
+    return bbox
 
 def zero(m,n):
     new_matrix = [[0 for row in range(n)] for col in range(m)]
