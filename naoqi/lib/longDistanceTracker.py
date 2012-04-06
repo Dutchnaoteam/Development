@@ -17,8 +17,8 @@ radians per pixel = 0.6073745796940266 / 120 = 0.005061454830783556
 import cv
 from math import *
 size = None
-#from naoqi import ALProxy
-#motion = ALProxy("ALMotion", "127.0.0.1", 9559)
+from naoqi import ALProxy
+motion = ALProxy("ALMotion", "127.0.0.1", 9559)
 i = 0
 
 def run(im, headInfo):
