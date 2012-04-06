@@ -24,6 +24,9 @@ def run(im, headInfo):
     (cam, head) = headInfo
     # convert the image 
     im = convertImage(im)
+    #use filterGreen to take only the image
+    green_thresh = filterGreen(im)
+    im = boundedBox(green_thresh, im)
     # filter the image
     im = filterImage(im)
     # blur the image
