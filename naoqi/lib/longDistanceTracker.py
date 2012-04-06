@@ -24,13 +24,10 @@ def run(im, headInfo):
     (cam, head) = headInfo
     # convert the image 
     im = convertImage(im)
-    #cv.SaveImage('b1.jpg', im)
     # filter the image
     im = filterImage(im)
-    #cv.SaveImage('b2.jpg', im)
     # blur the image
     cv.Smooth(im, im, cv.CV_BLUR, 2, 2)
-    #cv.SaveImage('b3.jpg', im)
     # find the max value in the image    
     (minVal, maxValue, minLoc, maxLocation) = cv.MinMaxLoc(im)
     #print maxValue/256.0
@@ -129,13 +126,14 @@ def filterGreen(im):
     ####################
     # filters for green# 
 
-    hsvMin1 = cv.Scalar(70,  30,  100, 0)
-    hsvMax1 = cv.Scalar(90,  180,  200, 0)
+    #hsvMin1 = cv.Scalar(60,  3,  90, 0)
+    #hsvMax1 = cv.Scalar(100,  190,  210, 0)
+    hsvMin1 = cv.Scalar(60,  3,  90, 0)
+    hsvMax1 = cv.Scalar(115,  180,  210, 0)
 
     # Color detection using HSV
     cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
     cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filter)
-    cv.SaveImage('greenFilter.png', filter)
 
     return filter
 
@@ -151,13 +149,11 @@ def greenGaussianFiltered(im):
     #            break
     #greenpoints = [greenpointsx] + [greenpointsy]
     cv.Smooth(im,im,cv.CV_GAUSSIAN, 5, 1)
-    cv.SaveImage('filtersmooth.png',im)
     return im
 
 def boundedBox(im_blurred, im_original):
     bbox = cv.BoundingRect(cv.GetMat(im_blurred))
     cv.SetImageROI(im_original,bbox)
-    cv.SaveImage('ROI.png',im_original)
     return im_original
 
 def zero(m,n):
