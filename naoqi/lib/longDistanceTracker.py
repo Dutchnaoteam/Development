@@ -161,7 +161,7 @@ def boundedBox(im_blurred, im_orig):
 
     # checking if a box is found
     _, _, width, height = bbox
-    if width == 0 or height == 0:
+    if width < (im_orig.width / 2.0) or height < (im_orig.height / 2.0):
         return im_orig
 
     cv.SetImageROI(im_orig, bbox)
