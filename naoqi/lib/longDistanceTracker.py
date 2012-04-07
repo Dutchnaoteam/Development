@@ -26,12 +26,6 @@ def run(im, headInfo):
     # convert the image 
     im = convertImage(im)
 
-    # white balance
-    r = 12
-    g = 255 - 187
-    b = 255 - 232
-    cv.AddS(im, (b, g, r), im)
-
     #use filterGreen to take only the image
     green_thresh = filterGreen(im)
 
@@ -118,9 +112,9 @@ def filterImage(im):
     # Size of the images
     (width, height) = size
     
-    hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
-    filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
-    filter2 = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
+    hsvFrame = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 3)
+    filter = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 1)
+    #filter2 = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 1)
     
     hsvMin1 = cv.Scalar(4,  140,  140, 0)
     hsvMax1 = cv.Scalar(9,  255,  256, 0)
