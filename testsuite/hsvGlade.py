@@ -410,7 +410,7 @@ class hsvGlade(wx.Frame):
             try:
                 # connect with Nao
                 self.vidProxy = ALProxy("ALVideoDevice", ip, 9559)
-                self.vidProxy.setParam(18,1)
+                self.vidProxy.setParam(18,1)    #camera={top=0, bottom=2}
                 self.vidProxy.startFrameGrabber()
                 self.subscribe()
                 # change buttons
