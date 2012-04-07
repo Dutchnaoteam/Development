@@ -158,6 +158,12 @@ def boundedBox(im_blurred, im_orig):
     single-channel thresholded image and sets it as ROI on
     the original image"""
     bbox = cv.BoundingRect(cv.GetMat(im_blurred))
+
+    # checking if a box is found
+    _, _, width, height = bbox
+    if width == 0 or height == 0:
+        return im_orig
+
     cv.SetImageROI(im_orig, bbox)
     return im_orig
 
