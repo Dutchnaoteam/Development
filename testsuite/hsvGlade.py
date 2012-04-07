@@ -6,6 +6,7 @@
 # Download wx at: www.wxpython.org
 # (Optional) Download wxGlade at: wxglade.sourceforge.net
 
+from naoqi import ALProxy
 from PIL import Image
 import wx
 import colorsys
@@ -83,14 +84,19 @@ class hsvGlade(wx.Frame):
         self.__do_layout()
         # end wxGlade
 
-        # set rgb range
+        # set parameters
         self.rMin = 0
         self.rMax = 0
         self.gMin = 0
         self.gMax = 0
         self.bMin = 0
         self.bMax = 0
-
+        self.vidProxy = None
+        self.vmName = "python_GVM"
+        self.imageResolution = 0    #resolution={0,1,2}
+        self.imageColorSpace = 11   #colorSpace={0,9,10,11,12,13}
+        self.imageFps = 30          #fps={5,10,15,30}
+        
         # events
         self.magicRatioTextCtrl.Bind(wx.EVT_TEXT_ENTER, self.setMagicRatio)
         self.ipTextCtrl.Bind(wx.EVT_TEXT_ENTER, self.addIP)
@@ -402,8 +408,12 @@ class hsvGlade(wx.Frame):
             self.setStatusText([">_> Connecting to " + ip + " ..."])
             
             try:
-                # Create socket
-                self.client = Client(self, ip)
+                # connect with Nao
+                self.vidProxy = ALProxy("ALVideoDevice", ip, 9559)
+                self.vidProxy.setParam(18,1)
+                self.vidProxy.startFrameGrabber()
+                self.subscribe()
+                # change buttons
                 self.connectButton.Disable()
                 self.disconnectButton.Enable()
                 self.setStatusText(["^_^ Connected to " + ip + "."])
@@ -416,13 +426,26 @@ class hsvGlade(wx.Frame):
         else:
             self.setStatusText(["T_T First add an IP"])
 
+    def unsubscribe(self):
+        try:
+            self.vidProxy.unsubscribe(self.vmName)
+        except:
+            pass
+    
+    def subscribe(self):
+        self.unsubscribe()
+        return self.vidProxy.subscribe(self.vmName, self.imageResolution, self.imageColorSpace, self.imageFps)
+        
     # TODO
     def disconnect(self, event):
         self.setStatusText(["<_< Disconnecting..."])
         
         # disconnect
         try:
-            del self.client
+            # disconnect from Nao
+            self.unsubscribe()
+            self.stopFrameGrabber()
+            # change buttons
             self.disconnectButton.Disable()
             self.connectButton.Enable()
             self.setStatusText(["^_^ Disconnected."])
@@ -432,27 +455,15 @@ class hsvGlade(wx.Frame):
             #print e.args
             #print e
             self.setStatusText(["T_T Could not disconnect."])
+            
+    def updateImage(self):
+        alImage = self.vidProxy.getImageRemote(self.vmName)
+        image = Image.frombuffer('RGB', size=(alImage[0],alImage[1]), alImage[6], 'raw', 'RGB', 0, 1)
+        self.gui.imageWindow.image = image
+        self.gui.imageWindow.Refresh()
 
     def hsvSpinCtrl(self, event):
-        pass
-        '''
-        focus = self.FindFocus()
-        if focus == self.hMin and self.hMin.GetValue() > self.hMax.GetValue():
-            self.hMax.SetValue(self.hMin.GetValue())
-        elif focus == self.hMax and self.hMax.GetValue() < self.hMin.GetValue():
-            self.hMin.SetValue(self.hMax.GetValue())
-        elif focus == self.sMin and self.sMin.GetValue() > self.sMax.GetValue():
-            self.sMax.SetValue(self.sMin.GetValue())
-        elif focus == self.sMax and self.sMax.GetValue() < self.sMin.GetValue():
-            self.sMin.SetValue(self.sMax.GetValue())
-        elif focus == self.vMin and self.vMin.GetValue() > self.vMax.GetValue():
-            self.vMax.SetValue(self.vMin.GetValue())
-        elif focus == self.vMax and self.vMax.GetValue() < self.vMin.GetValue():
-            self.vMin.SetValue(self.vMax.GetValue())
-        #print "hsvSpinCtrl"
-        #self.Refresh()
-        #self.paintGradient(None)
-        '''
+        pass    
 
     def paintGradient(self, event):
         print "paintGradient"
