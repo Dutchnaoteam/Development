@@ -116,6 +116,10 @@ class hsvGlade(wx.Frame):
         self.imageWindow.Bind(wx.EVT_LEFT_DOWN, self.pickColour)
         self.imageWindow.Bind(wx.EVT_LEAVE_WINDOW, self.leaveImage)
         self.imageWindow.Bind(wx.EVT_ENTER_WINDOW, self.enterImage)
+        # update image from nao
+        self.timerInterval = 33 # in miliseconds 
+        self.timer = wx.Timer(self, self.timerInterval)
+        wx.EVT_TIMER(self, self.timerInterval, self.updateImage)
         # key events
         self.ipListBox.Bind(wx.EVT_KEY_UP, self.onKeyPress)
 
@@ -410,18 +414,20 @@ class hsvGlade(wx.Frame):
             try:
                 # connect with Nao
                 self.vidProxy = ALProxy("ALVideoDevice", ip, 9559)
-                self.vidProxy.setParam(18,1)    #camera={top=0, bottom=2}
+                self.vidProxy.setParam(18,1)    #camera={top=0, bottom=1}
                 self.vidProxy.startFrameGrabber()
                 self.subscribe()
+                # start timer
+                self.timer.Start(self.timerInterval)
                 # change buttons
                 self.connectButton.Disable()
                 self.disconnectButton.Enable()
                 self.setStatusText(["^_^ Connected to " + ip + "."])
             except Exception as e:
                 print "Could not connect to " + ip + "."
-                #print type(e)
-                #print e.args
-                #print e
+                print type(e)
+                print e.args
+                print e
                 self.setStatusText(["Could not connect to " + ip + "."])
         else:
             self.setStatusText(["T_T First add an IP"])
@@ -444,23 +450,26 @@ class hsvGlade(wx.Frame):
         try:
             # disconnect from Nao
             self.unsubscribe()
-            self.stopFrameGrabber()
+            self.vidProxy.stopFrameGrabber()
+            # stop timer
+            self.timer.Stop()
             # change buttons
             self.disconnectButton.Disable()
             self.connectButton.Enable()
             self.setStatusText(["^_^ Disconnected."])
         except Exception as e:
             print "Could not disconnect."
-            #print type(e)
-            #print e.args
-            #print e
+            print type(e)
+            print e.args
+            print e
             self.setStatusText(["T_T Could not disconnect."])
             
-    def updateImage(self):
+    def updateImage(self, event):
         alImage = self.vidProxy.getImageRemote(self.vmName)
-        image = Image.frombuffer('RGB', size=(alImage[0],alImage[1]), alImage[6], 'raw', 'RGB', 0, 1)
-        self.gui.imageWindow.image = image
-        self.gui.imageWindow.Refresh()
+        size=(alImage[0],alImage[1])
+        image = Image.frombuffer('RGB', size, alImage[6], 'raw', 'RGB', 0, 1)
+        self.imageWindow.image = self.pilToWx(image)
+        self.imageWindow.Refresh()
 
     def hsvSpinCtrl(self, event):
         pass    
