@@ -6,7 +6,7 @@ minMax
 if maxValue < x:
     return None
 calculatePosition
-return (xPos, yPos, xAngle, yAngle)
+return (xPos, yPos)
 
 height of image is 120
 angle of image in height is 34.80 degrees
@@ -54,15 +54,15 @@ def run(im, headInfo):
 
 def calcPosition(coord, cam, headInfo):
     (width, height) = size
-    #print 'size: ', width, ', ', height
     # coord with origin in the upperleft corner of the image
     (xCoord, yCoord) = coord
-    #print 'pixelCoord from upperLeft: ', xCoord, ', ', yCoord
     # change the origin to centre of the image
     xCoord = -xCoord + width/2.0
     yCoord = yCoord - height/2.0
-    #print 'pixelCoord from centre: ', xCoord, ', ', yCoord
     # convert pixel coord to angle
+    #dtf = 135.9 # distance to frame
+    #xAngle = math.atan( xCoord / dtf )
+    #yAngle = math.atan( yCoord / dtf )
     radiusPerPixel = 0.005061454830783556
     xAngle = xCoord * radiusPerPixel
     yAngle = yCoord * radiusPerPixel
