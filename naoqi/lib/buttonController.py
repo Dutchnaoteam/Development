@@ -1,7 +1,6 @@
 # File: buttonController
 # By: Camiel Verschoor, Sander Nugteren & Erik van Egmond
 
-from naoqi import ALProxy
 import time
 
 class buttonController():
@@ -13,19 +12,26 @@ class buttonController():
     kickOff = 0
 
     # CONSTRUCTOR
-    def __init__(self, ttsProxy, memProxy, interval=0.5):
+    def __init__(self, ttsProxy, memProxy, sensors, interval=0.5):
         self.interval = interval
         #self.chestButtonPressed = False
         self.manual = True
         self.memProxy = memProxy
         self.ttsProxy = ttsProxy
-
+        self.sensors  = sensors
+        
     # FUNCTIONS
     def chestButton(self):
-        return not(self.memProxy.getData("ChestButtonPressed", 0) == 0.0)
-        
+        if self.memProxy.getData("ChestButtonPressed", 0):
+            print 'Pressed'
+            while self.memProxy.getData("ChestButtonPressed", 0):
+                pass
+            return 1
+        else:
+            return 0
+                
     def bumperButton(self):
-        return not((self.memProxy.getData("LeftBumperPressed", 0) == 0.0) or (self.memProxy.getData("RightBumperPressed", 0) == 0.0))
+        return self.memProxy.getData("LeftBumperPressed", 0) or self.memProxy.getData("RightBumperPressed", 0)
     
     # THE FUNCTIONS TO SETUP THE NAO
     def getSetup(self):
@@ -95,11 +101,3 @@ class buttonController():
                     self.ttsProxy.say("No kick off")
                 time.sleep(0.5)
         return self.kickOff
-
-    # GET FUNCTIONS
-    def getChestButton(self):
-        button = self.chestButton()
-        if button:
-            while self.chestButton():
-                pass
-        return button

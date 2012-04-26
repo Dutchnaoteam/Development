@@ -4,6 +4,7 @@ CONTENT: markGoalCV, calcXangle, convertImage, run
 '''
 import cv
 import math
+import time
 
 def markGoalCV(im, color):
     ''' 
@@ -15,26 +16,44 @@ def markGoalCV(im, color):
     OUTPUT: returns an OpenCV color filtered image with values of the 
             color match, values over a threshold of 70 are sugested
     '''
-    size = (160,120) # Size of the images
+    size = (320,240) # Size of the images #Tijmen edited
     hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
     filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
     
     # Goalfilter values (made in Istanbul 06/07/2011)
-    if(color == 'blue'):
+    '''if(color == 'blue'):
         hueMin = 116
         hueMax = 130
-        saturationMin = 185 
+        saturationMin = 117 
         saturationMax = 255 
-        valueMin = 75 
+        valueMin = 134 
         valueMax = 210
     if(color == 'yellow'):
         hueMin = 20 
         hueMax = 41 
-        saturationMin = 55 
+        saturationMin = 100 
         saturationMax = 255
         valueMin = 60
         valueMax = 210 
-        
+    '''
+    # TODO AANPASSEN TIJMEN 
+    # Goalfilter values made in Eindhoven 04/2012
+    if(color == 'blue'):
+        hueMin = 106
+        hueMax = 113
+        saturationMin = 204 
+        saturationMax = 255 
+        valueMin = 119 
+        valueMax = 210
+    if(color == 'yellow'):
+        hueMin = 29 
+        hueMax = 39 
+        saturationMin = 102 
+        saturationMax = 255
+        valueMin = 188
+        valueMax = 210 
+            
+    
     hsvMin1 = cv.Scalar(hueMin, saturationMin, valueMin, 0)
     hsvMax1 = cv.Scalar(hueMax, saturationMax, valueMax, 0)
     cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
@@ -50,7 +69,7 @@ def calcXangle(xcoord):
     OUTPUT: returns the angle to the x coordinate with the middle of
     the image being 0 degrees
     '''
-    (width, height) = (160, 120)
+    (width, height) = (320, 240)
     xDiff = width/2 - xcoord
     distanceToFrame = 0.5 * width / 0.42860054745600146
     xAngle = math.atan(xDiff/distanceToFrame)
@@ -64,7 +83,7 @@ def convertImage(picture):
     OUTPUT: an OpenCV image
     '''
     global size
-    size = (160, 120)
+    size = (320, 240)
     # resize the image
     picture = picture.resize(size)
     # convert the type to OpenCV
@@ -87,52 +106,54 @@ def run(image, yawHead, color):
 
     # Filter an image based on color.
     image = convertImage(image)
+    #cv.SaveImage('raw' + str(time.time()) +  '.jpg', image)
     image = markGoalCV(image, color)
+    #cv.SaveImage('filter' + color + str(time.time()) +  '.jpg', image)
     cv.Smooth(image, image, cv.CV_GAUSSIAN, 5,5)
     
     threshold = 70   # threshold for the grayscale
-    (width, height) = (160,120) # resolution of the input images
+    (width, height) = (320,240) # resolution of the input images
     
     #######################ALGORITHMICDIVISION#######################
     
     # Form a dict of vertical lines.
     lines = {}
-    for x in range(width):                                              # for every vertical line
+    for x in xrange(width):                                              # for every vertical line
         
         checker = False
-        for y in range(10,height,10):                                   # iterate from top down steps of ten pixels (start at ten)
-            if (image[y,x] > threshold):                                # when a true pixel is found 
-                ry = y - 9                                              # go back nine pixels
-                while(image[ry,x] <= threshold):                               # start iterating by one pixel until a true pixel is found
-                    ry = ry + 1
-                
+        for y in xrange(10,height,10):                                   # iterate from top down steps of ten pixels (start at ten)
+            if (image[y,x] > threshold):                                 # when a true pixel is found 
+                ry = y - 9                                               # go back nine pixels
+                while(image[ry,x] <= threshold):                         # start iterating by one pixel until a true pixel is found
+                    ry += 1
                 checker = False
                 
-                for checky in range(ry, min(ry + 15, height)):          # count until 15 pixels are found in a row or until a false pixel is found
+                # count until 30 pixels are found in a row or until a false pixel is found
+                for checky in xrange(ry, min(ry + 20, height)):   
                     if (image[checky,x] <= 70):
                         break
-                    elif (checky == ry+14):
+                    elif (checky == ry+19):
                         checker = True
             if checker: 
                 break
         if checker:               # when a line of true pixels is found do the same from the bottom up
-            for by in range(height-10,0,-10):                   # iterate from top down steps of ten pixels (start at ten)
+            for by in xrange(height-10,0,-10):                  # iterate from top down steps of ten pixels (start at ten)
                 if (image[by,x] > threshold):                   # when a true pixel is found 
                     bry = by + 9                                # go back nine pixels
                     while(image[bry,x] <= threshold):           # start iterating by one pixel until a true pixel is found
                         bry = bry - 1
                     checker = False
-                    for checky in range(max(bry-15,0), bry):    # count until 15 pixels in this column are found or until a false pixel is found
+                    for checky in xrange(max(bry - 20,0), bry):    # count until 15 pixels in this column are found or until a false pixel is found
                         if (image[checky,x] <= 70):
                             break
-                        elif checky == bry-14 or checky == ry:  # also stop if lines overlap 
+                        elif checky == bry - 19 or checky == ry:   # also stop if lines overlap 
                             checker = True
                             
                     if (checker):                               # if bottom up searching goes past the starting pixel: Im an idiot
                         lines[x] = (ry, bry)                    # remember starting and ending pixel
                         
                                                                 # when a false pixel is found retry at the last known pixel (ten further)
-    # IN CONCLUSION: A line on x has at least 20 pixels of yellow color
+    # IN CONCLUSION: A line on x has at least 10 pixels of yellow color
     
     #######################ALGORITHMICDIVISION#######################
       
@@ -147,7 +168,7 @@ def run(image, yawHead, color):
     posMax = None
     posNotQuiteAsMax = None
     
-    for i in range(len(lines)-1):                                       # iterate from left to right (only where a line is found)
+    for i in xrange(len(lines)-1):                                      # iterate from left to right (only where a line is found)
         if (currentBlob == 'empty'):                                    # remember first line
             currentBlob = 'full'
             underline = sortedlines[i]
@@ -162,7 +183,7 @@ def run(image, yawHead, color):
             upperline = sortedlines[i+1]                                # find the most outer line attached to the first line
         # if they are separated    
         else:
-            if upperline - underline > 3:                           # remember that one
+            if upperline - underline > 3:                               # remember that one
                 pos = (upperline + underline)/2
                 dif = upperline - underline                             # and the difference between the two
                 if (dif > NotQuiteAsMax):                               # save it if its greater than the others found

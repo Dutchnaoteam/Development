@@ -145,6 +145,21 @@ def mult(matrix1,matrix2):
                     new_matrix[i][j] += matrix1[i][k]*matrix2[k][j]
         return new_matrix
  
+# form a rotation translation matrix            
+def rtmatrix(rotation, translation):
+    [a1, a2, a3] = rotation # 1 = roll 2 = pitch 3 = yaw
+    [t1, t2, t3] = translation # xyz
+    # calculate the transformation matrix 
+    matrix = [[math.cos(a1) * math.cos(a3) - math.sin(a1) * math.cos(a2) * math.sin(a3), 
+               -math.sin(a1) * math.cos(a3) - math.cos(a1) * math.cos(a2) * math.sin(a3),
+               math.sin(a2) * math.sin(a3), t1 ],
+              [math.cos(a1) * math.sin(a3) + math.sin(a1) * math.cos(a2) * math.cos(a3), 
+              -math.sin(a1) * math.sin(a3) + math.cos(a1) * math.cos(a2) * math.cos(a3),
+              -math.sin(a2) * math.cos(a3), t2 ],
+              [math.sin(a1) * math.sin(a2), math.cos(a1) * math.sin(a2) , math.cos(a2) , t3 ],[0,0,0,1]]
+    return matrix
+
+ 
 def time_mult(matrix1,matrix2):
     # Clock the time matrix multiplication takes
     start = clock()
