@@ -28,12 +28,16 @@ class KalmanBall():
     firstCall = bool
     
     def __init__(self, measurement = (1,0)):
+        if not measurement:
+            measurement = (1,0)
         self.setFirstCall( True, measurement )
         self.mu[0][0] = measurement[0]
         self.mu[1][0] = measurement[1]
 
     def setFirstCall(self, arg = True, initial = (1,0)):
         self.firstCall = arg
+        if not initial:
+            initial = (1,0)
         self.mu = [[ initial[0] ],[ initial[1] ]]
         self.Sigma = [[0.1,0],[0,0.1]]
         self.timeStamp = time.time()

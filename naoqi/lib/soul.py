@@ -179,10 +179,10 @@ def Ready():
 
 
 def Set():
-    """Set state: start searching for ball. CAUTION: Game is started in Set phase
+    '''Set state: start searching for ball. CAUTION: Game is started in Set phase
     instead of Initial in penalty shootout!
     ledProxy:  Chest Yellow
-    """
+    '''
     global teamColor
     global kickOff
     global phase
@@ -551,9 +551,9 @@ def BallFound():
             print 'Kalman position', x,y
             theta = math.atan(y/x)
             # hacked influencing of perception, causing walking forward to have priority
-            theta = theta / 2.0  #if theta > 0.4    else theta / 5.5
-            x = (4.0 * (x - 0.19)) #if x > 0.5        else (x - 0.16) * 1.3
-            y = 0.6 * y           #if -0.1 < y < 0.1 else 2.0 * y
+            theta = theta / 2.0     #if theta > 0.4    else theta / 5.5
+            x = (4.0 * (x - 0.18))  #if x > 0.5        else (x - 0.16) * 1.3
+            y = 0.6 * y             #if -0.1 < y < 0.1 else 2.0 * y
 
         else:
             print 'Not seen ball', x, y
@@ -645,7 +645,7 @@ def BallNotFound():
         firstCall['BallNotFound'] = True
     else:
         # if no ball is found circle slowly while searching for it
-        mot.postWalkTo(0, 0, 1.3)
+        mot.postWalkTo(0, 0, 2.1)
         goalPosKnown = False, None
 
 def Kick():
