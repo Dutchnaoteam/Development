@@ -45,6 +45,9 @@ sentinel.enableDefaultActionDoubleClick(False)
 sentinel.enableHeatMonitoring(False)
 motProxy.setWalkArmsEnable(True, True)
 
+# turn off sentinel
+sentinel.enableHeatMonitoring(False)
+
 # Creating classes: Protocol is first three letters with exception gameStateController (gsc)
 # stateController class: robot state, penalized, etc.
 gsc = gameStateController.StateController('stateController', ttsProxy, memProxy, ledProxy, sensors )
@@ -85,6 +88,7 @@ phase = 'BallNotFound'
 # Robots own variables
 robot = gsc.getRobotNumber()
 memProxy.insertListData([['dntBallDist', '', 0], ['dntPhase', 0, 0], ['dntNaoNum', robot, 0]])
+<<<<<<< HEAD
 teamColor = 0
 kickOff = 0
 penalty = 0
@@ -93,6 +97,13 @@ audProxy = ALProxy('ALAudioDevice', '127.0.0.1', 9559)
 audProxy.setOutputVolume(60)
 (teamColor, kickOff, penalty) = gsc.getMatchInfo()
 audProxy.setOutputVolume(0)
+=======
+teamColor = None
+kickOff = None
+penalty = None
+
+(teamColor, kickOff, penalty) = gsc.getMatchInfo()
+
 
 # If keeper -> different style of play
 playerType = 1 if robot == 1 else 0
@@ -113,7 +124,10 @@ def Initial():
     global phase                                           # to change, call global, else not possible
     global ball_loc
     global firstCall
+    global coachThread
     global nameList
+
+    failedList = list()
 
     if firstCall['Initial']:
         print 'In initial state'
@@ -123,6 +137,9 @@ def Initial():
 
         # Empty variables
         ball_loc = list()
+
+        # Team color must be displayed on left foot (Reference to rules)
+        ledProxy.off('AllLeds')
 
         mot.stiff()                                        # stiffness on (if it wasnt already)
         mot.setHead(0,0)                                   # head in normal position
@@ -156,6 +173,7 @@ def Ready():
         visThread.stopScan()
         print 'In ready state'
         mHandler.killWalk()
+
 
         firstCall['Initial'] = True
         firstCall['Ready']   = False
@@ -252,11 +270,11 @@ def Penalized():
     """
     global phase
     global firstCall
-    
+    memProxy.insertData('dntBallDist', 0)
+
     if firstCall['Penalized']:
         print 'In penalized state'
         visThread.stopScan()                               # stop looking for the ball
-        
         if playerType == 0:                                # if a player, goto unpenalized phase
             phase = 'Unpenalized'
         else:                                              # if a keeper, go to ballnotfoundkeep..
@@ -271,7 +289,7 @@ def Penalized():
         firstCall['Playing']   = True
         firstCall['Penalized'] = False
         firstCall['FirstPress']= False
-        
+
 def Finished():
     visThread.stopScan()                                   # stop looking for the ball
     mHandler.killWalk()                                         # stop walking
@@ -301,6 +319,7 @@ def BallFoundKeep():
         mot.setFME(False)
         
     maxlength = 6
+
     halfmaxlength = (maxlength/2.0)
 
     #  FIND A BALL  #
@@ -341,7 +360,6 @@ def BallFoundKeep():
             yold /= halfmaxlength
             xnew /= halfmaxlength
             ynew /= halfmaxlength
-
             
             # calc diff in distance
             distold = math.sqrt(xold**2 + yold**2)
@@ -352,7 +370,8 @@ def BallFoundKeep():
 
             # calculate direction if speed is high enough
             if speed > 0.3:
-                #mot.stiffKnees()
+
+            #mot.stiffKnees()
 
                 # This is all triangular magic using similarity between two triangles formed by balllocations and Nao.
                 # Keep in mind that y-axis is inverted and that x is forward, y is sideways!
@@ -485,7 +504,6 @@ def BallFound():
         else:
             print 'Not seen ball', x, y
             # TODO determine where ball is in headposition and look there instead of random places
-            
             # hacked influencing, turn towards last found position first
             theta = math.atan(y/x) / 2.5
             x = 2.0 * (x -0.2)
@@ -517,7 +535,6 @@ def KeepDistance():
     if ball:
         (x,y) = ball
         memProxy.insertData('dntPhase', 'KeepDistance')
-        
         theta = math.atan(y/x)
         # hacked influencing of perception, causing walking forward to have priority
         theta = theta / 2.5  if theta > 0.4    else theta / 5.5
@@ -540,7 +557,6 @@ def BallNotFound():
         mHandler.killWalk()
         firstCall['BallFound'] = True
         firstCall['BallNotFound'] = False
-        
     # try to find a ball
     ball = vis.scanCircle(visThread)
     if ball:
@@ -559,7 +575,6 @@ def Kick():
 
     memProxy.insertData('dntPhase', 'Kick')
     visThread.stopScan()
-    
     # scan for a goal
     goal = None
     if goalPosKnown[0]:
@@ -568,7 +583,6 @@ def Kick():
         goal = vis.scanCircleGoal()
     if goal:
         goalPosKnown = (True, goal)
-    
     print 'Kick phase: ', goal
     mot.setHead(0, 0.45)
     visThread.startScan()
@@ -611,8 +625,8 @@ def Kick():
             ball = visThread.findBall()
             mHandler.setBallLoc( ball )
         ball = mHandler.getKalmanBallPos()
-        
         # Cases 1-3, if you see your own goal, kick to the other side
+
         if goalColor == teamColor:
             # Case 1, goal is left, kick to the right.
             if kickangle >= 0.7:
@@ -663,6 +677,7 @@ def ReturnField():
 ##### OPERATING SYSTEM #####
 
 def awakeSoul():
+    global coachThread
     gsc.start()
     state = 0
     while(state != 4 or gsc.getSecondaryState()):

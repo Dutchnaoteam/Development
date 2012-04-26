@@ -22,6 +22,7 @@ class Motions():
     def __init__(self, motProxy, posProxy):
         self.motProxy = motProxy
         self.posProxy = posProxy
+
         self.setGaitConfigSimple( 0.07 , 0.14, 0.4, 0.015, 40, 21 )
         self.setFME(False)
         

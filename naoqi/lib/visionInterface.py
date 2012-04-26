@@ -134,7 +134,6 @@ class VisionInterface():
             (image, headinfo) = self.snapShot()
             # then start headmovement
             self.motProxy.angleInterpolation(['HeadPitch', 'HeadYaw'], [[-0.47], [yaw]], [[0.3],[0.3]], True)
-            
             # finally, start calculations
             goal = self.getGoal(image, headinfo)
             if goal:
