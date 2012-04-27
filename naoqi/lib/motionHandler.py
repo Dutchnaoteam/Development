@@ -5,8 +5,6 @@ import math
 import particleFilter
 import kalmanFilter
 from socket import *
-import cPickle as pickle
-
 
 def debug():
     import motions as m
@@ -20,9 +18,7 @@ def debug():
     gsc = gameStateController.StateController('stateController', ttsProxy, memProxy, ledProxy, sensors )
     mot = None
     
-    debugBool = True
-    debugIP = '127.0.0.1'
-    return MotionHandler( (debugBool, debugIP), mot, gsc, memProxy )
+    return MotionHandler( mot, gsc, memProxy, True )
 
 class MotionHandler(threading.Thread):
     # Control vector [forward, horizontal, rotational speed].
@@ -33,10 +29,10 @@ class MotionHandler(threading.Thread):
     ballLoc = None
     lock = threading.Lock()
     
-    def __init__(self, (debugBool, debugIP), motionObject, gameStateController, memProxy ):
+    def __init__(self, motionObject, gameStateController, memProxy, debug = False ):
         threading.Thread.__init__(self)
-        self.debug = debugBool
         
+        self.debug  = debug
         self.running = True
         self.PF = particleFilter.ParticleFilter( 200 ) # 200 samples for debugging
         self.KF = kalmanFilter.KalmanFilter( ) 
@@ -44,13 +40,6 @@ class MotionHandler(threading.Thread):
         self.gsc = gameStateController
         self.memProxy = memProxy
 
-        if debugBool:
-            host = debugIP
-            port = 4242
-            addr = (host,port)
-            self.server = socket( AF_INET, SOCK_STREAM )
-            self.server.connect(addr)
-        
     def __del__(self):
         self.close()
     
@@ -69,7 +58,7 @@ class MotionHandler(threading.Thread):
         t = max(-1, min( 1, t ))
         f = max(0,  min( 1, f ))
         
-        vX = 0.07 * x * f
+        vX = 0.09 * x * f
         vY = 0.05 * y * f
         vT = 0.50 * t * f
         
@@ -117,7 +106,7 @@ class MotionHandler(threading.Thread):
 	return m
     
     def getKalmanBallPos( self ):
-        return self.kalmanBallPos
+        return self.KF.ballPos
 	
     """Main loop"""
     def run(self):
@@ -129,37 +118,39 @@ class MotionHandler(threading.Thread):
                 if self.gsc.getState() == 10:
                     print 'Penalized by motionHandler!!!\n'
                     while self.mot.isWalking():
-                        self.killWalk()
-                    time.sleep(0.5)
-                    self.mot.keepNormalPose()
+                        self.killWalk()                        
                     self.mot.motProxy.killTasksUsingResources(['HeadYaw', 'HeadPitch'])
-                    time.sleep(0.1)
+                    time.sleep(0.5)
                     self.mot.setHead(0, 0)
+                    self.mot.keepNormalPose()
                     print 'killed all'
-                    while self.gsc.getState() == 10:
-                        time.sleep(0.1)
                 else:
                     time.sleep(0.025)
+                    if self.mot.standUp():
+                        print 'Fallen'
+                        self.killWalk()
+                        break
                     if self.features or self.ballLoc:
                         break
             
             interval = time.time() - timeStamp
             timeStamp = time.time()
-                    
+            # get features from the world
             measurements = self.getFeatures()
             ballLoc = self.getBallLoc()
+            # set control vector
             control = [0,0,0]
             for i in range(3):
                 control[i] = self.control[i] * interval
+            # update PF and KF
             self.PF.iteratePlus( measurements, control )
             self.KF.iterate( ballLoc, control )
-            self.kalmanBallPos = self.KF.ballPos
             
+            # if debugging, store info in memory
             if self.debug:
-                # use the naos ip to write to memory(Proxy)
+                # use the naos ip to write to memoryProxy
                 self.memorySend()
-		# second option: self.serverSend(), which uses socket programming
-
+		
     """Function involving writing info to memory"""
     def memorySend( self ):
         particles = self.PF.samples
@@ -176,34 +167,6 @@ class MotionHandler(threading.Thread):
         for i in range(3):
             toSendMeanState[i] = int(meanState[i] * 100)
         # store by pickling
-        particles = pickle.dumps( {'PF': toSendParticles, 'NAO':toSendMeanState} )
-        
+        particles = [toSendParticles, toSendMeanState]
         self.memProxy.insertData( 'PF', particles )
 	
-    """Functions involving socket programming"""
-    def socketSend( self ):
-        # receive go message from debugging server
-        self.server.recv( 128 )
-            # prepare data for sending
-        particles = self.PF.samples 
-        
-        toSendParticles = list()
-        # debug screen is 600 x 400
-        for particle in particles:
-            x = int(particle[0] * 100)
-            y = int(particle[1] * 100)
-            t = int(particle[2] * 100)
-            toSendParticles.append( [x,y,t] )
-        meanState = self.PF.meanState
-        
-        toSendMeanState = [0,0,0]
-        for i in range(3):
-            toSendMeanState[i] = int(meanState[i] * 100)
-        # store by pickling
-        particles = pickle.dumps( {'PF': toSendParticles, 'NAO':toSendMeanState} ).encode("UTF-8")
-        try:
-            self.server.send( particles )
-            #print 'Sent' 
-        except:
-            print 'Server closed (probably)'
-            self.server.close()

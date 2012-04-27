@@ -112,7 +112,8 @@ class VisionInterface():
                 if loc:
                     return loc
            
-    def scanCircleGoal(self, yawRange = {0:-1.5, 1:1.5}):            
+    def scanCircleGoal(self,speed = 0.25): 
+        yawRange = [-1.5, 1.5]    
         # initialize variables
         realGoal = None
         tempGoal = None
@@ -123,18 +124,15 @@ class VisionInterface():
             elif 2<yawRange[r]:
                 yawRange[r] = 2     
         
-        current = self.motProxy.getAngles(['HeadPitch', 'HeadYaw'], True)
         # move head to starting position
-        self.motProxy.setAngles(['HeadPitch', 'HeadYaw'], \
-                                    [-0.47, -1.5], 0.8)
-        time.sleep(0.4)
-        increment = math.copysign(0.5, yawRange[1])
-        for yaw in xfrange( yawRange[0] + increment, yawRange[1] + increment, increment):
-            # take a snapshot..
+        time.sleep(0.1)
+        self.motProxy.angleInterpolationWithSpeed(['HeadPitch', 'HeadYaw'], \
+                                    [-0.47, -1.5], 1.0, True)
+        time.sleep(0.1)
+        # then start headmovement
+        self.motProxy.setAngles('HeadYaw', yawRange[1], speed)
+        while self.motProxy.getAngles('HeadYaw', True)[0] < yawRange[1] -0.05:
             (image, headinfo) = self.snapShot()
-            # then start headmovement
-            self.motProxy.angleInterpolation(['HeadPitch', 'HeadYaw'], [[-0.47], [yaw]], [[0.3],[0.3]], True)
-            # finally, start calculations
             goal = self.getGoal(image, headinfo)
             if goal:
                 # goal is ( color, ( (angle, width), (angle, width) )
@@ -161,6 +159,7 @@ class VisionInterface():
                     tempGoal = ( color, posts[0] )
                     
             if realGoal:
+                self.motProxy.changeAngles('HeadYaw', 0.001, 1 )
                 break
         # stop goalscanning, start finding ball again
         

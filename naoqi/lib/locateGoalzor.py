@@ -108,9 +108,8 @@ def run(image, yawHead, color):
     image = convertImage(image)
     #cv.SaveImage('raw' + str(time.time()) +  '.jpg', image)
     image = markGoalCV(image, color)
-    #cv.SaveImage('filter' + str(time.time()) +  '.jpg', image)
+    #cv.SaveImage('filter' + color + str(time.time()) +  '.jpg', image)
     cv.Smooth(image, image, cv.CV_GAUSSIAN, 5,5)
-    #cv.SaveImage('smooth' + str(time.time()) +  '.jpg', image)
     
     threshold = 70   # threshold for the grayscale
     (width, height) = (320,240) # resolution of the input images
@@ -128,7 +127,7 @@ def run(image, yawHead, color):
                 while(image[ry,x] <= threshold):                         # start iterating by one pixel until a true pixel is found
                     ry += 1
                 checker = False
-               
+                
                 # count until 30 pixels are found in a row or until a false pixel is found
                 for checky in xrange(ry, min(ry + 20, height)):   
                     if (image[checky,x] <= 70):

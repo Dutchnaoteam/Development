@@ -22,7 +22,6 @@ class Motions():
     def __init__(self, motProxy, posProxy):
         self.motProxy = motProxy
         self.posProxy = posProxy
-
         self.setGaitConfigSimple( 0.07 , 0.14, 0.4, 0.015, 40, 21 )
         self.setFME(False)
         
@@ -31,6 +30,7 @@ class Motions():
             self.motProxy.setFallManagerEnabled(arg)
         except:
             print 'Could not switch off FallManager. '
+            
     # set parts of the footgaitconfig, order is important but it does not
     # have to contain each and every option (if no value found for an option
     # it will use earlier specified values)
@@ -1150,11 +1150,13 @@ class Motions():
                                     
     # kick towards front, right leg
     def kick(self, angle, coordinates = (0.05, -0.01) ):
-        if angle >= 0.9:
+        if angle >= 0.6:
             self.sideRightKick()
         elif angle >= 0:
-            self.cartesianRight( angle, max( coordinates[0], -0.2), min ( max( coordinates[1], -0.1 ), 0.01 ) )            
-        elif -0.5 <= angle <= 0:
+            coordinates = coordinates[0], coordinates[1]
+            self.cartesianRight( angle, min( 0.05, max( coordinates[0], -0.2)), min ( max( coordinates[1], -0.1 ), 0.01 ) )            
+        elif -0.6 <= angle <= 0:
+            coordinates = coordinates[0], coordinates[1] - 0.04
             self.cartesianLeft( angle, min( coordinates[0], 0.2), max ( min( coordinates[1], 0.1 ), -0.01 ) )
         elif angle <= -1:
             self.sideLeftKick()
@@ -1191,8 +1193,6 @@ class Motions():
                                         [-0.5,         1.1,          -0.65], 
                                         [[0.25],      [0.25],        [0.25]], True)    
             self.normalPose(True)
-        
-        
         
     # remove stiffness from body
     def kill(self):
