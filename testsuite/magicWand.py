@@ -16,7 +16,6 @@ def magic(image, startPos, ratio):
 '''
 
 def magic(image, startPos, ratio):
-    #print startPos, ratio
     minColour = maxColour = getRGB(image, startPos)
     (minColour, maxColour) = search(image, startPos, minColour, maxColour,
                                     ratio, -1, 0)
@@ -26,7 +25,6 @@ def magic(image, startPos, ratio):
                                     ratio, 0, -1)
     (minColour, maxColour) = search(image, startPos, minColour, maxColour,
                                     ratio, 0, 1)
-    print "magicWand:",minColour,maxColour
     return (minColour, maxColour)
     
 
@@ -34,31 +32,23 @@ def getRGB(image, (x,y)):
     return (image.GetRed(x,y),image.GetGreen(x,y),image.GetBlue(x,y))
 
 def search(image, (x,y), minColour, maxColour, ratio, stepHor, stepVer):
-    print minColour, maxColour
     while True:
         if x<=0 or x>=image.GetWidth()-1 or y<=0 or y>=image.GetHeight()-1:
             break
         x += stepHor
         y += stepVer
         
-        s = ""
         c1 = getRGB(image, (x,y))
-        s += str(c1)
         if inRange(c1, minColour, maxColour):
-            s += " inRange"
             continue
         if closeColour(c1, maxColour, ratio):
-            s += " closeColourMax:"+str(c1)+", "+str(maxColour)+", "+str(ratio)
             maxColour = makeGreater(c1, maxColour)
         else:
             break
         if closeColour(c1, minColour, ratio):
-            s += " closeColourMin:"+str(c1)+", "+str(minColour)+", "+str(ratio)
             minColour = makeSmaller(c1, minColour)
         else:
             break
-        #print s
-        #raw_input()
         
     return (minColour, maxColour)
 

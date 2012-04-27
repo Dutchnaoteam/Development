@@ -33,7 +33,6 @@ class hsvGlade(wx.Frame):
         self.hsvRangeSizer_staticbox = wx.StaticBox(self, -1, "Set HSV range")
         self.connectSizer_staticbox = wx.StaticBox(self, -1, "Connect")
         self.naoVisionSizer_staticbox = wx.StaticBox(self, -1, "Nao Vision")
-        
         # Menu Bar
         self.TestSuite_menubar = wx.MenuBar()
         wxglade_tmp_menu = wx.Menu()
