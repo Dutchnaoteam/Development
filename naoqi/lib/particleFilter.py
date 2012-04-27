@@ -3,20 +3,16 @@ from math import *
 import time
 import threading
 
-class ParticleFilter(threading.Thread):
+class ParticleFilter():
 
     # Field Parameters
-    num_samples = 100
+    num_samples = 10
     wslow = 0
     wfast = 0
     samples = []
-    timeStamp = time.time()
     
-    measurements = [None]
-    control = [0,0,0]
-    meanState = [0,0,0]
+    meanState = None
     counter = 0
-    lock = threading.Lock()
     
     # feature coordinates per id, (x,y).
     # note that the naming is based on naoviewpoint (left poles are
@@ -27,81 +23,31 @@ class ParticleFilter(threading.Thread):
                  'BluePoleRight'  :    (0.0, 2.75) }
 
     # The default number of samples. 
-    def __init__( self, position = False, numberOfSamples = 100 ):
-        threading.Thread.__init__(self)
-        self.reset( position, numberOfSamples )
+    def __init__( self, numberOfSamples ):
+                
+        self.reset( numberOfSamples )
         self.running = False
         self.closed = False
-        
+                
     # destructor for this class
     def __del__(self):
         self.running = False
         self.closed = True
-
-    def active(self):
-        return self.running
-    
+            
     def close(self):
         self.__del__()
-    
-    def startFilter(self):
-        self.running = True
-    
-    def pauseFilter(self):
-        self.running = False
-        
-    # main thread function
-    def run(self):
-        while not self.closed:
-            while self.running:
-                # get the current timestamp
-                interval = time.time() - self.timeStamp
-                self.timeStamp = time.time()
-
-                oldState = self.meanState
-
-                # get measurements, if available
-                measurements = self.measurements
-                with self.lock:
-                    self.measurements = [None]
-                
-                # get the current robot velocity
-                #control = motProxy.getRobotVelocity()
-                
-                control[0] += self.control[0] * interval
-                control[1] += self.control[1] * interval
-                control[2] += self.control[2] * interval
-                self.meanState = self.iteratePlus( measurements , self.control ) 
-    
-                if oldState != self.meanState:
-                    print 'Current position', self.meanState
-                
-        print 'Closed particle filter thread safely.'
-    
-    def setControl(self, control):
-        self.control = control
-    
-    def getControl(self):
-        return self.control
-     
+                 
     def getPosition(self):
         return self.meanState
-                 
-    def setMeasurements( self,measurements ):
-        with self.lock:
-            self.measurements = measurements
-        
+             
     # Reset field variables for this particleFilter. 
-    def reset( self, position = False, numberOfSamples = 100 ):
+    def reset( self, numberOfSamples, position = [3,2,0.0] ):
         # Field Parameters
         self.num_samples = numberOfSamples
         self.wslow = 0
         self.wfast = 0
-        self.timeStamp = time.time()
-        
-        self.measurements = [None]
-        self.control = [0,0,0]
         self.counter = 0
+        self.createSamples( position )    
             
     # Create particles. If given a position, all particles are at this position. 
     def createSamples( self, position ):
@@ -109,10 +55,11 @@ class ParticleFilter(threading.Thread):
         field_height = 4;
         
         self.samples = []
-
+        self.weights = []
+	print position
         for i in range(self.num_samples):
-            if not position:
-                x = random() * field_width
+            if type(position) != list:
+		x = random() * field_width
                 y = random() * field_height
                 theta = uniform( -pi, pi )
             else:
@@ -121,28 +68,22 @@ class ParticleFilter(threading.Thread):
                 y = position[1] + gauss(0, 0.1)
                 theta = self.minimizedAngle( position[2] + gauss(0, 1.5) )
             self.samples.append( [ x, y, theta ] )
-        self.meanState = self.calcMean( self.samples )
+            self.weights.append( random() )
+        self.meanState = self.findBest( self.samples, self.weights )
 
-    def setTime( self,timestamp ):
-        self.timestamp = timestamp
-    
     def iteratePlus( self, measurements, control ):
-
         length = len(measurements)
-        #print 'Control: ' ,control, 'Length', length
         
-        control[0] = control[0] / float(length)
-        control[1] = control[1] / float(length)
-        control[2] = control[2] / float(length)
-        
-        meanState = [0,0,0]
-        for measurement in measurements: 
-            meanState = self.iterate( measurement, control)
-        return meanState
-    
+        if length == 0:
+            self.iterate( None, control )
+        else:        
+            for measurement in measurements:
+                self.iterate( measurement, control)
+                control = [0,0,0]
+                
     # One iteration of the particle filter. 
     def iterate( self, measurement, control):
-                    
+	
         predictedSamples = []
         weights = []
 
@@ -157,12 +98,13 @@ class ParticleFilter(threading.Thread):
                 # ..find weights
                 weight = self.sensorModel( [x,y,theta], measurement )
                 weights.append( weight )
-        
+                
         # counter keeps track of the number of random samples
         counter = 0
         
         # Resampling is only possible if weights are used        
         if measurement:
+	    self.weights = weights
             meanWeight = sum(weights) / self.num_samples
 
             # These are 'learning rate'-like factors that determine how fast random samples are introduced
@@ -197,28 +139,22 @@ class ParticleFilter(threading.Thread):
             self.samples = predictedSamples
         
         # The mean of all samples is (probably) the current position and orientation
-        meanState = self.calcMean(self.samples)
+        self.meanState = self.findBest(self.samples, self.weights)
         
-        #print '\nIteration ', iteration, ':'
         if counter:
             print 'Introduced', counter, 'random samples.'
-        #print 'Mean:' , meanState
-        #print 'Measured', measurement
-        #print 'Wfast/wslow', wfast, wslow
-        
-        return meanState
-                    
+                            
     # Simple motion model: Increment the state by the rotated control vector
-    def motionModel( self, sample, control, interval ):
+    def motionModel( self, sample, control ):
                 
-        # Add noise to the motion, currently 0.01 meters per 1 meter and 0.2 rad per 1? or 2 pi rad (I think)
-        control[0] = (control[0] + gauss( 0, 0.01 ) )
-        control[1] = (control[1] + gauss( 0, 0.01 ) )
-        control[2] = (control[2] + gauss( 0, 0.2 ) )
+        # Add noise to the motion, currently 0.001 meters per 1 meter and 0.02 rad per 1? or 2 pi rad (I think)
+        control[0] += gauss( 0, 0.001 ) 
+        control[1] += gauss( 0, 0.001 )
+        control[2] += gauss( 0, 0.002 )
         
-        x = sample[0] + control[0] * cos(sample[2]) + control[1] * cos(sample[2] + 0.5 * pi )
-        y = sample[1] + control[0] * sin(sample[2]) + control[1] * sin(sample[2] + 0.5 * pi )
-        theta = sample[2] + control[2]
+        x = sample[0] + control[0] * cos(sample[2]) - control[1] * sin(sample[2])
+        y = sample[1] + control[0] * sin(sample[2]) + control[1] * cos(sample[2])
+        theta = self.minimizedAngle(sample[2] + control[2])
         return x, y, theta
 
     # Sensor model calculates the probability of a state given a measurement 
@@ -231,13 +167,13 @@ class ParticleFilter(threading.Thread):
             xR, yR = self.worldMap[idFeature]
             
             rangeR = sqrt( ( x-xR )**2 + ( y-yR )**2 )
-            bearingR = self.minimizedAngle( atan2( yR - y, xR - x) - theta )
+            bearingR = self.minimizedAngle( atan2( yR - y, xR - x) + theta )
             
             sigmaRange = 0.3        # range is very uncertain
             sigmaBearing =  0.005     # bearing is very precise
             sigmaSignature = 0.01    # signature does not really matter here
-
-            weight = self.prob( rangeR-rangeM , sigmaRange ) * \
+	    
+	    weight = self.prob( rangeR-rangeM , sigmaRange ) * \
                      self.prob( bearingR-bearingM , sigmaBearing ) * \
                      self.prob( signature, sigmaSignature )
         else:
@@ -266,15 +202,15 @@ class ParticleFilter(threading.Thread):
     def prob( self, x, sigma ):
         return exp( - x**2 / (2*sigma) ) / sqrt( sigma * 2 * pi ) 
             
-    # Calculate the mean of 3D samples
-    def calcMean( self, samples ):
-        x = 0
-        y = 0
-        t = 0
+    # In the case of weights, take the best sample
+    def findBest( self, samples, weights ):
+      
+        bestSoFar = samples[0]
+        bestWeight = weights[0]
         
-        for sample in samples:
-            xs , ys, ts = sample
-            x += xs / self.num_samples
-            y += ys / self.num_samples
-            t += ts / self.num_samples
-        return x,y,t
+        for i in range(1, len(samples)):
+	    if weights[i] > bestWeight:
+	        bestWeight = weights[i]
+	        bestSoFar = samples[i]
+	        
+	return bestSoFar

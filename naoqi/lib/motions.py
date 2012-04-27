@@ -22,7 +22,8 @@ class Motions():
     def __init__(self, motProxy, posProxy):
         self.motProxy = motProxy
         self.posProxy = posProxy
-        self.setGaitConfigSimple( 0.05 , 0.15, 0.4, 0.014, 40, 20 )
+
+        self.setGaitConfigSimple( 0.07 , 0.14, 0.4, 0.015, 40, 21 )
         self.setFME(False)
         
     def setFME(self, arg):
@@ -1151,16 +1152,10 @@ class Motions():
     def kick(self, angle, coordinates = (0.05, -0.01) ):
         if angle >= 0.9:
             self.sideRightKick()
-        elif angle >= 0.5:
-            self.walkTo( 0, coordinates[1] + 0.04, 0 )
-            self.rKickAngled( angle )
         elif angle >= 0:
             self.cartesianRight( angle, max( coordinates[0], -0.2), min ( max( coordinates[1], -0.1 ), 0.01 ) )            
         elif -0.5 <= angle <= 0:
             self.cartesianLeft( angle, min( coordinates[0], 0.2), max ( min( coordinates[1], 0.1 ), -0.01 ) )
-        elif -1 <= angle:
-            self.walkTo( 0, coordinates[1] - 0.04, 0 )
-            self.lKickAngled( - angle )
         elif angle <= -1:
             self.sideLeftKick()
     
@@ -1203,6 +1198,9 @@ class Motions():
     def kill(self):
         self.motProxy.setStiffnesses('Body', 0)
 
+    def killAll(self):
+        self.motProxy.killAll()
+        
     # remove knee stiffness
     def killKnees(self):
         if self.motProxy.getStiffnesses('RKneePitch')[0] > 0:
@@ -1212,10 +1210,13 @@ class Motions():
                                       [[-1.1], [-1.1]], [[0.35],[0.35]], True)
 
     # stop walking if active    
-    def killWalk(self):
+    def killWalk(self, waitUntilKilled = True):
         if self.motProxy.walkIsActive():
-            self.walkTo(0,0,0.00001)
-        
+            if waitUntilKilled:
+                self.walkTo(0,0,0.00001)
+            else:
+                self.postWalkTo( 0, 0, 0.0001) 
+                
     # left kick with inputangle
     def lKickAngled(self, angle):
         self.motProxy.setAngles(['RShoulderRoll', 'RShoulderPitch', 'LShoulderRoll', 'LShoulderPitch',
@@ -1331,40 +1332,44 @@ class Motions():
 
     # soft kick towards right, left leg
     def sideLeftKick(self):
-        self.motProxy.angleInterpolation(['RAnkleRoll', 'LAnkleRoll'], [-0.2, -0.2], [[0.4], [0.4]], True)
-
+        self.motProxy.angleInterpolation(['RAnkleRoll', 'LAnkleRoll', 'RShoulderRoll', 'LShoulderRoll'], 
+                                         [-0.25,       -0.25,        -0.4,           0.3], 
+                                         [[0.4], [0.4], [0.4], [0.4]], True)
+        
         names = list()
         angles = list()
         times = list()
         
         names = ['RShoulderRoll','LHipRoll', 'LHipPitch', 'LKneePitch','LAnklePitch','LAnkleRoll','RHipRoll','RHipPitch','RKneePitch','RAnklePitch','RAnkleRoll']
-        angles = [[-0.4],         [0.0, 0.3], [-0.4, -0.8],[0.95, 0.2], [-0.55, 0.6], [-0.25,-0.3],[0.05 ],   [-0.4],     [0.95],      [-0.5],       [-0.25]]
+        angles = [[-1],         [0.0, 0.35], [-0.4, -0.8],[0.95, 0.2], [-0.55, 0.6], [-0.25,-0.3],[0.05 ],   [-0.4],     [0.95],      [-0.5],       [-0.25]]
         times  = [[0.2],          [0.3, 0.75],[0.5,   1.0],[0.5,  1.0], [ 0.5,  1.0], [0.5,   1.0],[ 1.0],    [0.5],      [0.5 ],      [ 0.5],       [ 0.5]]
         
         self.motProxy.angleInterpolation(names, angles, times, True)
         
-        self.motProxy.angleInterpolation('LHipRoll', [-0.05], [0.1], True)
+        self.motProxy.angleInterpolationWithSpeed('LHipRoll', [-0.1], 1.0, True)
         time.sleep(0.1)
         self.motProxy.angleInterpolation(['LHipRoll','LHipPitch','LKneePitch','LAnklePitch'], 
-                                     [[0.0],    [-0.55],    [1.2],       [-0.6]], 
+                                     [[0.0],    [-0.6],    [1.3],       [-0.6]], 
                                      [[0.5],    [0.6],      [0.6],       [0.6]], True)
         self.normalPose(True)
 
         # soft kick towards left, right leg
     # soft kick towards left, right leg
     def sideRightKick(self):
-        self.motProxy.angleInterpolation(['RAnkleRoll', 'LAnkleRoll'], [0.2, 0.2], [[0.4], [0.4]], True)
-
+        self.motProxy.angleInterpolation(['RAnkleRoll', 'LAnkleRoll', 'RShoulderRoll', 'LShoulderRoll'], 
+                                         [ 0.25,        0.25,         0.4,           -0.3], 
+                                         [[0.4], [0.4], [0.4], [0.4]], True)
+        
         names =  ['LShoulderRoll','RHipRoll','RHipPitch','RKneePitch','RAnklePitch','RAnkleRoll','LHipRoll','LHipPitch','LKneePitch','LAnklePitch','LAnkleRoll']
-        angles = [[0.4],          [0,  -0.3],[-0.4, -0.8],[0.95, 0.2],[-0.55, 0.6], [0.25, 0.3], [-0.05],   [-0.4],     [0.95],      [-0.5],       [0.25]]
+        angles = [[1],            [0,  -0.35],[-0.4, -0.8],[0.95, 0.2],[-0.55, 0.6], [0.25, 0.3], [-0.05],   [-0.4],     [0.95],      [-0.5],       [0.25]]
         times =  [[0.2],          [0.3, 0.75 ],[0.5, 1], [0.5, 1],     [0.5, 1],    [0.5, 1],    [1.0],     [0.5],      [0.5],       [0.5],        [0.5]]
         
         self.motProxy.angleInterpolation(names, angles, times, True)
         
-        self.motProxy.angleInterpolation('RHipRoll', [0.05], [0.1], True)
+        self.motProxy.angleInterpolationWithSpeed('RHipRoll', [0.1], 1.0, True)
         time.sleep(0.1)
         self.motProxy.angleInterpolation(['RHipRoll','RHipPitch', 'RKneePitch', 'RAnklePitch'], 
-                                    [[0.0],     [-0.55],     [1.2],        [-0.6]], 
+                                    [[0.0],     [-0.6],     [1.3],        [-0.6]], 
                                     [[0.5],     [0.6],       [0.6],        [0.6]], True)
         self.normalPose(True)
 
@@ -1465,7 +1470,7 @@ class Motions():
     def walkTo(self, x,y,angle):
         self.motProxy.walkTo(x,y,angle,self.gaitConfig)
         
-    def cartesianRight( self, angle, x,y , interval1 = 0.1, interval2= 0.1, interval3 =0.1):
+    def cartesianRight( self, angle, x,y , interval1 = 0.1, interval2= 0.09, interval3 =0.09):
         
         # maxima input:
         # angle -> -0.3 to 0.5 (with x = 0.05, y =  0.00) 
@@ -1558,7 +1563,7 @@ class Motions():
         
         self.normalPose(True)
         
-    def cartesianLeft( self, angle, x, y , interval1 = 0.1, interval2 = 0.1, interval3 = 0.1 ):
+    def cartesianLeft( self, angle, x, y , interval1 = 0.0, interval2 = 0.1, interval3 = 0.1 ):
         #
         # maxima input:
         # angle -> -0.5 to 0.3 (with x = 0.05, y =  0.00) 

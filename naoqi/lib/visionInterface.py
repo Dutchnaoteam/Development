@@ -14,79 +14,17 @@ def debug():
     motProxy = ALProxy( 'ALMotion', '127.0.0.1', 9559 )
     vidProxy = ALProxy( 'ALVideoDevice', '127.0.0.1', 9559 )
     memProxy = ALProxy( 'ALMemory', '127.0.0.1', 9559 ) 
-    return VisionInterface( motProxy , vidProxy, memProxy )
-    
-# vision class keeps scanning for ball/goal in images, depending on variables ball and goal
-class VisionThread(threading.Thread):
-    '''TODO: Make visioninterface update goalposition only at certain headpositions, no movement during scan'''
-    ballLoc = None
-    on = True
-    scanning = True
-    checked = False
-    lock = threading.Lock()
-    
-    # constructor    
-    def __init__(self, interface):
-        threading.Thread.__init__(self)
-        self.interface = interface
-    
-    # destructor
-    def __del__(self):
-        self.scanning = False
-        self.on = False
+    ledProxy = ALProxy( 'ALLeds', '127.0.0.1', 9559 ) 
+    vis = VisionInterface( motProxy , vidProxy, memProxy, ledProxy )
+    vt = VisionThread( vis, memProxy, ledProxy )
+    return vis, vt
         
-    # main iteration    
-    def run(self):
-        # currently no safe way to stop thread
-        while self.on:
-            # on is the variable that states if a ball and/or goal should be found
-            if self.scanning:
-                
-                # take a snapshot
-                (image, headinfo) = self.interface.snapShot()
-                self.ballLoc = self.interface.getBall(image,headinfo)
-                # shared variable access makes this necessary
-                with self.lock:
-                    self.checked = False
-            else:
-                time.sleep(0.1)
-                
-    # stop main iteration 
-    def stopScan(self):
-        self.scanning = False
-    
-    def active(self):
-        return self.scanning
-    
-    # close thread
-    def close(self):
-        self.on = False
-        self.scanning = False
-        
-    # start finding of ball
-    def startScan(self):
-        self.on = True
-        self.scanning = True
-    
-    # return last found ballloc (none if none found)
-    def findBall(self):
-        # while there is no 'new' balllocation available, wait
-        now = time.time()
-        while self.checked and time.time() - now < 0.5:
-            time.sleep(0.01)
-        with self.lock:
-            self.checked = True
-        return self.ballLoc
-       
-    # clear variables
-    def clearCache(self):
-        self.ballLoc = None
-    
 class VisionInterface():
-    def __init__(self, motProxy, vidProxy, memProxy):
+    def __init__(self, motProxy, vidProxy, memProxy, ledProxy):
         self.motProxy = motProxy
         self.vidProxy = vidProxy
         self.memProxy = memProxy
+        self.ledProxy = ledProxy
         
         # use the bottom Camera
         self.vidProxy.setParam(18, 1)
@@ -103,7 +41,7 @@ class VisionInterface():
         self.unsubscribe()
         # subscribe(gvmName, resolution={0,1,2}, colorSpace={0,9,10,11,12,13},
         #           fps={5,10,15,30}
-        return self.vidProxy.subscribe('python_GVM', 0, 11, 30)
+        return self.vidProxy.subscribe('python_GVM', 1, 11, 30)
 
     def snapShot(self):
         ''' TODO: test accuracy of useSensorValues={True, False} '''
@@ -127,10 +65,14 @@ class VisionInterface():
         yellow = goal.run(image, head[1], 'yellow')
         if yellow:
             goalLoc = ('Yellow', yellow)
+            # yellow goal , anyone got a better value?
+            self.ledProxy.fadeRGB('LeftFaceLeds',0x00ff3000, 0)     
         else:
             blue = goal.run(image, head[1], 'blue')        
             if blue:    
                 goalLoc = ('Blue',blue)
+                # blue LeftFaceLed
+                self.ledProxy.fadeRGB('LeftFaceLeds', 0xffffff, 0)
         return goalLoc
         #print time.time()-now
         
@@ -138,36 +80,38 @@ class VisionInterface():
         # Take snapshot and measure head angles
         ballLoc = ball.run(image, headinfo)
         if ballLoc:
+            # Right leds turn green
+            self.ledProxy.fadeRGB('RightFaceLeds', 0x0000ff00, 0)
             (x,y) = ballLoc
             if x < 0 or x > 6 or y < -4 or y > 4:
                 ballLoc = None
             else:
                 self.memProxy.insertData('dntBallDist', math.sqrt(x**2 + y**2))
         else:
-            self.memProxy.insertData('dntBallDist', '')                
+            
+            self.memProxy.insertData('dntBallDist', 0)
+            self.ledProxy.fadeRGB('RightFaceLeds',0x00ff0000, 0)
         return ballLoc
-        
     
     # scan movement to find ball
-    def scanCircle(self, vis):            
+    def scanCircle( self, vt ):      
         loc = None
         
         # extra check to stop the head from making unnecessary movements
-        ball = vis.findBall()
+        ball = vt.findBall()
         if ball:
             return ball
-        for angles in [(-1,  0.4), (-0.5,  0.4), (0.0, 0.5),   (0.5,  0.4), (1,  0.4),  \
-                       ( 1,  0.1), ( 0.75, 0.1), (0.5, 0.1  ), (0.25, 0.1), (0,  0.1), (-0.25, 0.1), (-0.5,  0.1), (-0.75, 0.1), (-1,  0.1  ), \
-                       (-1.1, -0.4), (-0.75, -0.4), (-0.5, -0.4), (-0.25, -0.4), (-0.125, -0.4), ( 0, -0.4), (0.125, -0.4), (0.25, -0.4), ( 0.5, -0.4), (0.75, -0.4), ( 1.1, -0.4),(0,0) ]: # last one is to make successive scans easier
-            self.motProxy.setAngles(['HeadYaw', 'HeadPitch'], [angles[0], angles[1]], 0.6)
         
-            # look for the ball in a given timespan
-            loc = vis.findBall()
-            if loc: 
-                 break
-        
-        return loc
-                
+        for yaw,pitch,t in [(-1, 0.5, 0.5), (1, 0.5, 1.5), (1, 0.1, 0.2), (-1, 0.1, 2), (-1, -0.4, 0.2), (1, -0.4, 3)]:
+            self.motProxy.post.angleInterpolation( ['HeadPitch', 'HeadYaw'], [[pitch], [yaw]], [[t], [t]], True )
+            
+            now = time.time()
+            while time.time() - now < t:
+                # look for the ball in a given timespan
+                loc = vt.findBall()
+                if loc:
+                    return loc
+           
     def scanCircleGoal(self, yawRange = {0:-1.5, 1:1.5}):            
         # initialize variables
         realGoal = None
@@ -182,14 +126,14 @@ class VisionInterface():
         current = self.motProxy.getAngles(['HeadPitch', 'HeadYaw'], True)
         # move head to starting position
         self.motProxy.setAngles(['HeadPitch', 'HeadYaw'], \
-                                    [-0.47, 0], 0.8)
-        
-        increment = math.copysign(0.25, yawRange[1])
+                                    [-0.47, -1.5], 0.8)
+        time.sleep(0.4)
+        increment = math.copysign(0.5, yawRange[1])
         for yaw in xfrange( yawRange[0] + increment, yawRange[1] + increment, increment):
             # take a snapshot..
             (image, headinfo) = self.snapShot()
             # then start headmovement
-            self.motProxy.setAngles(['HeadPitch', 'HeadYaw'], [-0.47, yaw], 0.9)
+            self.motProxy.angleInterpolation(['HeadPitch', 'HeadYaw'], [[-0.47], [yaw]], [[0.3],[0.3]], True)
             # finally, start calculations
             goal = self.getGoal(image, headinfo)
             if goal:
@@ -236,7 +180,77 @@ class VisionInterface():
             find = vis.findBall()
             f += 1
         return f
+    
+# vision class keeps scanning for ball/goal in images, depending on variables ball and goal
+class VisionThread(threading.Thread):
+    ballLoc = None
+    on = True
+    scanning = True
+    checked = False
+    lock = threading.Lock()
+    
+    # constructor    
+    def __init__(self, interface, memProxy, ledProxy):
+        threading.Thread.__init__(self)
+        self.interface = interface
+        self.memProxy = memProxy
+        self.ledProxy = ledProxy
+    
+    # destructor
+    def __del__(self):
+        self.scanning = False
+        self.on = False
         
+    # main iteration    
+    def run(self):
+        # currently no safe way to stop thread
+        while self.on:
+            # on is the variable that states if a ball and/or goal should be found
+            if self.scanning:
+                
+                # take a snapshot
+                (image, headinfo) = self.interface.snapShot()
+                self.ballLoc = self.interface.getBall(image,headinfo)
+                # shared variable access makes this necessary
+                with self.lock:
+                    self.checked = False
+            else:
+                time.sleep(0.1)
+                self.interface.memProxy.insertData('dntBallDist', 0)
+                # no ballscanning, right led turns yellow
+                self.ledProxy.off('RightFaceLeds')
+                
+    # stop main iteration 
+    def stopScan(self):
+        self.scanning = False
+    
+    def active(self):
+        return self.scanning
+    
+    # close thread
+    def close(self):
+        self.on = False
+        self.scanning = False
+        
+    # start finding of ball
+    def startScan(self):
+        self.on = True
+        self.scanning = True
+    
+    # return last found ballloc (none if none found)
+    def findBall(self):
+        # while there is no 'new' balllocation available, wait
+        now = time.time()
+        while self.checked and time.time() - now < 0.5:
+            time.sleep(0.01)
+        with self.lock:
+            self.checked = True
+        return self.ballLoc
+       
+    # clear variables
+    def clearCache(self):
+        self.ballLoc = None        
+    
 # range with float step 
 def xfrange(start, stop, step):
     while start < stop:

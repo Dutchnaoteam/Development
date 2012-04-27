@@ -18,14 +18,14 @@
 import gameStateController          # Controls the states of the nao
 import motions                      # All motion actions
 import visionInterface              # All vision actions
-import coach
-import kalmanFilter as kalman
+import motionHandler
 import time
 import math
 import socket
 
 
-# Proxy creation: protocol is first three letters with exceptions TextToSpeech (tts) and RobotPose (pos)
+""" Proxy creation: protocol is first three letters with exceptions 
+TextToSpeech (tts), RobotPose (pos), Sentinel and Sensors """
 from naoqi import ALProxy
 audProxy = ALProxy('ALAudioDevice', '127.0.0.1', 9559)
 ledProxy = ALProxy('ALLeds', '127.0.0.1', 9559)
@@ -35,31 +35,44 @@ posProxy = ALProxy('ALRobotPose', '127.0.0.1', 9559)
 ttsProxy = ALProxy('ALTextToSpeech', '127.0.0.1', 9559)
 vidProxy = ALProxy('ALVideoDevice', '127.0.0.1', 9559)
 sentinel = ALProxy('ALSentinel', '127.0.0.1', 9559)
+sensors  = ALProxy('ALSensors', '127.0.0.1', 9559)
+
+# turn off default beavior
+sentinel.enableDefaultActionSimpleClick(False)
+sentinel.enableDefaultActionDoubleClick(False)
+        
+# turn off sentinel
+sentinel.enableHeatMonitoring(False)
+motProxy.setWalkArmsEnable(True, True)
 
 # turn off sentinel
 sentinel.enableHeatMonitoring(False)
 
 # Creating classes: Protocol is first three letters with exception gameStateController (gsc)
+# stateController class: robot state, penalized, etc.
+gsc = gameStateController.StateController('stateController', ttsProxy, memProxy, ledProxy, sensors )
+print 'Started gsc'
+
 # Motion class: motion functions etc.
-mot = motions.Motions( motProxy, posProxy  )
+mot = motions.Motions( motProxy, posProxy )
+# Motionhandler: threaded instance handling motion updates
+debugIP = '192.168.1.26'
+try:
+    mHandler = motionHandler.MotionHandler( (True, debugIP), mot, gsc , memProxy )  
+except:
+    print 'Could not connect to debugIP ', debugIP
+    mHandler = motionHandler.MotionHandler( (False, debugIP), mot, gsc, memProxy )
+
+mHandler.start()
+print 'motionHandler started'
 
 # VisionInterface class: goalscans, ballscans
-vis = visionInterface.VisionInterface( motProxy, vidProxy, memProxy )
+vis = visionInterface.VisionInterface( motProxy, vidProxy, memProxy, ledProxy )
 # Start the vision (ballfinding) thread
-visThread = visionInterface.VisionThread( vis )
+visThread = visionInterface.VisionThread( vis, memProxy, ledProxy )
 visThread.start()
 visThread.stopScan()
 
-
-coachThread = None
-
-# stateController class: robot state, penalized, etc.
-gsc = gameStateController.stateController('stateController', ttsProxy, memProxy )
-
-# kalmanFilter class: a kalman filter to keep track of the ballposition
-kalmanFilterBall = kalman.KalmanBall()
-# control vector containing x,y,theta-velocity
-control = [0,0,0]
 # ball location(s)
 ball_loc = list()
 
@@ -75,21 +88,25 @@ phase = 'BallNotFound'
 # Robots own variables
 robot = gsc.getRobotNumber()
 memProxy.insertListData([['dntBallDist', '', 0], ['dntPhase', 0, 0], ['dntNaoNum', robot, 0]])
+<<<<<<< HEAD
+teamColor = 0
+kickOff = 0
+penalty = 0
+
+audProxy = ALProxy('ALAudioDevice', '127.0.0.1', 9559)
+audProxy.setOutputVolume(60)
+(teamColor, kickOff, penalty) = gsc.getMatchInfo()
+audProxy.setOutputVolume(0)
+=======
 teamColor = None
 kickOff = None
 penalty = None
 
 (teamColor, kickOff, penalty) = gsc.getMatchInfo()
 
-# If keeper -> different style of play , coaches other naos
 
 # If keeper -> different style of play
 playerType = 1 if robot == 1 else 0
-
-
-ipList  = list()
-nameList = []
-#nameList = ['camlal.local', 'frank.local', 'elpresidente.local']
 
 ## STATES (Gamestates)
 # Initial()
@@ -113,8 +130,8 @@ def Initial():
     failedList = list()
 
     if firstCall['Initial']:
-        mot.killWalk()
         print 'In initial state'
+        mHandler.killWalk()
         visThread.stopScan()                               # do not find the ball when in Initial
         print 'TeamColor: ' , teamColor                    # print the teamcolor as a check
 
@@ -123,10 +140,6 @@ def Initial():
 
         # Team color must be displayed on left foot (Reference to rules)
         ledProxy.off('AllLeds')
-        if (teamColor == 0):
-            ledProxy.fadeRGB('LeftFootLeds', 0x000000ff, 0)
-        else:
-            ledProxy.fadeRGB('LeftFootLeds', 0x00ff0000, 0)
 
         mot.stiff()                                        # stiffness on (if it wasnt already)
         mot.setHead(0,0)                                   # head in normal position
@@ -146,12 +159,6 @@ def Initial():
         firstCall['Playing']   = True
         firstCall['Penalized'] = True
 
-    for name in nameList:
-        try:
-            ipList.append(socket.gethostbyname( name ))
-        except Exception as inst:
-            failedList.append(name)
-    nameList = failedList
     time.sleep(0.1)
 
 def Ready():
@@ -165,10 +172,8 @@ def Ready():
         # stop ballfinding, there is no ball anyway
         visThread.stopScan()
         print 'In ready state'
-        mot.killWalk()
+        mHandler.killWalk()
 
-        # set ChestLeds
-        ledProxy.fadeRGB('ChestLeds',0x000000ff, 0)
 
         firstCall['Initial'] = True
         firstCall['Ready']   = False
@@ -187,11 +192,9 @@ def Set():
     global kickOff
     global phase
     global firstCall
-    global control
     # if the first iteration
     if firstCall['Set']:
-        memProxy.insertData('dntBallDist', 0)
-        mot.killWalk()
+        mHandler.killWalk()
         # update info about team, it is possible that game is started in set phase
         (teamColor, kickOff, penalty) = gsc.getMatchInfo()
 
@@ -208,13 +211,6 @@ def Set():
             mot.keepNormalPose()
 
         audProxy.setOutputVolume(0)                        # set volume to zero
-        ledProxy.fadeRGB('ChestLeds', 0x00ffff00, 0)       # set chestledcolor to green
-
-        # Team color must be displayed on left foot (Reference to rules)
-        if (teamColor == 0):
-            ledProxy.fadeRGB('LeftFootLeds', 0x000000ff, 0)
-        else:
-            ledProxy.fadeRGB('LeftFootLeds', 0x00ff0000, 0)
 
         firstCall['Initial']   = True
         firstCall['Ready']     = True
@@ -224,49 +220,25 @@ def Set():
 
     # Head movements allowed in the set state
     # FIND A BALL #
-    if phase != 'BallFound' and phase != 'BallFoundKeep':
-        ball = vis.scanCircle(visThread)
-        if ball:
-            kalmanFilterBall.setFirstCall( True, ball )
-            control = [0,0,0]
-            if playerType == 0:
-                phase = 'BallFound'
-            else:
-                phase = 'BallFoundKeep'
-
-    # Keep finding the ball, it might move (or does it?)
-    else:
-        ball = visThread.findBall()
-        if not ball:
-            if playerType == 0:
-                phase = 'BallNotFound'
-            else:
-                phase = 'BallNotFoundKeep'
-        kalmanFilterBall.setFirstCall( True, ball )
-        ball = kalmanFilterBall.iterate( ball , [0,0,0] )
-        print 'Kalmanposition: ', ball
-
+    ball = vis.scanCircle(visThread)
+    if ball:
+        mHandler.setBallLoc( ball )
+        if playerType == 0:
+            phase = 'BallFound'
+        else:
+            phase = 'BallFoundKeep'
+        
 def Playing():
     """Playing state: play game according to phase transitions
     ledProxy:  Chest Green
     """
     global phase
     global firstCall
-    global coachThread
-
+   
     if firstCall['Playing']:
+        mHandler.killWalk()
         visThread.startScan()
-        try:
-            coachThread.isActive()
-        except:
-            try:
-                coachThread = coach.Coach('coach', ipList, memProxy, ledProxy)
-                coachThread.start()
-                print 'coaching started'
-            except:
-                pass
         print 'In playing state'
-        ledProxy.fadeRGB('ChestLeds', 0x0000ff00, 0)
         firstCall['Initial']   = True
         firstCall['Ready']     = True
         firstCall['Set']       = True
@@ -276,8 +248,7 @@ def Playing():
     # if nao has fallen down, stand up
     if mot.standUp():
         print 'Fallen'
-        #particleFilter.reset( position )
-        # relocalize
+        mot.killWalk()
     else:
         # localization features on field:
         # - goals, both yellow
@@ -290,14 +261,6 @@ def Playing():
         # - ...
         # position = particleFilter.meanState
         pass
-    try:
-        coachPhase = coachThread.getCoachData('dnt'+str(robot))
-        if coachPhase:
-            print 'Coach says: ', coachPhase
-            phase = coachPhase
-    except Exception as inst:
-        print inst
-        print 'Could not get an action'
     # Execute the phase as specified by phase variable
     phases.get(phase)()
 
@@ -311,14 +274,7 @@ def Penalized():
 
     if firstCall['Penalized']:
         print 'In penalized state'
-        ledProxy.fadeRGB('ChestLeds',0x00ff0000, 0)        # ledProxy on chest: red
-        mot.killWalk()                                     # stop walking
-
         visThread.stopScan()                               # stop looking for the ball
-        mot.stiff()                                        # stiffness on (just in case?)
-
-        mot.keepNormalPose()
-
         if playerType == 0:                                # if a player, goto unpenalized phase
             phase = 'Unpenalized'
         else:                                              # if a keeper, go to ballnotfoundkeep..
@@ -333,12 +289,10 @@ def Penalized():
         firstCall['Playing']   = True
         firstCall['Penalized'] = False
         firstCall['FirstPress']= False
-        print phase
 
 def Finished():
     visThread.stopScan()                                   # stop looking for the ball
-    ledProxy.off('AllLeds')                                # turn off leds
-    mot.killWalk()                                         # stop walking
+    mHandler.killWalk()                                         # stop walking
     mot.stance()                                           # sit down
     mot.setHead(0,0)                                       # set head straight
     time.sleep(1)                                          # wait until seated etc
@@ -362,8 +316,10 @@ def BallFoundKeep():
     if firstCall['BallFoundKeep']:
         mot.stance()
         firstCall['BallFoundKeep'] = False
+        mot.setFME(False)
+        
+    maxlength = 6
 
-    maxlength = 4
     halfmaxlength = (maxlength/2.0)
 
     #  FIND A BALL  #
@@ -404,24 +360,18 @@ def BallFoundKeep():
             yold /= halfmaxlength
             xnew /= halfmaxlength
             ynew /= halfmaxlength
-
-            xlast, ylast = ball_loc[-1]
-            xpenultimate, ypenultimate = ball_loc[-2]
-
-            distlast = math.sqrt(xlast**2 + ylast**2)
-            distpenultimate = math.sqrt(xpenultimate **2 + ypenultimate **2)
-            speedlast = distpenultimate  - distlast
-
+            
             # calc diff in distance
             distold = math.sqrt(xold**2 + yold**2)
             distnew = math.sqrt(xnew**2 + ynew**2)
             speed = distold - distnew
 
-            print 'Ball moving from ', xold, yold, 'to', xnew, ynew, '(mean). Speed', speed, 'Speedlast', speedlast
+            print 'Ball moving from ', xold, yold, 'to', xnew, ynew, '(mean). Speed', speed
 
             # calculate direction if speed is high enough
-            if speed > 0.1 or speedlast > 0.1:
-                #mot.stiffKnees()
+            if speed > 0.3:
+
+            #mot.stiffKnees()
 
                 # This is all triangular magic using similarity between two triangles formed by balllocations and Nao.
                 # Keep in mind that y-axis is inverted and that x is forward, y is sideways!
@@ -485,6 +435,8 @@ def BallNotFoundKeep():
     """
     global phase
     global ball_loc
+    mot.setFME(False)
+        
     visThread.startScan()
     # if a ball is found
     if vis.scanCircle(visThread):
@@ -508,13 +460,12 @@ def BallNotFoundKeep():
 def Standby():
     global phase
     ttsProxy.say('Waiting')
-    mot.killWalk()
+    mHandler.killWalk()
     time.sleep(0.3)
     phase = 'BallFound'
 
 def BallFound():
     global phase
-    global control
     global goalPosKnown
 
     # FIND A BALL #
@@ -525,26 +476,28 @@ def BallFound():
         #print 'RealPosition', ball
     if firstCall['BallFound']:
         mot.setFME(True)
-        ledProxy.fadeRGB('RightFaceLeds', 0x0000ff00, 0)
         firstCall['BallFound'] = False
         firstCall['BallNotFound'] = True
         # initialize mean mu for kalman filter
         if seen:
-            kalmanFilterBall.setFirstCall(True, ball)
-            control = [0,0,0]
-
-    ball = kalmanFilterBall.iterate(ball, control)
-    (x,y) = ball
+            mHandler.setBallLoc( ball )
+    
+    mHandler.setBallLoc( ball )    
+    ball = mHandler.getKalmanBallPos()
+    (x,y) = ball 
     memProxy.insertData('dntPhase', 'BallFound')
-    memProxy.insertData('dntBallDist', math.sqrt(x**2 + y**2))
-
-    if seen and x < 0.19 and -0.02 < y < 0.02:
+    
+    if seen and x < 0.17 and -0.02 < y < 0.02:
         print 'Kick'
         # BLOCKING CALL: FIND BALL WHILE STANDING STILL FOR ACCURATE CORRECTION
+<<<<<<< HEAD
         mot.killWalk()
         time.sleep(5)
         #mot.setFootSteps( ['LLeg', 'RLeg'], [[x-0.16, y, 0],[0,0,0]], [1.0, 2.0] )
         control = [0,0,0]
+=======
+        mHandler.killWalk()
+>>>>>>> 014e7f09e091b57e969ebaaf1d5ff738dc7ef578
         phase = 'Kick'
     else:
         if seen:
@@ -552,45 +505,31 @@ def BallFound():
             theta = math.atan(y/x)
             # hacked influencing of perception, causing walking forward to have priority
             theta = theta / 2.0     #if theta > 0.4    else theta / 5.5
-            x = (4.0 * (x - 0.18))  #if x > 0.5        else (x - 0.16) * 1.3
+            x = (3.0 * (x - 0.17))  #if x > 0.5        else (x - 0.16) * 1.3
             y = 0.6 * y             #if -0.1 < y < 0.1 else 2.0 * y
 
         else:
             print 'Not seen ball', x, y
             # TODO determine where ball is in headposition and look there instead of random places
-
-            head = mot.getHeadPos( False )
-            yaw = head[0]
-            pitch = head[1]
-            # slowly move head towards 0,0 position
-            mot.setHead( yaw / 1.5 , pitch / 1.5 )
-
             # hacked influencing, turn towards last found position first
             theta = math.atan(y/x) / 2.5
-            x = (x -0.5)
-            y = 0
+            x = 2.0 * (x -0.2)
+            y = 0.5 * y
 
-        x = max(-1, min(1, x))
-        y = max(-1, min(1, y))
-        theta = max(-1, min(1, theta))
-        mot.setWalkTargetVelocity(x , y, theta, 1.0)
+        mHandler.sWTV(x , y, theta, 0.7)
+        time.sleep(0.2)
         goalPosKnown = False, None
 
-
-        # maxXSpeed 0.117 m / s for nao , backwards a lot less
-        vX = x * 0.120 if x > 0 else x * 0.079
-        # maxYSppeed is 0.05 m/s
-        vY = y * 0.054
-        # maxTSpeed 0.4 rad / s
-        vT = theta * 0.410
-        control = [vX,vY,vT]
-        print ''
-
     # If covariance becomes too large, when?
-    if kalmanFilterBall.Sigma[0][0] > 0.05:
-        print 'Sigma kalmanfilter: ' , kalmanFilterBall.Sigma
+    if mHandler.KF.Sigma[0][0] > 0.1:
+        print 'Sigma kalmanfilter: ' , mHandler.KF.Sigma
+        if x > 0:
+            theta = math.atan(y/x)
+        else:
+            theta = 0
         print 'Perhaps the ball is lost, turning ', theta,'to find it'
-        mot.postWalkTo(0,0, theta)
+        mHandler.walkTo(0,0, theta)
+        
         # TODO somehow influence kalman mu based on turn
         phase = 'BallNotFound'
 
@@ -603,19 +542,13 @@ def KeepDistance():
     if ball:
         (x,y) = ball
         memProxy.insertData('dntPhase', 'KeepDistance')
-        memProxy.insertData('dntBallDist', math.sqrt(x**2 + y**2))
-
         theta = math.atan(y/x)
         # hacked influencing of perception, causing walking forward to have priority
         theta = theta / 2.5  if theta > 0.4    else theta / 5.5
         x = (2.0 * x - 0.4) if x > 0.5        else (x - 0.4) * 1.3
         y = 0.5 * y          if -0.1 < y < 0.1 else 2.0 * y
 
-        x = min( 1, max( -1, x))
-        y = min( 1, max( -1, y))
-        theta = min( 1, max( -1, theta))
-
-        mot.setWalkTargetVelocity(x , y, theta, 1.0)
+        mHandler.sWTV(x , y, theta, 1.0)
         phase = 'BallFound'
     else:
         phase = 'BallNotFound'
@@ -623,29 +556,23 @@ def KeepDistance():
 def BallNotFound():
     global ball_loc
     global phase
-    global control
     global goalPosKnown
 
     # if this is the first time the ball is not founnd
     if firstCall['BallNotFound']:
         memProxy.insertData('dntPhase', 'BallNotFound')
-        memProxy.insertData('dntBallDist', 0)
-        ledProxy.fadeRGB('RightFaceLeds',0x00ff0000, 0) # no ball, led turns red
-        mot.killWalk()
+        mHandler.killWalk()
         firstCall['BallFound'] = True
         firstCall['BallNotFound'] = False
-        control = [0,0,0]
-
     # try to find a ball
     ball = vis.scanCircle(visThread)
     if ball:
-        kalmanFilterBall.setFirstCall(True, ball )
-        control = [0,0,0]
+        mHandler.setBallLoc( ball )
         phase = 'BallFound'
         firstCall['BallNotFound'] = True
     else:
         # if no ball is found circle slowly while searching for it
-        mot.postWalkTo(0, 0, 2.1)
+        mHandler.postWalkTo(0, 0, 2.1)
         goalPosKnown = False, None
 
 def Kick():
@@ -655,10 +582,6 @@ def Kick():
 
     memProxy.insertData('dntPhase', 'Kick')
     visThread.stopScan()
-
-    ledProxy.fadeRGB('LeftFaceLeds',0x00000000, 0)         # no goal yet, left led turns black
-    ledProxy.fadeRGB('RightFaceLeds', 0x00ff0000, 0)       # no ball anymore, right led turns red
-
     # scan for a goal
     goal = None
     if goalPosKnown[0]:
@@ -667,7 +590,6 @@ def Kick():
         goal = vis.scanCircleGoal()
     if goal:
         goalPosKnown = (True, goal)
-
     print 'Kick phase: ', goal
     mot.setHead(0, 0.45)
     visThread.startScan()
@@ -677,24 +599,17 @@ def Kick():
     # Check if the ball is still there, wait until ball is found has passed
     # Something of a mean, ...
 
-    print 'Found ball: ', ball
-
-    #ball = kalmanFilterBall.iterate( ball, [0,0,0] )
     if not ball:
         print 'Ball gone'
         phase = 'BallNotFound'
     elif ball[0] > 0.25 or ball[1] > 0.1 or ball[1] < -0.1:
-        ledProxy.fadeRGB('RightFaceLeds', 0x00ff0000, 0)  #right led turns green
         print 'Ball too far'
         phase = 'BallFound'
     elif ball and not goal:
-        ledProxy.fadeRGB('RightFaceLeds', 0x00ff0000, 0)  #right led turns green
         mot.walkTo(0,0.04 + ball[1],0)
         mot.kick(0)
         phase = 'BallNotFound'
     else:
-        ledProxy.fadeRGB('RightFaceLeds', 0x00ff0000, 0)  #right led turns green
-
         # else a goal is found, together with it's color
         (color, kickangles ) = goal
         if type(kickangles[0]) == tuple:
@@ -706,11 +621,17 @@ def Kick():
 
         if color == 'Blue':
             goalColor = 0
-            ledProxy.fadeRGB('LeftFaceLeds',0x000000ff, 0) # blue goal
         else:
             goalColor = 1
-            ledProxy.fadeRGB('LeftFaceLeds',0x00ff3000, 0) # yellow goal , anyone got a better value?
         print 'Goalcolor', goalColor, 'KickAngle', kickangle
+        
+        # use kalman filter to position ball in 10 measurements 
+        c = 0
+        while c < 10:
+            c += 1
+            ball = visThread.findBall()
+            mHandler.setBallLoc( ball )
+        ball = mHandler.getKalmanBallPos()
         # Cases 1-3, if you see your own goal, kick to the other side
 
         if goalColor == teamColor:
@@ -729,10 +650,9 @@ def Kick():
             # Kick towards it.
 
             # general kick interface distributes kick
-            ledProxy.fadeRGB('RightFaceLeds', 0x00ff0000, 0)  #right led turns green
-            mot.kick(kickangle, kalmanFilterBall.iterate(ball, [0,0,0]))
-        ledProxy.fadeRGB('LeftFaceLeds',0x00000000, 0)
+            mot.kick(kickangle, ball)
         phase = 'BallNotFound'
+        ledProxy.fadeRGB('LeftFaceLeds', 0x00000000, 0)  # no goal yet, left led turns black
 
 def Unpenalized():
     """When unpenalized, a player starts at the side of the field
@@ -748,7 +668,7 @@ def Unpenalized():
     visThread.startScan()
     # so no matter what, it's always good to walk forward (2 meters, to the center of the field)
     if not(mot.isWalking()):
-        mot.postWalkTo(2, 0, 0)
+        mHandler.postWalkTo(2, 0, 0)
     phase = 'ReturnField'
 
 def ReturnField():
@@ -771,11 +691,6 @@ def awakeSoul():
         #print 'soul.py State: ', state
         state = gsc.getState()
         states.get(state)()
-    try:
-        # close all threads
-        coachThread.close()
-    except:
-        pass
     gsc.close()
     visThread.close()
     # particleFilter.close()

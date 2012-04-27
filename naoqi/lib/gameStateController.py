@@ -8,7 +8,7 @@ import gameController as gameC
 import buttonController as buttonC
 import threading
 
-class stateController(threading.Thread):
+class StateController(threading.Thread):
     # VARIABLES
     f = open('/home/nao/naoinfo/NAOINFO.txt','r')
     robot = int(f.readline())
@@ -18,13 +18,14 @@ class stateController(threading.Thread):
     lastCheck = 0
     secondaryState = 0
 
-    def __init__(self, name, ttsProxy, memProxy ):
+    def __init__(self, name, ttsProxy, memProxy, ledProxy, sensors ):
         threading.Thread.__init__(self)
         self.name = name
         self.running = True
-        self.bc = buttonC.buttonController( ttsProxy, memProxy )
+        self.bc = buttonC.buttonController( ttsProxy, memProxy, sensors )
         self.gc = gameC.gameController( self.team )
-
+        self.ledProxy = ledProxy
+        
     def __del__(self):
         self.running = False
         self.gc.close()
@@ -33,7 +34,9 @@ class stateController(threading.Thread):
         gcState = 0
         buttonState = 0
         now = time.time()
+        
         while(self.running):
+            previous = self.state
             # if gamecontroller active
             if self.gc.controlledRefresh():
                 gcState = self.gc.getGameState()                # get state from GameController
@@ -43,21 +46,51 @@ class stateController(threading.Thread):
                     self.state = 10
                 else:
                     self.state = gcState
+                self.manageLeds( self.state )
             # if gamecontroller not active, listen to buttons for some time (10 seconds) then try refreshing
             else: 
-                print 'Gc, not active, listen to buttonInterface'
+                #print 'Gc, not active, listen to buttonInterface'
                 now = time.time()
                 while time.time() - now < 10.0:
-                    self.state = self.listenToButtons(buttonState)
-                    buttonState = self.state
-            #print 'gamecontroller state : ', self.state
-                
+                    self.state = self.listenToButtons( self.state )
+                    self.manageLeds( self.state )
+
+    def manageLeds( self, state ): 
+        # case initial
+        if state == 0:
+            self.ledProxy.off('AllLeds')
+            # Team color must be displayed on left foot (Reference to rules)
+            if (self.getTeamColor == 0):
+                self.ledProxy.fadeRGB('LeftFootLeds', 0x000000ff, 0)
+            else:
+                self.ledProxy.fadeRGB('LeftFootLeds', 0x00ff0000, 0)
+        elif self.state == 1:
+            # ChestLed is blue
+            self.ledProxy.fadeRGB('ChestLeds',0x000000ff, 0)
+        elif self.state == 2:
+            # ChestLed is yellow
+            self.ledProxy.fadeRGB('ChestLeds', 0x00ffff00, 0)       # set chestledcolor to green
+            # Team color must be displayed on left foot (Reference to rules)
+            if (self.getTeamColor == 0):
+                self.ledProxy.fadeRGB('LeftFootLeds', 0x000000ff, 0)
+            else:
+                self.ledProxy.fadeRGB('LeftFootLeds', 0x00ff0000, 0)
+        elif self.state == 3:
+            # ChestLed is greens
+            self.ledProxy.fadeRGB('ChestLeds', 0x0000ff00, 0)
+        elif self.state == 10:
+            # ChestLed is red 
+            self.ledProxy.fadeRGB('ChestLeds',0x00ff0000, 0)                               
+        elif self.state == 4:
+            # Leds are off
+            self.ledProxy.off('AllLeds')                                
+
     def getState(self):
         return self.state
 
     def listenToButtons(self, buttonState):
         state = 0
-        if self.bc.getChestButton(): #change the phase if the ChestButton was pressed
+        if self.bc.chestButton(): #change the phase if the ChestButton was pressed
             if(buttonState == 0):    # initial   -> penalized
                 state = 10
             elif(buttonState == 10): # penalized -> playing

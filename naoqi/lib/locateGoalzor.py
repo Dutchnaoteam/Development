@@ -16,12 +16,12 @@ def markGoalCV(im, color):
     OUTPUT: returns an OpenCV color filtered image with values of the 
             color match, values over a threshold of 70 are sugested
     '''
-    size = (160,120) # Size of the images
+    size = (320,240) # Size of the images #Tijmen edited
     hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
     filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
     
     # Goalfilter values (made in Istanbul 06/07/2011)
-    if(color == 'blue'):
+    '''if(color == 'blue'):
         hueMin = 116
         hueMax = 130
         saturationMin = 117 
@@ -31,11 +31,29 @@ def markGoalCV(im, color):
     if(color == 'yellow'):
         hueMin = 20 
         hueMax = 41 
-        saturationMin = 55 
+        saturationMin = 100 
         saturationMax = 255
         valueMin = 60
         valueMax = 210 
-        
+    '''
+    # TODO AANPASSEN TIJMEN 
+    # Goalfilter values made in Eindhoven 04/2012
+    if(color == 'blue'):
+        hueMin = 106
+        hueMax = 113
+        saturationMin = 204 
+        saturationMax = 255 
+        valueMin = 119 
+        valueMax = 210
+    if(color == 'yellow'):
+        hueMin = 29 
+        hueMax = 39 
+        saturationMin = 102 
+        saturationMax = 255
+        valueMin = 188
+        valueMax = 210 
+            
+    
     hsvMin1 = cv.Scalar(hueMin, saturationMin, valueMin, 0)
     hsvMax1 = cv.Scalar(hueMax, saturationMax, valueMax, 0)
     cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
@@ -51,7 +69,7 @@ def calcXangle(xcoord):
     OUTPUT: returns the angle to the x coordinate with the middle of
     the image being 0 degrees
     '''
-    (width, height) = (160, 120)
+    (width, height) = (320, 240)
     xDiff = width/2 - xcoord
     distanceToFrame = 0.5 * width / 0.42860054745600146
     xAngle = math.atan(xDiff/distanceToFrame)
@@ -65,7 +83,7 @@ def convertImage(picture):
     OUTPUT: an OpenCV image
     '''
     global size
-    size = (160, 120)
+    size = (320, 240)
     # resize the image
     picture = picture.resize(size)
     # convert the type to OpenCV
@@ -95,7 +113,7 @@ def run(image, yawHead, color):
     #cv.SaveImage('smooth' + str(time.time()) +  '.jpg', image)
     
     threshold = 70   # threshold for the grayscale
-    (width, height) = (160,120) # resolution of the input images
+    (width, height) = (320,240) # resolution of the input images
     
     #######################ALGORITHMICDIVISION#######################
     
@@ -110,12 +128,12 @@ def run(image, yawHead, color):
                 while(image[ry,x] <= threshold):                         # start iterating by one pixel until a true pixel is found
                     ry += 1
                 checker = False
-                
-                # count until 15 pixels are found in a row or until a false pixel is found
-                for checky in xrange(ry, min(ry + 10, height)):   
+               
+                # count until 30 pixels are found in a row or until a false pixel is found
+                for checky in xrange(ry, min(ry + 20, height)):   
                     if (image[checky,x] <= 70):
                         break
-                    elif (checky == ry+9):
+                    elif (checky == ry+19):
                         checker = True
             if checker: 
                 break
@@ -126,10 +144,10 @@ def run(image, yawHead, color):
                     while(image[bry,x] <= threshold):           # start iterating by one pixel until a true pixel is found
                         bry = bry - 1
                     checker = False
-                    for checky in xrange(max(bry-10,0), bry):    # count until 15 pixels in this column are found or until a false pixel is found
+                    for checky in xrange(max(bry - 20,0), bry):    # count until 15 pixels in this column are found or until a false pixel is found
                         if (image[checky,x] <= 70):
                             break
-                        elif checky == bry-9 or checky == ry:   # also stop if lines overlap 
+                        elif checky == bry - 19 or checky == ry:   # also stop if lines overlap 
                             checker = True
                             
                     if (checker):                               # if bottom up searching goes past the starting pixel: Im an idiot
