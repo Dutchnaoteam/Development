@@ -33,6 +33,7 @@ class MotionHandler(threading.Thread):
         threading.Thread.__init__(self)
         
         self.debug  = debug
+        self.fallManager = True
         self.running = True
         self.PF = particleFilter.ParticleFilter( 200 ) # 200 samples for debugging
         self.KF = kalmanFilter.KalmanFilter( ) 
@@ -79,6 +80,21 @@ class MotionHandler(threading.Thread):
         self.KF.iterate( None, [x,y,t] )
         self.mot.walkTo( x, y, t )
     
+    def dive( direction ):
+        self.fallManager = False
+        if dir >= 0.5:
+            self.mot.diveRight()
+        elif dir <= -0.5:
+            self.mot.diveLeft()
+        elif 0.5 > dir <= 0:
+            self.mot.footRight()
+        elif -0.5 < dir < 0:
+            self.mot.footLeft()
+        self.fallManager = True
+        
+    def kick(angle ):
+        self.mot.kick( angle )
+        
     """Functions for localization"""
     def setControl( self, control ):
         self.control = control
@@ -87,7 +103,7 @@ class MotionHandler(threading.Thread):
     def setFeatures( self, measurements ):
         with self.lock:
             self.features = measurements
-	print 'Use once', measurements
+        print 'Use once', measurements
             
     def getFeatures(self):
         with self.lock:
@@ -100,10 +116,10 @@ class MotionHandler(threading.Thread):
             self.ballLoc = measurement
 
     def getBallLoc(self ):
-	with self.lock:
-	    m = self.ballLoc
-	    self.ballLoc = None
-	return m
+        with self.lock:
+            m = self.ballLoc
+            self.ballLoc = None
+        return m
     
     def getKalmanBallPos( self ):
         return self.KF.ballPos
@@ -126,10 +142,14 @@ class MotionHandler(threading.Thread):
                     print 'killed all'
                 else:
                     time.sleep(0.025)
-                    if self.mot.standUp():
-                        print 'Fallen'
-                        self.killWalk()
-                        break
+                    # get up if fallen
+                    # TODO implement stiffness off based on accX or accY
+                    if self.fallManager:
+                        if self.mot.standUp():
+                            print 'Fallen'
+                            self.killWalk()
+                            break
+                    # if a feature is found, use it immediately
                     if self.features or self.ballLoc:
                         break
             

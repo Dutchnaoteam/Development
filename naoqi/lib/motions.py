@@ -148,7 +148,7 @@ class Motions():
                     [0             ,  0           , 0          ,  0        ,  0        ,  0          ,  0          ],  0.3)
         self.motProxy.setAngles( ['LHipPitch', 'LAnklePitch', 'RHipPitch', 'RAnklePitch'],
                      [-1.5       , 0.8          , -1.5,       0.8], 0.3 )
-        time.sleep(0.9)
+        time.sleep(1)
 
         # move legs down, arms down to push
         self.motProxy.setAngles(['LShoulderPitch','RShoulderPitch','RHipPitch', 'LHipPitch'],
@@ -161,7 +161,7 @@ class Motions():
         self.motProxy.setAngles(['RShoulderRoll', 'LShoulderRoll'], [-0.25, 0.25], 0.5 )
         self.motProxy.setAngles(['LElbowRoll', 'RElbowRoll'], [0,0], 0.5)
         
-        time.sleep(0.3)
+        time.sleep(0.4)
         
         # twist legs around to sit with legs wide
         t = 0.4
@@ -1343,14 +1343,14 @@ class Motions():
             self.motProxy.angleInterpolation(names, angles, times, True)    
                                     
     # kick towards front, right leg
-    def kick(self, angle, coordinates = (0.05, -0.01) ):
-        if angle >= 0.6:
+    def kick(self, angle ):
+        if angle >= 1.0:
             self.sideRightKick()
         elif angle >= 0:
-            self.cartesianRight( angle, min( 0.04, max( coordinates[0], -0.2)), min ( max( coordinates[1], -0.1 ), 0.01 ) )            
-        elif -0.6 <= angle < 0:
-            self.cartesianLeft( angle, min( coordinates[0], 0.2), max ( min( coordinates[1], 0.1 ), -0.01 ) )
-        elif angle <= -0.6:
+            self.rKickAngled(angle )
+        elif -1.0 <= angle < 0:
+            self.lKickAngled( -angle )
+        elif angle <= -1.1:
             self.sideLeftKick()
     
     def kickStraight(self, angle):
