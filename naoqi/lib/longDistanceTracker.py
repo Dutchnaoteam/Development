@@ -27,7 +27,6 @@ motion = ALProxy("ALMotion", "127.0.0.1", 9559)
 import time
 
 def run(im, headInfo):
-    global i
     (cam, head) = headInfo
     # convert the image 
     im = convertImage(im)
@@ -170,13 +169,13 @@ def filterGreen(im):
 
     return filter
 
-def boundedBox(im_blurred, im_orig):
-    """ boundedBox(im_blurred, im_orig) -> im_orig
+def boundedBox(im_filter, im_orig):
+    """ boundedBox(im_filter, im_orig) -> im_orig
     
     calculates a bounding box around the white pixels of a
     single-channel thresholded image and sets it as ROI on
     the original image"""
-    bbox = cv.BoundingRect(cv.GetMat(im_blurred))
+    bbox = cv.BoundingRect(cv.GetMat(im_filter))
 
     # checking if a box is found
     _, _, width, height = bbox
