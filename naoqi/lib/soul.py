@@ -490,14 +490,7 @@ def BallFound():
     if seen and x < 0.17 and -0.02 < y < 0.02:
         print 'Kick'
         # BLOCKING CALL: FIND BALL WHILE STANDING STILL FOR ACCURATE CORRECTION
-<<<<<<< HEAD
-        mot.killWalk()
-        time.sleep(5)
-        #mot.setFootSteps( ['LLeg', 'RLeg'], [[x-0.16, y, 0],[0,0,0]], [1.0, 2.0] )
-        control = [0,0,0]
-=======
         mHandler.killWalk()
->>>>>>> 014e7f09e091b57e969ebaaf1d5ff738dc7ef578
         phase = 'Kick'
     else:
         if seen:
@@ -716,6 +709,20 @@ phases =     {
     'Standby': Standby,
     'KeepDistance' : KeepDistance
 }
+
+# Dictionary that stores if a phase has been called once already.
+# TODO find a better way to check if a phase or state has been called already, perhaps
+# keeping track of the previous (or all previous, as a log) states?
+firstCall = {'Initial' : True,
+             'Ready' : True,
+             'Set': True,
+             'Playing': True,
+             'Penalized': True,
+             'BallFoundKeep' : True,
+             'BallNotFoundKeep' : True,
+             'BallFound' : True,
+             'BallNotFound' : True,
+             'FirstPress' : True}
 
 awakeSoul()
 
