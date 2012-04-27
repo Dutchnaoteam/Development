@@ -335,7 +335,11 @@ class hsvGlade(wx.Frame):
         if self.hMin > self.hMax:
             message = str([[self.hMin.GetValue(),self.sMin.GetValue(),self.vMin.GetValue()], [self.hMax.GetValue(),self.sMax.GetValue(),vMax.GetValue()]])
         else:
-            message = str([[self.hMin.GetValue(),self.sMin.GetValue(),self.vMin.GetValue()], [180,self.sMax.GetValue(),self.vMax.GetValue()], [0,sMin.GetValue(),vMin.GetValue()], [hMax.GetValue(),sMax.GetValue(),vMax.GetValue()]])
+            hMin = self.hMin.GetValue(); hMax = self.hMax.GetValue()
+            sMin = self.sMin.GetValue(); sMax = self.sMax.GetValue()
+            vMin = self.vMin.GetValue(); vMax = self.vMax.GetValue()
+            message = str([[hMin,sMin,vMin], [180,sMax,vMax], [0,sMin,vMin], [hMax,sMax,vMax]])
+            #message = str([[self.hMin.GetValue(),self.sMin.GetValue(),self.vMin.GetValue()], [180,self.sMax.GetValue(),self.vMax.GetValue()], [0,sMin.GetValue(),vMin.GetValue()], [hMax.GetValue(),sMax.GetValue(),vMax.GetValue()]])
         try:
             self.client.send(message)
         except Exception as e:
