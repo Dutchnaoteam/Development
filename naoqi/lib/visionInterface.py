@@ -112,7 +112,7 @@ class VisionInterface():
                 if loc:
                     return loc
            
-    def scanCircleGoal(self,speed = 0.25): 
+    def scanCircleGoal(self,speed = 0.125): 
         yawRange = [-1.5, 1.5]    
         # initialize variables
         realGoal = None
