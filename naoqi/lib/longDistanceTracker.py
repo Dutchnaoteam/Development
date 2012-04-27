@@ -7,16 +7,6 @@ if maxValue < x:
     return None
 calculatePosition
 return (xPos, yPos, xAngle, yAngle)
-
-height of image is 240
-angle of image in height is 47.80 degrees
-radians per pixel in height is 0.834267382 radians
-radians per pixel = 0.83 / 240 = 0.00345833333   
-
-height of image is 320
-angle of image in height is 60.97 degrees
-radians per pixel in height is 1.064 radians
-radians per pixel = 1.064 / 320 = 0.003325   
 '''
 
 import cv
@@ -31,14 +21,15 @@ def run(im, headInfo):
     (cam, head) = headInfo
     # convert the image 
     im = convertImage(im)
-
+    timeStamp = str(time.time())
+    cv.SaveImage(timeStamp + 'Raw' +  '.png', im)
     #use filterGreen to take only the image
     green_thresh = filterGreen(im)
 
     im = boundedBox(green_thresh, im)
     # filter the image
     im = filterImage(im)
-    #cv.SaveImage('filter' + str(time.time()) +  '.jpg', im)
+    cv.SaveImage(timeStamp + 'Filter' +  '.png', im)
     # blur the image
     cv.Smooth(im, im, cv.CV_BLUR, 2, 2)
     # find the max value in the image    
@@ -73,10 +64,9 @@ def calcPosition(coord, cam, headInfo):
     yCoord = yCoord - height/2.0
     #print 'pixelCoord from centre: ', xCoord, ', ', yCoord
     # convert pixel coord to angle
-    radiusPerPixelHeight = 0.00345833333
-    radiusPerPixelWidth = 0.003325
-    xAngle = xCoord * radiusPerPixelWidth    
-    yAngle = yCoord * radiusPerPixelHeight
+    dtf = 135.9 # distance to frame
+    xAngle = atan( xCoord / dtf )
+    yAngle = atan( yCoord / dtf )
     if -1 < xAngle < 1 and -1 < yAngle < 1:
         yAngle = -0.47 - headInfo[0] if yAngle + headInfo[0] < -0.47 else yAngle
         motion.changeAngles(['HeadPitch', 'HeadYaw'], [0.3*yAngle, 0.3*xAngle], 0.7)  # 0.3*angles for smoother movements, optional. Smoothinggg. 
