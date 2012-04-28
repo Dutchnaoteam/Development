@@ -6,18 +6,19 @@
 # Download wx at: www.wxpython.org
 # (Optional) Download wxGlade at: wxglade.sourceforge.net
 
-from naoqi import ALProxy
-from PIL import Image
 import wx
 import colorsys
 import magicWand
 import socket
 import time
 import threading
+# own file
+import filterTools
 
 '''
 TODO
-transfer data between gui and nao
+update filter image
+create toggle for filter options
 '''
 
 # begin wxGlade: extracode
@@ -33,6 +34,7 @@ class hsvGlade(wx.Frame):
         self.hsvRangeSizer_staticbox = wx.StaticBox(self, -1, "Set HSV range")
         self.connectSizer_staticbox = wx.StaticBox(self, -1, "Connect")
         self.naoVisionSizer_staticbox = wx.StaticBox(self, -1, "Nao Vision")
+        
         # Menu Bar
         self.TestSuite_menubar = wx.MenuBar()
         wxglade_tmp_menu = wx.Menu()
@@ -53,7 +55,7 @@ class hsvGlade(wx.Frame):
         # Menu Bar end
         self.TestSuite_statusbar = self.CreateStatusBar(1, 0)
         self.imageWindow = PreviewImage(self, -1)
-        self.filterWindow = PreviewFilter(self, -1)
+        self.filterWindow = PreviewImage(self, -1)
         self.list_box_1 = wx.ListBox(self, -1, choices=["Ball", "Blue Goal", "Yellow Goal"])
         self.emptyText = wx.StaticText(self, -1, "")
         self.minText = wx.StaticText(self, -1, "Min:")
@@ -90,11 +92,13 @@ class hsvGlade(wx.Frame):
         self.gMax = 0
         self.bMin = 0
         self.bMax = 0
-        self.vidProxy = None
+        self.visionTools = None
         self.vmName = "python_GVM"
         self.imageResolution = 0    #resolution={0,1,2}
-        self.imageColorSpace = 11   #colorSpace={0,9,10,11,12,13}
+        self.imageColorSpace = 13   #colorSpace={0,9,10,11,12,13}
         self.imageFps = 30          #fps={5,10,15,30}
+        self.imageWindow.image = wx.Image('./ball2.png', wx.BITMAP_TYPE_PNG)
+        self.filterWindow.image = wx.Image('./ballFilter.png', wx.BITMAP_TYPE_PNG)
         
         # events
         self.magicRatioTextCtrl.Bind(wx.EVT_TEXT_ENTER, self.setMagicRatio)
@@ -213,16 +217,18 @@ class hsvGlade(wx.Frame):
 
     #>> TEST <<
     def test(self, event):
-        if self.testImageS == 'old':
-            pilImage = Image.open('./ballTest.png')
-            self.testImageS = 'new'
-        else:
-            pilImage = Image.open('./ball2.png')
-            self.testImageS = 'old'
-        image = self.pilToWx(pilImage)
-        #image = wx.Image('./ballTest.png', wx.BITMAP_TYPE_PNG)
-        self.imageWindow.image = image
-        self.imageWindow.Refresh()
+        testTools = filterTools.VisionTestTools()
+        print 'hi'
+        image = self.imageWindow.image
+        image = testTools.wxToCv(image)
+        #TODO make saveImage function in filterTools
+        testTools.saveImageCv(image, 'wxToCv.png')
+        # filter image
+        (hsvMin, hsvMax) = self.getRangeHSV()
+        filter = testTools.filterImage(image, hsvMin, hsvMax)
+        self.filterWindow.image = testTools.cvFilterToWx(filter)
+        # refresh
+        self.filterWindow.Refresh()
     #>> END <<
     
     def setMagicRatio(self, evt):
@@ -241,12 +247,6 @@ class hsvGlade(wx.Frame):
             self.magicRatioTextCtrl.SetValue('0.125')
 
         self.setStatusText(status)
-
-    def pilToWx(self, pilImage):
-        image = wx.EmptyImage(pilImage.size[0], pilImage.size[1])
-        image.SetData(pilImage.convert("RGB").tostring())
-        image.SetAlphaData(pilImage.convert("RGBA").tostring()[3::4])
-        return image
 
     def setStatusText(self, status):
         for i in range(len(status)):
@@ -330,22 +330,6 @@ class hsvGlade(wx.Frame):
             self.vMin.SetValue(vMax)
             self.vMax.SetValue(vMin)
  
-        # TODO send hsv-ranges to Nao
-        if self.hMin > self.hMax:
-            message = str([[self.hMin.GetValue(),self.sMin.GetValue(),self.vMin.GetValue()], [self.hMax.GetValue(),self.sMax.GetValue(),vMax.GetValue()]])
-        else:
-            hMin = self.hMin.GetValue(); hMax = self.hMax.GetValue()
-            sMin = self.sMin.GetValue(); sMax = self.sMax.GetValue()
-            vMin = self.vMin.GetValue(); vMax = self.vMax.GetValue()
-            message = str([[hMin,sMin,vMin], [180,sMax,vMax], [0,sMin,vMin], [hMax,sMax,vMax]])
-            #message = str([[self.hMin.GetValue(),self.sMin.GetValue(),self.vMin.GetValue()], [180,self.sMax.GetValue(),self.vMax.GetValue()], [0,sMin.GetValue(),vMin.GetValue()], [hMax.GetValue(),sMax.GetValue(),vMax.GetValue()]])
-        try:
-            self.client.send(message)
-        except Exception as e:
-            print "There is no Nao receiving this hsv-range."
-            #print type(e)
-            #print e.args
-            #print e
 
     def allZeros(self):
         return self.hMin.GetValue()==self.hMax.GetValue()== \
@@ -407,7 +391,6 @@ class hsvGlade(wx.Frame):
 
         self.setStatusText(status)
 
-    # TODO
     def connect(self, event):
         i = self.ipListBox.GetSelection()
         if i>=0:
@@ -416,10 +399,10 @@ class hsvGlade(wx.Frame):
             
             try:
                 # connect with Nao
-                self.vidProxy = ALProxy("ALVideoDevice", ip, 9559)
-                self.vidProxy.setParam(18,1)    #camera={top=0, bottom=1}
-                self.vidProxy.startFrameGrabber()
-                self.subscribe()
+                self.visionTools = filterTools.VisionTools(ip, self.vmName)
+                self.visionTools.setParam(18,1)    #camera={top=0, bottom=1}
+                self.visionTools.startFrameGrabber()
+                self.visionTools.subscribe()
                 # start timer
                 self.timer.Start(self.timerInterval)
                 # change buttons
@@ -434,26 +417,15 @@ class hsvGlade(wx.Frame):
                 self.setStatusText(["Could not connect to " + ip + "."])
         else:
             self.setStatusText(["T_T First add an IP"])
-
-    def unsubscribe(self):
-        try:
-            self.vidProxy.unsubscribe(self.vmName)
-        except:
-            pass
-    
-    def subscribe(self):
-        self.unsubscribe()
-        return self.vidProxy.subscribe(self.vmName, self.imageResolution, self.imageColorSpace, self.imageFps)
         
-    # TODO
     def disconnect(self, event):
         self.setStatusText(["<_< Disconnecting..."])
         
         # disconnect
         try:
             # disconnect from Nao
-            self.unsubscribe()
-            self.vidProxy.stopFrameGrabber()
+            self.visionTools.unsubscribe()
+            self.visionTools.stopFrameGrabber()
             # stop timer
             self.timer.Stop()
             # change buttons
@@ -466,13 +438,19 @@ class hsvGlade(wx.Frame):
             print e.args
             print e
             self.setStatusText(["T_T Could not disconnect."])
-            
+    
+    # TODO fix cvToWx
     def updateImage(self, event):
-        alImage = self.vidProxy.getImageRemote(self.vmName)
-        size=(alImage[0],alImage[1])
-        image = Image.frombuffer('RGB', size, alImage[6], 'raw', 'RGB', 0, 1)
-        self.imageWindow.image = self.pilToWx(image)
+        # raw image
+        image = self.visionTools.getImage()
+        self.imageWindow.image = self.visionTools.cvToWx(image)
+        # filter image
+        (hsvMin, hsvMax) = self.getRangeHSV()
+        filter = self.visionTools.filterImage(image, hsvMin, hsvMax)
+        self.filterWindow.image = self.visionTools.cvTowx(filter)
+        # refresh
         self.imageWindow.Refresh()
+        self.filterWindow.Refresh()
 
     def hsvSpinCtrl(self, event):
         pass    
@@ -480,32 +458,27 @@ class hsvGlade(wx.Frame):
     def paintGradient(self, event):
         print "paintGradient"
         dc = wx.PaintDC(self.gradientPanel)
-        (rgbMin, rgbMax) = self.getRange()
-        dc.GradientFillLinear((-1,-1,-1,-1), rgbMin, rgbMax, wx.EAST)
+        (rgbMin, rgbMax) = self.getRangeRGB()
+        dc.GradientFillLinear((-1,-1,-1,-1), self.tupleToWxColour(rgbMin), self.tupleToWxColour(rgbMax), wx.EAST)
 
-    def getRange(self):
+    def tupleToWxColour(self, (a,b,c)):
+        return wx.Colour(a,b,c)
+    
+    def getRangeHSV(self):
+        return ( (self.hMin.GetValue(),self.sMin.GetValue(),self.vMin.GetValue()), (self.hMax.GetValue(),self.sMax.GetValue(),self.vMax.GetValue()) )
+        
+    def getRangeRGB(self):
         # convert between colourspaces
-        hMin = self.hMin.GetValue()
-        hMax = self.hMax.GetValue()
-        sMin = self.sMin.GetValue()
-        sMax = self.sMax.GetValue()
-        vMin = self.vMin.GetValue()
-        vMax = self.vMax.GetValue()
+        ((hMin,sMin,vMin), (hMax,sMax,vMax)) = self.getRangeHSV()
         (rMin, gMin, bMin) = colorsys.hsv_to_rgb(hMin/180.0, \
                                                  sMin/255.0, \
                                                  vMin/255.0)
         (rMax, gMax, bMax) = colorsys.hsv_to_rgb(hMax/180.0, \
                                                  sMax/255.0, \
                                                  vMax/255.0)
-        rMin *= 255
-        rMax *= 255
-        gMin *= 255
-        gMax *= 255
-        bMin *= 255
-        bMax *= 255
-        rgbMin = wx.Colour(rMin, gMin, bMin)
-        rgbMax = wx.Colour(rMax, gMax, bMax)
-        return (rgbMin, rgbMax)
+        rMin *= 255; rMax *= 255; gMin *= 255
+        gMax *= 255; bMin *= 255; bMax *= 255
+        return ((rMin,gMin,bMin), (rMax,gMax,bMax))
 
 # end of class hsvGlade
 
@@ -561,12 +534,10 @@ class PreviewPalette(wx.Panel):
         return color
 
 class PreviewImage(wx.Panel):
-    #TODO make function for changing the image
     def __init__(self, parent, id=wx.ID_ANY,
                  pos=wx.DefaultPosition, size=(-1,-1)):#size=wx.DefaultSize):
         wx.Panel.__init__(self, parent, id, pos, size)
-        self.image = wx.Image('./ball2.png', wx.BITMAP_TYPE_PNG)
-        self.SetMinSize(self.image.GetSize())
+        self.SetMinSize((160,120))
         wx.EVT_PAINT(self, self.OnPaint) 
 
     def OnPaint(self, event): 
@@ -576,22 +547,6 @@ class PreviewImage(wx.Panel):
         (winX, winY) = self.GetSize()
         tempImage = self.image.Scale(winX, winY)
         dc.DrawBitmap(wx.BitmapFromImage(tempImage), 0, 0)
-
-class PreviewFilter(wx.Panel): 
-    def __init__(self, parent, id=wx.ID_ANY,
-                 pos=wx.DefaultPosition, size=(-1,-1)):#size=wx.DefaultSize):
-        wx.Panel.__init__(self, parent, id, pos, size)
-        self.filter = wx.Image('./ballFilter.png', wx.BITMAP_TYPE_PNG)
-        self.SetMinSize(self.filter.GetSize())
-        wx.EVT_PAINT(self, self.OnPaint) 
-
-    def OnPaint(self, event): 
-        self.Paint(wx.PaintDC(self)) 
-
-    def Paint(self, dc):
-        (winX, winY) = self.GetSize()
-        tempFilter = self.filter.Scale(winX, winY)
-        dc.DrawBitmap(wx.BitmapFromImage(tempFilter), 0, 0)
 
 class Client(threading.Thread):
     on = False
