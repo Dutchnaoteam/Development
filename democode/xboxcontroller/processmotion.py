@@ -52,6 +52,7 @@ def processInput(input, motionclass):
             if (button == 0):       #A - stand-up when falling down
                 print "standing up"
                 motionclass.standUp()
+                return "action"
             elif (button == 1):     #B - toggle stiffness
                 if (stiff == 1):
                     print "stiffness off"
@@ -61,27 +62,35 @@ def processInput(input, motionclass):
                     print "stiffness on"
                     motionclass.stiff()
                     stiff = 1
+                return "action"
             elif (button == 4):     #LB - shoot with left leg
                 print "shoot left"
-                motionclass.cartesianLeft(0,0.05,0)
+                motionclass.normalPose()
+                motionclass.cartesianLeft(0,0.08,0)
+                return "action"
             elif (button == 5):     #RB - shoot with right leg
                 print "shoot right"
-                motionclass.cartesianRight(0,0.05,0)
+                motionclass.normalPose()
+                motionclass.cartesianRight(0,0.08,0)
+                return "action"
         
         #actions which are allowed todo when walking
         if (button == 6):       #back-button
-            print "Quitting..." 
+            print "quitting..." 
             motionclass.stance()
             time.sleep(2)
+            print ">stiffness off"
             motionclass.kill()
             stiff = 0
             return "quit"
         elif (button == 7):     #start-button
-            print "pausing"
+            print "pausing.."
             motionclass.stance()
             time.sleep(2)
+            print ">stiffness off"
             motionclass.kill()
             stiff = 0
+            print "paused"
         elif (button == 2):     #X (superspeed)
             superSpeed = 1
    
@@ -113,14 +122,16 @@ def processInput(input, motionclass):
 
     #joystick            
     if (input.type == 7):
-        angle = input.dict["value"]
+        angle = round(input.dict["value"], 1)
+        axis = input.dict["axis"]
         
-        if (angle < -0.4):       #rotate left
-            veloT = rotateVelocity
-        elif (angle > 0.4):  #rotate right
-            veloT = -rotateVelocity
-        elif ((angle  > -0.005) and (angle < 0.005)): 
-            veloT = 0 
+        if (axis == 4):             #right joystick, horizontal movement
+            if (angle < -0.6):      #rotate left
+                veloT = rotateVelocity
+            elif (angle > 0.6):     #rotate right
+                veloT = -rotateVelocity
+            elif ((angle  > -0.2) and (angle < 0.2)): 
+                veloT = 0 
         
     #do movement
     if ((veloX != veloX_old) or (veloY != veloY_old) or (veloT != veloT_old) or (superSpeed != superSpeed_old)):
@@ -144,13 +155,15 @@ def processInput(input, motionclass):
             if (veloT != veloT_old):
                 veloT = veloT*2                
             
-        print "executing: x:" + str(veloX) + " y:"+ str(veloY) + " t:" + str(veloT) + " stiff:" + str(stiff) + " speed:" + str(superSpeed)
+        print "executing walk: x:" + str(veloX) + "\t y:"+ str(veloY) + "\t t:" + str(veloT) + "\t stiff:" + str(stiff) + " speed:" + str(superSpeed)
         motionclass.setWalkTargetVelocity(veloX,veloY,veloT,1)
         
         veloX_old = veloX
         veloY_old = veloY
         veloT_old = veloT
         superSpeed_old = superSpeed
+        
+        return "action"
     return None
     
 #######################################################

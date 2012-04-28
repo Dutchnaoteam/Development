@@ -16,7 +16,8 @@
 # 4) get Nao-ipadress
 # 5) In terminal, goto the dir containing the above described files 
 # 6) run: 
-#      terminal> python main.py <NaoIPadress>
+#      terminal> python main.py <NaoIPadress> <JoystickID>
+#           (JoystickID is by default '0', unless multiple joysticks are attached)
 # 7) enjoy :) [programme controls can be found in 'processmotion.py']
 #
 
@@ -32,12 +33,15 @@ print "> searching joystick..."
 import pygame
 pygame.init()
 pygame.joystick.init()
-joystickID = 0
-myjoy = pygame.joystick.Joystick(joystickID)	
+print ">>> found: " + str(pygame.joystick.get_count()) + " joysticks"
 
-print "> setting up joystick..."
+joystickID = 0
+if (len(sys.argv) > 2):
+    joystickID = int(sys.argv[2])
+print ">>> selected joystick: " + str(joystickID) 
+myjoy = pygame.joystick.Joystick(joystickID)	
 myjoy.init()
-print ">>> Joystick: "  + myjoy.get_name()
+print ">>> joystick initialized: "  + myjoy.get_name()
 
 print "> importing naoqi..."
 from naoqi import ALProxy
@@ -61,7 +65,9 @@ while True:
     try:
         e = pygame.event.wait()
         r = processmotion.processInput(e, motionclass)
-        if (r == "quit"):
+        if (r == "action"):
+            print " >>> executed"
+        elif (r == "quit"):
             print "quit."
             exit(1)
             break
