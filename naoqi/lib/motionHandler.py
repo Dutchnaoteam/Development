@@ -4,6 +4,7 @@ import time
 import math
 import particleFilter
 import kalmanFilter
+import logging
 from socket import *
 
 def debug():
@@ -49,7 +50,7 @@ class MotionHandler(threading.Thread):
         except:
             pass
         self.running = False
-        print 'motionHandler closed safely'
+        logging.info( 'motionHandler closed safely' )
     
     """Functions for motion"""
     def sWTV( self, x, y, t, f ):
@@ -87,7 +88,7 @@ class MotionHandler(threading.Thread):
     def setFeatures( self, measurements ):
         with self.lock:
             self.features = measurements
-	print 'Use once', measurements
+	logging.debug( 'Use once' + str(measurements) )
             
     def getFeatures(self):
         with self.lock:
@@ -116,18 +117,18 @@ class MotionHandler(threading.Thread):
             now = time.time()
             while time.time() - now < 0.5:
                 if self.gsc.getState() == 10:
-                    print 'Penalized by motionHandler!!!\n'
+                    logging.info( 'Penalized by motionHandler!!!' )
                     while self.mot.isWalking():
                         self.killWalk()                        
                     self.mot.motProxy.killTasksUsingResources(['HeadYaw', 'HeadPitch'])
                     time.sleep(0.5)
                     self.mot.setHead(0, 0)
                     self.mot.keepNormalPose()
-                    print 'killed all'
+                    logging.debug( 'killed all' )
                 else:
                     time.sleep(0.025)
                     if self.mot.standUp():
-                        print 'Fallen'
+                        logging.debug( 'Fallen' )
                         self.killWalk()
                         break
                     if self.features or self.ballLoc:

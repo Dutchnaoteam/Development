@@ -44,14 +44,14 @@ def markGoalCV(im, color):
         saturationMin = 204 
         saturationMax = 255 
         valueMin = 119 
-        valueMax = 210
+        valueMax = 197
     if(color == 'yellow'):
         hueMin = 29 
         hueMax = 39 
         saturationMin = 102 
-        saturationMax = 255
+        saturationMax = 204
         valueMin = 188
-        valueMax = 210 
+        valueMax = 255 
             
     
     hsvMin1 = cv.Scalar(hueMin, saturationMin, valueMin, 0)

@@ -15,7 +15,7 @@ def rand(m,n):
 def show(matrix):
     # Print out matrix
     for col in matrix:
-        print col 
+        logging.debug( col ) 
 
 def transpose(matrix):
     new_matrix = zero(len(matrix[0]), len(matrix))
@@ -26,7 +26,7 @@ def transpose(matrix):
 
 def inverse3D(matrix):
     if len(matrix) != 3 or len(matrix[0]) != 3:
-        print 'Matrix must be 3x3 for this inverse function'
+        logging.warning( 'Matrix must be 3x3 for this inverse function' )
     else:
         new_matrix = zero(3,3)
         a= matrix[0][0]
@@ -57,11 +57,11 @@ def inverse3D(matrix):
 
             return new_matrix            
         except:
-            print 'Matrix can not be inverted.'
+            logging.debug( 'Matrix can not be inverted.' )
             
 def inverse2D(matrix):
     if len(matrix) != 2 or len(matrix[0]) != 2:
-        print 'Matrix must be 2x2 for this inverse function'
+        logging.warning( 'Matrix must be 2x2 for this inverse function' )
     else:
         new_matrix = zero(2,2)
         a= matrix[0][0]
@@ -81,7 +81,7 @@ def inverse2D(matrix):
             new_matrix[1][1] = det * a
             return new_matrix
         except:
-            print 'Matrix can not be inverted\n', matrix
+            logging.debug( 'Matrix can not be inverted\n', str(matrix) )
 
  
 def Cholesky(A, ztol= 1.0e-5):
@@ -95,7 +95,7 @@ def Cholesky(A, ztol= 1.0e-5):
            t[i][i] = 0.0
         else: 
            if d < 0.0:
-              print A
+              logging.debug( A)
               raise ValueError, "Matrix not positive-definite"
            t[i][i] = math.sqrt(d)
         for j in range(i+1, nrows):
@@ -109,8 +109,8 @@ def Cholesky(A, ztol= 1.0e-5):
         
 def subtract(matrix1,matrix2):
     if len(matrix1) != len(matrix2) or len(matrix1[0]) != len(matrix2[0]):
-        print 'Matrices must be of same size for subtraction'
-        print matrix1,matrix2
+        logging.warning( 'Matrices must be of same size for subtraction')
+        logging.warning( str(matrix1)+str(matrix2))
         raise ValueError
     else:
         new_matrix = zero(len(matrix1), len(matrix1[0]))
@@ -121,8 +121,8 @@ def subtract(matrix1,matrix2):
 
 def plus(matrix1,matrix2):
     if len(matrix1) != len(matrix2) or len(matrix1[0]) != len(matrix2[0]):
-        print 'Matrices must be of same size for addition'
-        print matrix1,matrix2
+        logging.warning( 'Matrices must be of same size for addition')
+        logging.debug( str(matrix1)+str(matrix2))
         raise ValueError
     else:
         new_matrix = zero(len(matrix1), len(matrix1[0]))
@@ -135,7 +135,7 @@ def mult(matrix1,matrix2):
     # Matrix multiplication
     if len(matrix1[0]) != len(matrix2):
         # Check matrix dimensions
-        print 'Matrices must be m*n and n*p to multiply!'
+        logging.warning( 'Matrices must be m*n and n*p to multiply!')
     else:
         # Multiply if correct dimensions
         new_matrix = zero(len(matrix1),len(matrix2[0]))
@@ -165,5 +165,5 @@ def time_mult(matrix1,matrix2):
     start = clock()
     new_matrix = mult(matrix1,matrix2)
     end = clock()
-    print 'Multiplication took ',end-start,' seconds'
+    logging.info( 'Multiplication took '+str(end-start)+' seconds')
  

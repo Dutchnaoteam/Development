@@ -7,6 +7,7 @@ import time
 import gameController as gameC
 import buttonController as buttonC
 import threading
+import logging
 
 class StateController(threading.Thread):
     # VARIABLES
@@ -49,7 +50,7 @@ class StateController(threading.Thread):
                 self.manageLeds( self.state )
             # if gamecontroller not active, listen to buttons for some time (10 seconds) then try refreshing
             else: 
-                #print 'Gc, not active, listen to buttonInterface'
+                #logging.info( 'Gc, not active, listen to buttonInterface' )
                 now = time.time()
                 while time.time() - now < 10.0:
                     self.state = self.listenToButtons( self.state )

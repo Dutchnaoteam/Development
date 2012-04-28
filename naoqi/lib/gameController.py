@@ -3,6 +3,8 @@
 
 from socket import *
 import time
+import logging
+
 
 # Double Dictionary
 class Ddict(dict):
@@ -66,9 +68,14 @@ class gameController():
         self.host = host
         self.port = port
         # Create socket and bind to address
-        self.socket = socket(AF_INET,SOCK_DGRAM,)
-        self.socket.bind((host,port))
-        self.socket.setblocking(0)
+        try:
+            self.socket = socket(AF_INET,SOCK_DGRAM,)
+            self.socket.bind((host,port))
+            self.socket.setblocking(0)
+        except Exception as e:
+            logging.error(e)
+            logging.error('closing game controller')
+            self.close()
 
     # DESTRUCTOR
     def __del__(self):
@@ -76,6 +83,7 @@ class gameController():
 
     def close(self):
         self.socket.close()
+        logging.info('gameController and it\'s socket closet safely')
     
     def controlledRefresh(self):
         active = False
@@ -105,7 +113,7 @@ class gameController():
             # Set the socket parameters
                 
             if not(ord(data[68]) == self.ourTeamNum or ord(data[20]) == self.ourTeamNum):
-                print 'wrong gc'
+                logging.warning( 'wrong gc' )
             else:
                 self.header = data[0:4]
                 # Data
@@ -130,8 +138,8 @@ class gameController():
                         # robot = team['nao'+str(r)]
                         team['nao'+str(r)]['penalty'] = self.stringToDecimal([data[24 + r*4 +(48*t)], data[25 + r*4+(48*t)]])
                         team['nao'+str(r)]['unpenalizedCountdown'] = self.stringToDecimal([data[26+r*4+(48*t)], data[27+r*4+(48*t)]])
-                        #print 'r' + str(r)
-                        #print _stringToDecimal([data[24 + r*4 +(48*t)], data[25 + r*4+(48*t)]])
+                        #logging.debug( 'r' + str(r) )
+                        #logging.debug( str(_stringToDecimal([data[24 + r*4 +(48*t)])+' ' +str(data[25 + r*4+(48*t)]])) )
 
                 self.time = time.time()
     

@@ -2,6 +2,7 @@
 # By: Camiel Verschoor, Sander Nugteren & Erik van Egmond
 
 import time
+import logging
 
 class buttonController():
     # VARIABLES
@@ -23,7 +24,7 @@ class buttonController():
     # FUNCTIONS
     def chestButton(self):
         if self.memProxy.getData("ChestButtonPressed", 0):
-            print 'Pressed'
+            logging.debug( 'Pressed' )
             while self.memProxy.getData("ChestButtonPressed", 0):
                 pass
             return 1

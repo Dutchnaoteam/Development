@@ -16,6 +16,7 @@ import struct
 import time
 import threading
 import earlights
+import logging
 from naoqi import ALProxy
 
 #we first insert some data that coach needs to know about every Nao
@@ -74,9 +75,9 @@ class Coach(threading.Thread):
             
             ballSeen = list()
             #see which nao is closest
-            #print 'dict:' ,self.proxyDict
+            #logging.debug( 'dict:' +str(self.proxyDict) )
             
-            print self.activeIPs
+            logging.debug( self.activeIPs )
             for ip in self.ipList: 
                 
                 try:
@@ -114,7 +115,7 @@ class Coach(threading.Thread):
                 self.ipList = self.failedIpList
                 self.failedIpList = list()
                 for ip in self.ipList: 
-                    print '********* RETESTING ', ip, '*********'
+                    logging.debug( '********* RETESTING '+ str(ip)+ '*********' )
                     try:
                         # 'receive' messages
                         proxy = self.proxyDict[ip]                       
@@ -144,7 +145,7 @@ class Coach(threading.Thread):
                             
                 
             
-            print 'Saw ball: ', ballSeen, 'Closest: ' ,closestNao , 'at: ',minDist          
+            logging.debug( 'Saw ball: '+ str(ballSeen)+ 'Closest: ' +str(closestNao) + 'at: '+str(minDist)  )        
             messageOut = list()
             # For every nao (including keeper, might come in handy later)
             # if keeper, dont alter actions

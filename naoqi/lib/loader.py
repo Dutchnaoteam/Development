@@ -6,6 +6,7 @@ from naoqi import ALProxy
 import time
 import os
 import sys
+import logging
 
 # Proxies
 ttsProxy = ALProxy("ALTextToSpeech", "127.0.0.1", 9559)

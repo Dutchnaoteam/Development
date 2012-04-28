@@ -29,7 +29,7 @@ class Motions():
         try:
             self.motProxy.setFallManagerEnabled(arg)
         except:
-            print 'Could not switch off FallManager. '
+            logging.warning( 'Could not switch off FallManager. ')
             
     # set parts of the footgaitconfig, order is important but it does not
     # have to contain each and every option (if no value found for an option
@@ -52,10 +52,10 @@ class Motions():
 
                     if minConfig[c][1] > inputConfig[i][1]:
                         newOption = [inputConfig[i][0], minConfig[c][1]]
-                        print 'Setting', inputConfig[i][0], 'to min boundary'
+                        logging.info( 'Setting'+ str(inputConfig[i][0])+ 'to min boundary')
                     elif maxConfig[c][1] < inputConfig[i][1]:
                         newOption = [inputConfig[i][0], maxConfig[c][1]]
-                        print 'Setting', inputConfig[i][0], 'to max boundary'
+                        logging.info( 'Setting'+str(inputConfig[i][0])+ 'to max boundary')
                     i += 1
 
             newConfig.append( newOption )
@@ -607,7 +607,7 @@ class Motions():
             self.bellyToStand()
             self.walkTo(-0.1, -0.05, -1.5)
         else:
-            print 'What the heck, I do not have a pose!'
+            logging.debug( 'What the heck, I do not have a pose!' )
             
     # dive towards the right (keeper)
     def diveRight(self):
@@ -667,7 +667,7 @@ class Motions():
             self.bellyToStand()
             self.walkTo(-0.1, 0.05, 1.5)
         else:
-            print 'What the heck, I do not have a pose!'
+            logging.debug( 'What the heck, I do not have a pose!')
             
     # heelball, not finished.
     def experimentalKick(self,angle):

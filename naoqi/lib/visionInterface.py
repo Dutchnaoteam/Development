@@ -8,6 +8,7 @@ import time
 import Image
 import math
 import threading
+import logging
 
 def debug():
     from naoqi import ALProxy
@@ -74,7 +75,7 @@ class VisionInterface():
                 # blue LeftFaceLed
                 self.ledProxy.fadeRGB('LeftFaceLeds', 0xffffff, 0)
         return goalLoc
-        #print time.time()-now
+        #logging.debug( str(time.time()-now) )
         
     def getBall(self, image, headinfo):
         # Take snapshot and measure head angles
@@ -169,7 +170,7 @@ class VisionInterface():
         # if only one goalpost is found
         if not(realGoal) and tempGoal:
             realGoal = tempGoal
-        #print 'Goal at:', realGoal
+        #logging.debug( 'Goal at:'+ str(realGoal) )
         return realGoal                                 
 
     def fps(self, vis):
@@ -230,6 +231,7 @@ class VisionThread(threading.Thread):
     def close(self):
         self.on = False
         self.scanning = False
+        logging.info('visThread closed safely')
         
     # start finding of ball
     def startScan(self):

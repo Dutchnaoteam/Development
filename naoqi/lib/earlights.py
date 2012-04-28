@@ -1,4 +1,5 @@
 import time
+import logging
 
 class EarLights():
     def __init__(self, name, ledProxy):

@@ -23,6 +23,21 @@ import time
 import math
 import socket
 
+#set up for the logging
+import logging
+FORMAT= '[%(levelname)s]\t %(asctime)s in %(filename)s on line %(lineno)s %(message)s'
+#Log settings for the file
+logging.basicConfig(filename='sou.log',format=FORMAT, level=logging.DEBUG)
+
+#logSettings for the console
+console = logging.StreamHandler()
+console.setLevel(logging.DEBUG)
+formatter = logging.Formatter(FORMAT)
+console.setFormatter(formatter)
+logging.getLogger('').addHandler(console)
+
+logging.info( 'soul start' )
+
 
 """ Proxy creation: protocol is first three letters with exceptions 
 TextToSpeech (tts), RobotPose (pos), Sentinel and Sensors """
@@ -48,7 +63,7 @@ motProxy.setWalkArmsEnable(True, True)
 # Creating classes: Protocol is first three letters with exception gameStateController (gsc)
 # stateController class: robot state, penalized, etc.
 gsc = gameStateController.StateController('stateController', ttsProxy, memProxy, ledProxy, sensors )
-print 'Started gsc'
+logging.info( 'Started gsc' )
 
 # Motion class: motion functions etc.
 mot = motions.Motions( motProxy, posProxy )
@@ -56,7 +71,7 @@ mot = motions.Motions( motProxy, posProxy )
 mHandler = motionHandler.MotionHandler( mot, gsc, memProxy )
 
 mHandler.start()
-print 'motionHandler started'
+logging.info( 'motionHandler started' )
 
 # VisionInterface class: goalscans, ballscans
 vis = visionInterface.VisionInterface( motProxy, vidProxy, memProxy, ledProxy )
@@ -111,10 +126,10 @@ def Initial():
     global nameList
 
     if firstCall['Initial']:
-        print 'In initial state'
+        logging.info( 'In initial state' )
         mHandler.killWalk()
         visThread.stopScan()                               # do not find the ball when in Initial
-        print 'TeamColor: ' , teamColor                    # print the teamcolor as a check
+        logging.info( 'TeamColor: ' + str(teamColor) )           # print the teamcolor as a check
 
         # Empty variables
         ball_loc = list()
@@ -149,7 +164,7 @@ def Ready():
     if firstCall['Ready']:
         # stop ballfinding, there is no ball anyway
         visThread.stopScan()
-        print 'In ready state'
+        logging.info( 'In ready state' )
         mHandler.killWalk()
 
         firstCall['Initial'] = True
@@ -175,10 +190,10 @@ def Set():
         # update info about team, it is possible that game is started in set phase
         (teamColor, kickOff, penalty) = gsc.getMatchInfo()
 
-        print 'In set state'
+        logging.info( 'In set state' )
         visThread.startScan()                              # start ballscan
 
-        print 'TeamColor: ' , teamColor                    # print teamcolor as a check
+        logging.info( 'TeamColor: ' + str(teamColor) )                    # print teamcolor as a check
 
         # Initial pose, if not already in it
         mot.stiff()
@@ -215,7 +230,7 @@ def Playing():
     if firstCall['Playing']:
         mHandler.killWalk()
         visThread.startScan()
-        print 'In playing state'
+        logging.info( 'In playing state' )
         firstCall['Initial']   = True
         firstCall['Ready']     = True
         firstCall['Set']       = True
@@ -233,7 +248,7 @@ def Penalized():
     global firstCall
     
     if firstCall['Penalized']:
-        print 'In penalized state'
+        logging.info( 'In penalized state' )
         visThread.stopScan()                               # stop looking for the ball
         
         if playerType == 0:                                # if a player, goto unpenalized phase
@@ -327,7 +342,7 @@ def BallFoundKeep():
             distnew = math.sqrt(xnew**2 + ynew**2)
             speed = distold - distnew
 
-            print 'Ball moving from ', xold, yold, 'to', xnew, ynew, '(mean). Speed', speed
+            logging.debug( 'Ball moving from '+str(xold)+' '+ str(yold)+ 'to'+ str(xnew)+' '+  str(ynew)+ '(mean). Speed'+ str(speed) )
 
             # calculate direction if speed is high enough
             if speed > 0.25 or (distnew < 0.5 and speed > 0.05 ):
@@ -364,27 +379,27 @@ def BallFoundKeep():
                 #                      dir   = A*C/B - ynew
 
                 dir = (yold - ynew ) * xnew / (xold - xnew) - ynew
-                print 'Direction', dir
+                logging.debug( 'Direction', dir )
                 # if a direction has been found, clear all variables
 
                 if dir >= 0.5:
-                    print 'Dive right'
+                    logging.debug( 'Dive right' )
                     mot.diveRight()
                 elif dir <= -0.5:
-                    print 'Dive left'
+                    logging.debug( 'Dive left' )
                     mot.diveLeft()
                 elif dir < 0.5 and dir >= 0:
-                    print 'Step right'
+                    logging.debug( 'Step right' )
                     mot.footRight()
                 elif dir > -0.5 and dir < 0:
-                    print 'Step left'
+                    logging.debug( 'Step left' )
                     mot.footLeft()
                 phase = 'BallNotFoundKeep'
 
                 ball_loc = list()
                 visThread.clearCache()
                 firstCall['BallFoundKeep'] = True
-                print 'Direction', dir
+                logging.debug( 'Direction', dir )
     else:
         phase = 'BallNotFoundKeep'
         firstCall['BallFoundKeep'] = True
@@ -432,7 +447,7 @@ def BallFound():
     ball = visThread.findBall()
     if ball:
         seen = True
-        #print 'RealPosition', ball
+        #logging.debug( 'RealPosition', ball )
     if firstCall['BallFound']:
         mot.setFME(True)
         firstCall['BallFound'] = False
@@ -447,13 +462,13 @@ def BallFound():
     memProxy.insertData('dntPhase', 'BallFound')
     
     if seen and x < 0.17 and -0.02 < y < 0.02:
-        print 'Kick'
+        logging.debug( 'Kick' )
         # BLOCKING CALL: FIND BALL WHILE STANDING STILL FOR ACCURATE CORRECTION
         mHandler.killWalk()
         phase = 'Kick'
     else:
         if seen:
-            print 'Kalman position', x,y
+            logging.debug( 'Kalman position'+str( x)+' '+str(y) )
             theta = math.atan(y/x)
             # hacked influencing of perception, causing walking forward to have priority
             theta *= 0.4      
@@ -463,7 +478,7 @@ def BallFound():
             time.sleep(0.15)
             goalPosKnown = False, None
         else:
-            print 'Not seen ball', x, y
+            logging.debug( 'Not seen ball' +str(x)+ ' '+str(y) )
             theta = math.atan( y / x ) 
             mHandler.postWalkTo( 0,0, math.copysign( theta, y ) / 2.0 )
             # TODO determine where ball is in headposition and look there instead of random places
@@ -472,12 +487,12 @@ def BallFound():
 
     # If covariance becomes too large, when?
     #if mHandler.KF.Sigma[0][0] > 0.075:
-    #    print 'Sigma kalmanfilter: ' , mHandler.KF.Sigma
+    #    logging.debug( 'Sigma kalmanfilter: ' , mHandler.KF.Sigma )
     #    if x > 0:
     #        theta = math.atan(y/x)
     #    else:
     #        theta = 0
-    #    print 'Perhaps the ball is lost, turning ', theta,'to find it'
+    #    logging.debug( 'Perhaps the ball is lost, turning ', theta,'to find it' )
     #    mHandler.postWalkTo(0,0, theta)
         
     # TODO somehow influence kalman mu based on turn
@@ -488,7 +503,7 @@ def KeepDistance():
     firstCall['BallFound'] = True
     firstCall['BallNotFound'] = True
     ball = visThread.findBall()
-    print 'KeepDist'
+    logging.debug( 'KeepDist' )
     if ball:
         (x,y) = ball
         memProxy.insertData('dntPhase', 'KeepDistance')
@@ -545,7 +560,7 @@ def Kick():
     if goal:
         goalPosKnown = (True, goal)
     
-    print 'Kick phase: ', goal
+    logging.debug( 'Kick phase: '+ str(goal) )
     mot.setHead(0, 0.45)
     visThread.startScan()
     ball = vis.scanCircle(visThread)
@@ -555,10 +570,10 @@ def Kick():
     # Something of a mean, ...
 
     if not ball:
-        print 'Ball gone'
+        logging.debug( 'Ball gone' )
         phase = 'BallNotFound'
     elif ball[0] > 0.25 or ball[1] > 0.1 or ball[1] < -0.1:
-        print 'Ball too far'
+        logging.debug( 'Ball too far' )
         phase = 'BallFound'
     elif ball and not goal:
         mot.kick(0, ball)
@@ -577,8 +592,8 @@ def Kick():
             goalColor = 0
         else:
             goalColor = 1
-        print 'Goalcolor', goalColor, 'KickAngle', kickangle
-        print 'TeamColor', teamColor
+        logging.debug( 'Goalcolor'+ str(goalColor)+ 'KickAngle'+ str(kickangle) )
+        logging.debug( 'TeamColor'+ str(teamColor) )
         
         # use kalman filter to position ball in 10 measurements 
         c = 0
@@ -649,7 +664,7 @@ def awakeSoul():
     gsc.start()
     state = 0
     while(state != 4 or gsc.getSecondaryState()):
-        #print 'soul.py State: ', state
+        #logging.debug( 'soul.py State: ', state )
         state = gsc.getState()
         states.get(state)()
     gsc.close()
@@ -692,8 +707,17 @@ firstCall = {'Initial' : True,
              'BallNotFound' : True,
              'FirstPress' : True}
 
-awakeSoul()
-
+try:
+    awakeSoul()
+except KeyboardInterrupt:
+    logging.critical('keyboard interrupt, stopping soul and closing all threads')
+except:
+    logging.critical('error in soul, closing all threads')
+finally:
+    gsc.close()
+    mHandler.close()
+    visThread.close()
+    
 # DEBUG #
 def testPhase(phase, interval):
     now = time.time()

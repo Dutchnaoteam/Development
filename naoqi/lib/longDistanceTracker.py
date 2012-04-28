@@ -25,6 +25,7 @@ size = None
 from naoqi import ALProxy
 motion = ALProxy("ALMotion", "127.0.0.1", 9559)
 import time
+import logging
 
 def run(im, headInfo):
     (cam, head) = headInfo
@@ -42,7 +43,7 @@ def run(im, headInfo):
     cv.Smooth(im, im, cv.CV_BLUR, 2, 2)
     # find the max value in the image    
     (minVal, maxValue, minLoc, maxLocation) = cv.MinMaxLoc(im)
-    #print maxValue/256.0
+    #logging.debug( str(maxValue/256.0) )
     
     # if the maxValue isn't hight enough return 'None'
     if maxValue/256.0 < 0.4:
@@ -57,20 +58,20 @@ def run(im, headInfo):
     position = calcPosition(maxLocation, cam, head)
     (xPos, yPos, xAngle, yAngle) = position
     
-    #print position
+    #logging.debug( position )
     #track(position)
     return (xPos, yPos)
 
 def calcPosition(coord, cam, headInfo):
     (width, height) = size
-    #print 'size: ', width, ', ', height
+    #logging.debug( 'size: '+str( width)+ ', '+ str(height))
     # coord with origin in the upperleft corner of the image
     (xCoord, yCoord) = coord
-    #print 'pixelCoord from upperLeft: ', xCoord, ', ', yCoord
+    #logging.debug( 'pixelCoord from upperLeft: '+ str(xCoord)+ ', '+str(yCoord))
     # change the origin to centre of the image
     xCoord = -xCoord + width/2.0
     yCoord = yCoord - height/2.0
-    #print 'pixelCoord from centre: ', xCoord, ', ', yCoord
+    #logging.debug( 'pixelCoord from centre: '+ str(xCoord)+ ', '+ str(yCoord))
     # convert pixel coord to angle
     radiusPerPixelHeight = 0.00345833333
     radiusPerPixelWidth = 0.003325
@@ -80,14 +81,14 @@ def calcPosition(coord, cam, headInfo):
         yAngle = -0.47 - headInfo[0] if yAngle + headInfo[0] < -0.47 else yAngle
         motion.changeAngles(['HeadPitch', 'HeadYaw'], [0.3*yAngle, 0.3*xAngle], 0.7)  # 0.3*angles for smoother movements, optional. Smoothinggg. 
 
-    #print 'angle from camera: ' + str(xAngle) + ', ' + str(yAngle)
+    #logging.debug( 'angle from camera: ' + str(xAngle) + ', ' + str(yAngle))
 
     # the position (x, y, z) and angle (roll, pitch, yaw) of the camera
     (x,y,z, roll,pitch,yaw) = cam
-    #print 'cam: ', cam
+    #logging.info( 'cam: '+ str(cam) )
 
     # the pitch has an error of 0.940063x + 0.147563
-    # print 'correctedPitch: ', pitch
+    # logging.debug( 'correctedPitch: '+ str(pitch))
     
     # position of the ball where
     # origin with position and rotation of camera
@@ -95,7 +96,7 @@ def calcPosition(coord, cam, headInfo):
     ballRadius = 0.065
     xPos = (z-ballRadius) / tan(pitch + yAngle)
     yPos = tan(xAngle) * xPos
-    #print 'position from camera: ', xPos, ', ', yPos
+    #logging.debug( 'position from camera: '+ str(xPos)+ ', '+ str(yPos))
     # position of the ball where
     #  origin with position of camera and rotation of body 
     xPos = cos(yaw)*xPos + -sin(yaw)*yPos
@@ -104,9 +105,9 @@ def calcPosition(coord, cam, headInfo):
     #  origin with position and rotation of body
     xPos += x
     yPos += y
-    #print 'position ball: ', xPos, ', ', yPos
-    #print 'new yaw/pitch: ', xAngle+yaw, yAngle+pitch
-    #print 'z / tan(pitch): ',(z-ballRadius) / tan(pitch)
+    #logging.debug( 'position ball: '+ str(xPos)+ ', '+ str(yPos) )
+    #logging.debug( 'new yaw/pitch: '+ str(xAngle+yaw)+ str(yAngle+pitch))
+    #logging.debug( 'z / tan(pitch): ' +str((z-ballRadius) / tan(pitch))
     return (xPos, yPos, xAngle, yAngle)
     
 def convertImage(picture):
@@ -131,8 +132,8 @@ def filterImage(im):
     
     # Values Eindhoven 4/2012
     # TODO AANPASSEN TIJMEN
-    hsvMin1 = cv.Scalar(4,  100,  130, 0)
-    hsvMax1 = cv.Scalar(14,  255,  255, 0)
+    hsvMin1 = cv.Scalar(4,  109,  142, 0)
+    hsvMax1 = cv.Scalar(14,  230,  255, 0)
     
     #hsvMin2 = cv.Scalar(170,  90,  130, 0)
     #hsvMax2 = cv.Scalar(200, 256, 256, 0)
@@ -192,13 +193,13 @@ def zero(m,n):
 def show(matrix):
     # Print out matrix
     for col in matrix:
-        print(col) 
+        logging.debug(col) 
  
 def mult(matrix1,matrix2):
     # Matrix multiplication
     if len(matrix1[0]) != len(matrix2):
         # Check matrix dimensions
-        print('Matrices must be m*n and n*p to multiply!')
+        logging.warning('Matrices must be m*n and n*p to multiply!')
     else:
         # Multiply if correct dimensions
         new_matrix = zero(len(matrix1),len(matrix2[0]))

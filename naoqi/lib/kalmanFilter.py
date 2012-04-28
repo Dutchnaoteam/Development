@@ -1,6 +1,7 @@
 import math
 import random
 import matrix
+import logging
 
 # Method to create samples given the mean and covariance matrix
 def sample(mean, cov , dimensions):
@@ -52,7 +53,7 @@ class KalmanFilter():
         # Predict new measurement based on nao movement.
         # Nao moves x,y towards the ball 
         muBelief = matrix.subtract( muBelief , self.u )
-        #print muBelief
+        #logging.debug( muBelief )
         # Nao rotates theta
         muBelief = matrix.mult( rotationmatrix, muBelief )
 
