@@ -218,13 +218,11 @@ class hsvGlade(wx.Frame):
     #>> TEST <<
     def test(self, event):
         testTools = filterTools.VisionTestTools()
-        print 'hi'
         image = self.imageWindow.image
         image = testTools.wxToCv(image)
-        #TODO make saveImage function in filterTools
-        testTools.saveImageCv(image, 'wxToCv.png')
         # filter image
         (hsvMin, hsvMax) = self.getRangeHSV()
+        print hsvMin, hsvMax
         filter = testTools.filterImage(image, hsvMin, hsvMax)
         self.filterWindow.image = testTools.cvFilterToWx(filter)
         # refresh
@@ -338,16 +336,16 @@ class hsvGlade(wx.Frame):
 
     def rgbToHsv(self, (r,g,b)):
         (h, s, v) = colorsys.rgb_to_hsv(r/255.0, g/255.0, b/255.0)
-        h *= 180
-        s *= 255
-        v *= 255
+        h = int(round(h*180))
+        s = int(round(s*255))
+        v = int(round(v*255))
         return (h,s,v)
 
     def hsvToRgb(self, (h,s,v)):
         (r, g, b) = colorsys.rgb_to_hsv(h/180.0, s/255.0, v/255.0)
-        r *= 255
-        g *= 255
-        b *= 255
+        r = int(round(r*255))
+        g = int(round(g*255))
+        b = int(round(b*255))
         return (r,g,b)
 
     # add a colour to the HSV-range using eyedropper
