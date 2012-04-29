@@ -23,7 +23,6 @@ import time
 import math
 import socket
 
-
 """ Proxy creation: protocol is first three letters with exceptions 
 TextToSpeech (tts), RobotPose (pos), Sentinel and Sensors """
 from naoqi import ALProxy
@@ -577,8 +576,6 @@ def Kick():
             goalColor = 0
         else:
             goalColor = 1
-        print 'Goalcolor', goalColor, 'KickAngle', kickangle
-        print 'TeamColor', teamColor
         
         # use kalman filter to position ball in 10 measurements 
         c = 0
@@ -612,6 +609,8 @@ def Kick():
                 ball = visThread.findBall()
                 mHandler.setBallLoc( ball )
             ball = mHandler.getKalmanBallPos()
+            print 'Goalcolor', goalColor, 'KickAngle', kickangle
+            print 'TeamColor', teamColor, 'Locatie', ball
             mot.kick(kickangle, ( ball[0]-0.11, ball[1] ))
         phase = 'BallNotFound'
         ledProxy.fadeRGB('LeftFaceLeds', 0x00000000, 0)  # no goal yet, left led turns black
