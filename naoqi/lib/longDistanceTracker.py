@@ -33,8 +33,9 @@ def run(im, headInfo):
 
     #use filterGreen to take only the image
     green_thresh = filterGreen(im)
-
-    im = boundedBox(green_thresh, im)
+    # OLD BOUNDING BOX METHOD
+    #im = boundedBox(green_thresh, im)
+    im = findField(green_thresh, im)
     # filter the image
     im = filterImage(im)
     #cv.SaveImage('filter' + str(time.time()) +  '.jpg', im)
@@ -117,6 +118,7 @@ def convertImage(picture):
     cv.SetData(image, picture.tostring(), picture.size[0]*3)
     return image
 
+
 def filterImage(im):
     # Size of the images
     (width, height) = size
@@ -143,6 +145,89 @@ def filterImage(im):
     #cv.InRangeS(hsvFrame, hsvMin2, hsvMax2, filter2)
     #cv.Or(filter, filter2, filter)
     return filter
+
+
+def findField(green_thresh, im):
+    image_points = connectedComponents(green_thresh)
+    rect = x_y_height_width(largest_component)
+    if width < (green_thresh.width / 2.0) or height < (green_thresh.height / 2.0):
+        return im_orig
+    cv.SetImageROI(im, (rect[0], rect[1], rect[2], rect[3]))
+    cv.SaveImage("newROI.jpg", im)
+
+
+# returns all points that contour the biggest connected components
+def connectedComponents(image):
+    stor = cv.CreateMemStorage()
+    seq = cv.FindContours(image, stor, cv.CV_RETR_LIST, cv.CV_CHAIN_APPROX_SIMPLE)
+    largest = (None, 0)
+    
+    #TODO: make things better
+    largest = []
+    while(seq != None):
+        print len(seq)
+        if len(seq) >=50:
+            print 'adding component with'
+            print len(seq)
+            print 'elements'
+            largest = largest + list(seq)
+        seq = seq.h_next()
+    for i in largest:
+        cv.Circle(image, i, 1,(0, 0, 250), 1)
+    cv.SaveImage("lineimage.png", image)
+    print(len(largest))
+    return largest
+    
+# returns minimal x minimal y height and width value in list
+# these values are extracted from a list of tuples (component_points)
+def x_y_height_width(component_points):
+    print component_points
+    #return 0s if there was no field
+    if(component_points == []):
+        return [0,0,0,0]
+
+    # find the tuples with smallest x values
+    smallest_x = component_points[0][0]
+    for i in component_points:
+        if(i[0] < smallest_x):
+            smallest_x = i[0]
+    # from those tuples find  y value with smallest x value
+    smallest_y = component_points[0][1]
+    for i in component_points:
+        if i[1] < smallest_y:
+            smallest_y = i[1]
+    # now we decide the max xy point the same way
+    biggest_x = component_points[0][0]
+    for i in component_points:
+        if(i[0] > biggest_x):
+            biggest_x = i[0]
+    # from those tuples find  y value with smallest x value
+    biggest_y = component_points[0][1]
+    for i in component_points:
+        if i[1] > biggest_y:
+            biggest_y = i[1]
+    width = biggest_x - smallest_x
+    height = biggest_y - smallest_y
+    print smallest_x
+    print smallest_y
+    print biggest_x
+    print biggest_y
+    return [smallest_x, smallest_y, width, height]
+
+
+
+
+
+
+    # from these tuples select smallest y value
+    
+    # do the same thing for max x values and max y values
+
+
+
+
+
+
 
 def filterGreen(im):
     """filterGreen(im) -> single-channel IplImage
