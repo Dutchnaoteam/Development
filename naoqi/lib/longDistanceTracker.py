@@ -54,7 +54,12 @@ def run(im, headInfo):
     # calculate the angles to the ball
     #(xAngle, yAngle) = calcAngles((xcoord, ycoord ), cam)
     # calculate the position of the ball
-    position = calcPosition(maxLocation, cam, head)
+
+    # we need to compensate for the ROI being set
+    x_pos, y_pos = maxLocation
+    x_off, y_off, _, _ = cv.GetImageROI(im)
+
+    position = calcPosition((x_pos + x_off, y_pos + y_off), cam, head)
     (xPos, yPos, xAngle, yAngle) = position
     
     #print position
