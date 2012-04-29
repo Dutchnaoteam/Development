@@ -29,7 +29,7 @@ class MotionHandler(threading.Thread):
     ballLoc = None
     lock = threading.Lock()
     
-    def __init__(self, motionObject, gameStateController, memProxy, debug = False ):
+    def __init__( self, motionObject, gameStateController, memProxy, debug = False ):
         threading.Thread.__init__(self)
         
         self.debug  = debug
@@ -41,10 +41,10 @@ class MotionHandler(threading.Thread):
         self.gsc = gameStateController
         self.memProxy = memProxy
 
-    def __del__(self):
+    def __del__( self ):
         self.close()
     
-    def close(self):
+    def close( self ):
         try:
             self.server.send('STOP')
         except:
@@ -80,19 +80,19 @@ class MotionHandler(threading.Thread):
         self.KF.iterate( None, [x,y,t] )
         self.mot.walkTo( x, y, t )
     
-    def dive( direction ):
+    def dive( self, direction ):
         self.fallManager = False
-        if dir >= 0.5:
+        if direction >= 0.5:
             self.mot.diveRight()
-        elif dir <= -0.5:
+        elif direction <= -0.5:
             self.mot.diveLeft()
-        elif 0.5 > dir <= 0:
+        elif 0.5 > direction >= 0:
             self.mot.footRight()
-        elif -0.5 < dir < 0:
+        elif -0.5 < direction < 0:
             self.mot.footLeft()
         self.fallManager = True
         
-    def kick(angle ):
+    def kick( self, angle ):
         self.mot.kick( angle )
         
     """Functions for localization"""
@@ -115,7 +115,7 @@ class MotionHandler(threading.Thread):
         with self.lock:
             self.ballLoc = measurement
 
-    def getBallLoc(self ):
+    def getBallLoc( self ):
         with self.lock:
             m = self.ballLoc
             self.ballLoc = None
@@ -125,7 +125,7 @@ class MotionHandler(threading.Thread):
         return self.KF.ballPos
 	
     """Main loop"""
-    def run(self):
+    def run( self ):
         timeStamp = time.time()
         while self.running:
             # pause, but if there is a feature available, use it immediately
