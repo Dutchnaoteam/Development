@@ -1,6 +1,7 @@
 ########################
 # NAO CONTROL THROUGH XBOX 360 WIRED CONTROLLER
-# 27 april 2012 - Hessel van der Molen
+# April 2012 - Hessel van der Molen
+# (c) Dutch Nao Team, licensed under GNU-GPL v3.0 
 #
 # HOW TO USE:
 # 1) Make sure you have installed:
@@ -17,8 +18,8 @@
 # 5) In terminal, goto the dir containing the above described files 
 # 6) run: 
 #      terminal> python main.py <NaoIPadress> <JoystickID>
-#           (JoystickID is by default '0', unless multiple joysticks are attached)
-# 7) enjoy :) [programme controls can be found in 'processmotion.py']
+#           (JoystickID is by default '0')
+# 7) enjoy :) [program controls/button definition can be found in 'processmotion.py']
 #
 
 print "Setting up system one moment please..."
@@ -33,46 +34,58 @@ print "> searching joystick..."
 import pygame
 pygame.init()
 pygame.joystick.init()
-print ">>> found: " + str(pygame.joystick.get_count()) + " joysticks"
+joysticksFound = pygame.joystick.get_count()
+print ">>> found: " + str(joysticksFound) + " joysticks"
 
-joystickID = 0
-if (len(sys.argv) > 2):
-    joystickID = int(sys.argv[2])
-print ">>> selected joystick: " + str(joystickID) 
-myjoy = pygame.joystick.Joystick(joystickID)	
-myjoy.init()
-print ">>> joystick initialized: "  + myjoy.get_name()
+if (joysticksFound > 0):
+    joystickID = 0
+    if (len(sys.argv) > 2):
+        joystickID = int(sys.argv[2])
+    print ">>> selected joystick: " + str(joystickID) 
+    myjoy = pygame.joystick.Joystick(joystickID)	
+    myjoy.init()
+    print ">>> joystick initialized: "  + myjoy.get_name()
 
-print "> importing naoqi..."
-from naoqi import ALProxy
+    print "> importing naoqi..."
+    from naoqi import ALProxy
 
-print "> setting connection data..."
-IPADRESS = sys.argv[1]
-PORT = 9559
+    print "> setting connection data..."
+    IPADRESS = sys.argv[1]
+    PORT = 9559
 
-print ">>> setting motion proxy..."
-motionProxy = ALProxy("ALMotion", IPADRESS, PORT)
-print ">>> setting pose proxy..."
-poseProxy = ALProxy("ALRobotPose", IPADRESS, PORT)
+    print ">>> setting motion proxy..."
+    motionProxy = ALProxy("ALMotion", IPADRESS, PORT)
+    print ">>> setting pose proxy..."
+    poseProxy = ALProxy("ALRobotPose", IPADRESS, PORT)
 
-print "> fetching DNT-motion class..."
-motionclass = motions.Motions(motionProxy, poseProxy)
+    print "> fetching DNT-motion class..."
+    motionclass = motions.Motions(motionProxy, poseProxy)
 
-print "------------------------------"
-print "System setup is complete!"
-print "Ready: reading joystick.."        
-while True:
-    try:
-        e = pygame.event.wait()
-        r = processmotion.processInput(e, motionclass)
-        if (r == "action"):
-            print " >>> executed"
-        elif (r == "quit"):
-            print "quit."
+    print "------------------------------"
+    print "System setup is complete!"
+    print "Ready: reading joystick.."        
+    while True:
+        try:
+            #TODO: test set_{allowed,blocked}
+            # --> disabling xbox xontrolloer when robot is executing command
+            # --> If robot-ovement is slow, pygame.event will not build large queue
+            #       --> so no overload when robot is done with movement
+            #pygame.event.set_blocked(None)
+            e = pygame.event.wait()
+            #pygame.event.set_allowed(None)
+            r = processmotion.processInput(e, motionclass)
+            if (r == "action"):
+                print " >>> executed"
+            elif (r == "quit"):
+                print "quit."
+                exit(1)
+                break
+        except KeyboardInterrupt,ee:
+            print( "\n\nClosed" )
+            print( str( ee ) )
             exit(1)
             break
-    except KeyboardInterrupt,ee:
-        print( "\n\nClosed" )
-        print( str( ee ) )
-        exit(1)
-        break
+else:
+    print "------------------------------"
+    print "No joysticks found, program terminated."
+    
