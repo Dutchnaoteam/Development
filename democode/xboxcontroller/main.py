@@ -42,9 +42,9 @@ if (joysticksFound > 0):
     if (len(sys.argv) > 2):
         joystickID = int(sys.argv[2])
     print ">>> selected joystick: " + str(joystickID) 
-    myjoy = pygame.joystick.Joystick(joystickID)	
-    myjoy.init()
-    print ">>> joystick initialized: "  + myjoy.get_name()
+    joystick = pygame.joystick.Joystick(joystickID)	
+    joystick.init()
+    print ">>> joystick initialized: "  + joystick.get_name()
 
     print "> importing naoqi..."
     from naoqi import ALProxy
@@ -68,7 +68,7 @@ if (joysticksFound > 0):
         try:
             #TODO: test set_{allowed,blocked}
             # --> disabling xbox xontrolloer when robot is executing command
-            # --> If robot-ovement is slow, pygame.event will not build large queue
+            # --> If robot-movement is slow, pygame.event will not build large queue
             #       --> so no overload when robot is done with movement
             #pygame.event.set_blocked(None)
             e = pygame.event.wait()
@@ -81,8 +81,8 @@ if (joysticksFound > 0):
                 exit(1)
                 break
         except KeyboardInterrupt,ee:
-            print( "\n\nClosed" )
-            print( str( ee ) )
+            print "forced quit."
+            print str( ee )
             exit(1)
             break
 else:
