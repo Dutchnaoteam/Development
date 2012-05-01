@@ -74,6 +74,25 @@ class VisionTestTools:
         cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
         cv.InRangeS(hsvFrame, hsvMin, hsvMax, filter)
         return filter
+        
+    def filterImageBgr(self, im, bgrMin, bgrMax):
+        #hsvFrame = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 3)
+        filter = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 1)
+        #cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
+        cv.InRangeS(im, bgrMin, bgrMax, filter)
+        return filter
+        
+    def floodFill(self, image):
+        (width, height) = cv.GetSize(image)
+        #mask = cv.CreateImage((width+2,height+2), cv.IPL_DEPTH_8U, 1)
+        #(area, value, rect) = cv.FloodFill(image, (0,0), cv.Scalar(0), cv.Scalar(0), cv.Scalar(0), 4, mask)
+        diff = 100
+        (area, value, rect) = cv.FloodFill(image, (80,60), cv.Scalar(0), cv.Scalar(diff), cv.Scalar(diff))
+        print 'area', area
+        print 'value', value
+        print 'rect', rect
+        #self.saveImageCv(mask, 'mask.png')
+        self.saveImageCv(image, 'floodFill.png')
 
     def boundedBox(self, im_filter, im_orig):
         """ boundedBox(im_filter, im_orig) -> im_orig
