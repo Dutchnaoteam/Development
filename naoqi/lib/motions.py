@@ -1405,7 +1405,7 @@ class Motions():
     def killWalk(self, waitUntilKilled = True):
         if self.motProxy.walkIsActive():
             if waitUntilKilled:
-                self.walkTo(0,0,0.00001)
+                self.walkTo( 0,0,0.00001 )
             else:
                 self.postWalkTo( 0, 0, 0.0001) 
                 

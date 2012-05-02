@@ -131,6 +131,7 @@ class MotionHandler(threading.Thread):
             # pause, but if there is a feature available, use it immediately
             now = time.time()
             while time.time() - now < 0.5:
+                # if in penalized state
                 if self.gsc.getState() == 10:
                     print 'Penalized by motionHandler!!!\n'
                     while self.mot.isWalking():
@@ -145,6 +146,14 @@ class MotionHandler(threading.Thread):
                     # get up if fallen
                     # TODO implement stiffness off based on accX or accY
                     if self.fallManager:
+                        # If falling down, kill stiffness
+                        threshold = 3
+                        torsoAngleX = self.memProxy.getData("Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value")
+                        torsoAngleY = self.memProxy.getData("Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value")
+                        if torsoAngleX + torsoAngleY > threshold:
+                            # TODO execute some motion that saves naos ass based on falldirection
+                            mot.kill()
+                        # If fallen down, stand up
                         if self.mot.standUp():
                             print 'Fallen'
                             self.killWalk()
