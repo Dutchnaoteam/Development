@@ -1414,39 +1414,28 @@ class Motions():
         self.motProxy.setAngles(['RShoulderRoll', 'RShoulderPitch', 'LShoulderRoll', 'LShoulderPitch',
                           'RElbowRoll', 'RElbowYaw', 'LElbowRoll', 'LElbowYaw'],
                           [-0.5 - 0.17*angle, 0.8, 0.25, 0.8, 0, 0, 0, 0], 0.3)
-        # Turn on left foot
-        self.motProxy.setAngles(['RAnkleRoll', 'LAnkleRoll'], [-0.195 - 0.025 * angle, -0.2], 0.2)    
         time.sleep(0.3)
         # Left leg stretched, right leg goes backwards
-        self.motProxy.angleInterpolation(['LHipYawPitch', 'RHipRoll', 'RKneePitch', 'RAnklePitch', 
+        self.motProxy.post.angleInterpolation(['LHipYawPitch', 'RHipRoll', 'RKneePitch', 
                                    'LHipRoll', 'RHipPitch', 'LHipPitch', 'LKneePitch', 'LAnklePitch'], 
-                                  [[0.65*angle], [-0.2*angle], [0.175 + 0.25*angle], [-0.125 -0.125*angle], 
+                                  [[0.65*angle], [-0.2*angle], [0.175 + 0.25*angle], 
                                    [-0.075 +0.295*angle], [-0.3 - 0.05*angle], [0.4], [0.5 - 0.35*angle], [-0.6 + 0.5*angle]],
                                   [[0.8], [0.9], [0.6], [0.6], [1.1], [0.6], [1.1], [1.2], [1.2]], True)
-
-        #time.sleep(0.3)
+        time.sleep(1.5)
         
-        if self.posProxy.getActualPoseAndTime()[0] == 'Back':
-            self.kill()
-            return 0
-        elif self.posProxy.getActualPoseAndTime()[0] == 'Belly':
-            self.kill()
-            return 0
         # kick
         self.motProxy.setAngles(['LShoulderPitch','LShoulderRoll'], [2, 0.35], 1)
         self.motProxy.setAngles(['LHipYawPitch', 'RHipRoll', 'RHipPitch', 'LHipPitch', 'LKneePitch', 'LAnklePitch'],
                          [0.75*angle, -0.1, -0.1 -0.25*angle , -0.2 + -0.25 * angle, 0, 0.1 - 0.075*angle], 0.9)
-        time.sleep(0.3 + 0.3 * angle)
+        time.sleep(0.5 + 0.3 * angle)
         # return to start position
-        self.motProxy.angleInterpolation(['LHipYawPitch', 'RHipRoll', 'RHipPitch', 'RKneePitch', 
-                                   'RAnklePitch', 'RAnkleRoll', 'LHipRoll', 'LHipPitch', 
-                                   'LKneePitch', 'LAnklePitch', 'LAnkleRoll'], 
-                                   [[0], [0],[-0.4], [0.95], [-0.55],[-0.15], [0], [-0.4], [0.95], [-0.55], [-0.15]], 
-                                   [[0.65],[0.85],[0.85],[0.85],[0.85],[0.85],[0.85],[0.85],[0.85],[0.65],[0.75]], 
+        self.motProxy.post.angleInterpolation(['LHipYawPitch', 'RHipRoll', 'RHipPitch', 'RKneePitch', 
+                                   'LHipRoll', 'LHipPitch', 
+                                   'LKneePitch', 'LAnklePitch'], 
+                                   [[0],   [0],   [-0.4], [0.95], [0],   [-0.4], [0.95], [-0.55]], 
+                                   [[0.65],[0.85],[0.85], [0.85], [0.85],[0.85], [0.85],[0.65]], 
                                    True)
-        time.sleep(0.2)
-        self.motProxy.setAngles(['RShoulderRoll', 'RShoulderPitch', 'LShoulderPitch'], [0, 1.2, 1.2], 0.4)
-        self.motProxy.setAngles(['RAnkleRoll', 'LAnkleRoll', 'LShoulderRoll'], [0, 0, 0], 0.05)        
+        time.sleep(1)
 
     # a normal pose from which walking is almost immediately possible
     def normalPose(self, force = False): 
@@ -1480,43 +1469,27 @@ class Motions():
         
     # right kick with inputangle      
     def rKickAngled(self, angle):
-        self.motProxy.setAngles(['LShoulderRoll', 'LShoulderPitch', 'RShoulderRoll', 'RShoulderPitch', 
-                                 'RElbowRoll', 'RElbowYaw', 'LElbowRoll', 'LElbowYaw'], 
-                                 [0.5 + 0.17*angle, 0.8, -0.25, 0.8, 0, 0, 0, 0], 0.3)
-        # Turn on left footm
-        self.motProxy.setAngles(['LAnkleRoll', 'RAnkleRoll'], [0.195 + 0.025 * angle, 0.2], 0.2)    
-        time.sleep(0.3)
+        self.motProxy.setAngles(['LShoulderRoll', 'RShoulderRoll'], 
+                                 [0.35,           -0.25,         ], 0.3)
+        time.sleep(0.5)
         # Left leg stretched, right leg goes backwards
-        self.motProxy.angleInterpolation(['LHipYawPitch', 'LHipRoll',  'LKneePitch', 'LAnklePitch', 
-                                   'RHipRoll', 'LHipPitch','RHipPitch', 'RKneePitch', 'RAnklePitch'], 
-                                  [[0.65*angle],   [0.2*angle], [0.175 + 0.25*angle], 
-                                   [-0.125 -0.125*angle], [0.075 -0.295*angle], 
-                                   [-0.3 - 0.05*angle], [0.4], [0.5 - 0.35*angle],
-                                   [-0.6 + 0.5*angle]],
-                                  [[0.8], [0.9], [0.6], [0.6], [1.1], [0.6], [1.1], [1.2], [1.2]], True)
-
-        #time.sleep(0.1)
-        if self.posProxy.getActualPoseAndTime()[0] == 'Back':
-            self.kill()
-            return 0
-        elif self.posProxy.getActualPoseAndTime()[0] == 'Belly':
-            self.kill()
-            return 0
-        
+        self.motProxy.post.angleInterpolation(
+            ['LHipYawPitch', 'LHipRoll',  'RHipRoll',          'LHipPitch',         'LKneePitch', 'LAnklePitch', 'RHipPitch', 'RKneePitch',        'RAnklePitch'], 
+            [[0.65*angle],   [0.2*angle], [0.075-0.295*angle], [-0.3 - 0.05*angle], [0.7],        [-0.3],        [0.4],       [0.5 - 0.35*angle],  [-0.6 + 0.5*angle]],
+            [[1.0],          [1.1],       [0.9],               [1.4],               [1.4],         [1.4],        [0.9],       [1.4],               [1.5]             ], 
+            True)
+        time.sleep(2.25)
         # kick
         self.motProxy.setAngles(['RShoulderPitch', 'RShoulderRoll'], [2, -0.35], 1)
-        self.motProxy.setAngles(['LHipYawPitch', 'LHipRoll', 'LHipPitch', 'RHipPitch', 'RKneePitch', 'RAnklePitch'],
-                         [0.75*angle, 0.1, -0.1 -0.25*angle , -0.2 + -0.25 * angle, 0, 0.1 - 0.075*angle], 0.9)
-        time.sleep(0.3 + 0.3 * angle)
+        self.motProxy.setAngles(['LHipYawPitch', 'LHipRoll', 'RHipPitch',     'RKneePitch', 'RAnklePitch'],
+                                [0.75*angle,      0.1,       -0.1-0.25*angle , 0,            0.1 - 0.075*angle], 1)
+        time.sleep(2 + 0.3 * angle)
         # return to start position
-        self.motProxy.angleInterpolation(['LHipYawPitch', 'LHipRoll', 'LHipPitch', 'LKneePitch', 'LAnklePitch',
-                                   'LAnkleRoll', 'RHipRoll', 'RHipPitch', 'RKneePitch', 'RAnklePitch', 'RAnkleRoll'],
-                                  [[0], [0],[-0.4], [0.95], [-0.55],[0.15], [0], [-0.4], [0.95], [-0.55], [0.15]],
-                                  [[0.65],[0.85],[0.85],[0.85],[0.85],[0.85],[0.85],[0.85],[0.85],[0.65],[0.75]], True)
-        time.sleep(0.2)
-        self.motProxy.setAngles(['LShoulderRoll', 'LShoulderPitch', 'RShoulderPitch'], [0, 1.2, 1.2], 0.4)
-        self.motProxy.setAngles(['LAnkleRoll', 'RAnkleRoll', 'RShoulderRoll'], [0, 0, 0], 0.05)
-        
+        self.motProxy.post.angleInterpolation(
+            ['LHipYawPitch', 'LHipRoll', 'LHipPitch', 'LKneePitch', 'RHipRoll', 'RHipPitch', 'RKneePitch', 'RAnklePitch', 'RAnkleRoll'],
+            [[0],            [0],        [-0.4],      [0.8],        [0],        [-0.4],       [0.95],      [-0.55],       [0] ],
+            [[0.65],         [0.85],     [0.85],      [0.85],       [0.85],     [0.85],       [0.85],      [0.65],        [0.6]  ], True)
+        time.sleep(0.85)
         
     # non blocking call, absolute
     def setHead(self, yaw, pitch):
@@ -1524,46 +1497,47 @@ class Motions():
 
     # soft kick towards right, left leg
     def sideLeftKick(self):
-        self.motProxy.angleInterpolation(['RAnkleRoll', 'LAnkleRoll', 'RShoulderRoll', 'LShoulderRoll'], 
-                                         [-0.25,       -0.25,        -0.4,           0.3], 
-                                         [[0.4], [0.4], [0.4], [0.4]], True)
+        self.motProxy.angleInterpolation([ 'RShoulderRoll', 'LShoulderRoll'], 
+                                         [  -0.4,            0.3], 
+                                         [  [0.4],          [0.4]], True)
         
         names = list()
         angles = list()
         times = list()
         
-        names = ['RShoulderRoll','LHipRoll', 'LHipPitch', 'LKneePitch','LAnklePitch','LAnkleRoll','RHipRoll','RHipPitch','RKneePitch','RAnklePitch','RAnkleRoll']
-        angles = [[-1],         [0.0, 0.35], [-0.4, -0.8],[0.95, 0.2], [-0.55, 0.6], [-0.25,-0.3],[0.05 ],   [-0.4],     [0.95],      [-0.5],       [-0.25]]
-        times  = [[0.2],          [0.3, 0.75],[0.5,   1.0],[0.5,  1.0], [ 0.5,  1.0], [0.5,   1.0],[ 1.0],    [0.5],      [0.5 ],      [ 0.5],       [ 0.5]]
+        names = ['RShoulderRoll','LHipRoll', 'LHipPitch', 'LKneePitch','LAnklePitch','RHipRoll','RHipPitch','RKneePitch']
+        angles = [[-1],         [0.0, 0.45], [-0.4, -0.8],[0.95, 0.2], [-0.55, 0.6], [0.05 ],   [-0.4],     [0.95],     ]
+        times  = [[0.2],          [0.3, 0.75],[0.5,   1.0],[0.5,  1.0], [ 0.5,  1.0] ,[ 1.0],    [0.5],      [0.5 ],    ]
         
-        self.motProxy.angleInterpolation(names, angles, times, True)
+        self.motProxy.post.angleInterpolation(names, angles, times, True)
+        time.sleep(1.3)
         
-        self.motProxy.angleInterpolationWithSpeed('LHipRoll', [-0.1], 1.0, True)
-        time.sleep(0.1)
+        self.motProxy.post.angleInterpolationWithSpeed('LHipRoll', [-0.1], 1.0, True)
+        time.sleep(1.0)
         self.motProxy.angleInterpolation(['LHipRoll','LHipPitch','LKneePitch','LAnklePitch'], 
                                      [[0.0],    [-0.6],    [1.3],       [-0.6]], 
                                      [[0.5],    [0.6],      [0.6],       [0.6]], True)
-        self.normalPose(True)
-
+        time.sleep(0.6)
+        
         # soft kick towards left, right leg
     # soft kick towards left, right leg
     def sideRightKick(self):
-        self.motProxy.angleInterpolation(['RAnkleRoll', 'LAnkleRoll', 'RShoulderRoll', 'LShoulderRoll'], 
-                                         [ 0.25,        0.25,         0.4,           -0.3], 
-                                         [[0.4], [0.4], [0.4], [0.4]], True)
+        self.motProxy.angleInterpolation(['RShoulderRoll', 'LShoulderRoll'], 
+                                         [ 0.4,           -0.3], 
+                                         [[0.4],          [0.4]], True)
         
-        names =  ['LShoulderRoll','RHipRoll','RHipPitch','RKneePitch','RAnklePitch','RAnkleRoll','LHipRoll','LHipPitch','LKneePitch','LAnklePitch','LAnkleRoll']
-        angles = [[1],            [0,  -0.35],[-0.4, -0.8],[0.95, 0.2],[-0.55, 0.6], [0.25, 0.3], [-0.05],   [-0.4],     [0.95],      [-0.5],       [0.25]]
-        times =  [[0.2],          [0.3, 0.75 ],[0.5, 1], [0.5, 1],     [0.5, 1],    [0.5, 1],    [1.0],     [0.5],      [0.5],       [0.5],        [0.5]]
+        names =  ['LShoulderRoll','RHipRoll','RHipPitch','RKneePitch','RAnklePitch','LHipRoll','LHipPitch','LKneePitch' ]
+        angles = [[1],            [0,  -0.45],[-0.4, -0.8],[0.95, 0.2],[-0.55, 0.6],  [-0.05],   [-0.4],     [0.95]     ]
+        times =  [[0.2],          [0.3, 0.75 ],[0.5, 1], [0.5, 1],     [0.5, 1],       [1.0],     [0.5],      [0.5]     ]
         
-        self.motProxy.angleInterpolation(names, angles, times, True)
-        
-        self.motProxy.angleInterpolationWithSpeed('RHipRoll', [0.1], 1.0, True)
-        time.sleep(0.1)
-        self.motProxy.angleInterpolation(['RHipRoll','RHipPitch', 'RKneePitch', 'RAnklePitch'], 
+        self.motProxy.post.angleInterpolation(names, angles, times, True)
+        time.sleep(1.3)
+        self.motProxy.post.angleInterpolationWithSpeed('RHipRoll', [0.1], 1.0, True)
+        time.sleep(1.0)
+        self.motProxy.post.angleInterpolation(['RHipRoll','RHipPitch', 'RKneePitch', 'RAnklePitch'], 
                                     [[0.0],     [-0.6],     [1.3],        [-0.6]], 
                                     [[0.5],     [0.6],       [0.6],        [0.6]], True)
-        self.normalPose(True)
+        time.sleep(0.6)
 
     # keeper stance
     def stance(self):

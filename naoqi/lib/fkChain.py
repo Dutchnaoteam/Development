@@ -76,6 +76,12 @@ class PID():
         self.integral     = 0
         self.derivative   = 0
         self.desired      = 0
+    
+    def reset(self):
+        self.previous_error = 0
+        self.proportional = 0
+        self.integral     = 0
+        self.derivative   = 0
         
     def setSP( self, setpoint ):
         self.desired = setpoint

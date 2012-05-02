@@ -39,12 +39,12 @@ class MotionHandler(threading.Thread):
         self.debug  = debug
         self.fallManager = False
         self.localize    = False
-        self.balancer    = True
+        self.balancer    = False
         
         # used objects
         self.fkClass  = fkChain.FKChain()
-        self.pitchPID = fkChain.PID(0.4, 0.01, 0.04)
-        self.rollPID  = fkChain.PID(0.4, 0.01, 0.04)
+        self.pitchPID = fkChain.PID(0.3, 0.02, 0.02)
+        self.rollPID  = fkChain.PID(0.3, 0.02, 0.02)
         # 200 samples for debugging
         self.PF       = particleFilter.ParticleFilter( 200 ) 
         self.KF       = kalmanFilter.KalmanFilter( ) 
@@ -83,10 +83,6 @@ class MotionHandler(threading.Thread):
         self.close()
     
     def close( self ):
-        try:
-            self.server.send('STOP')
-        except:
-            pass
         self.running = False
         print 'motionHandler closed safely'
     
@@ -131,7 +127,20 @@ class MotionHandler(threading.Thread):
         self.fallManager = True
         
     def kick( self, angle ):
+        self.pitchPID.reset()
+        self.rollPID.reset()
+        if angle < 0:
+            self.supportLeg = "R"
+            self.mot.motProxy.setAngles(["LAnkleRoll","RAnkleRoll"], [-0.2, -0.2], 0.5)
+        else:
+            self.supportLeg = "L"
+            self.mot.motProxy.setAngles(["LAnkleRoll","RAnkleRoll"], [ 0.2,  0.2], 0.5)
+            
+        self.balancer = True 
         self.mot.kick( angle )
+        self.balancer = False
+        time.sleep(0.2)
+        self.mot.normalPose(True)
         
     """Functions for localization"""
     def setControl( self, control ):
@@ -206,26 +215,25 @@ class MotionHandler(threading.Thread):
                 
                 for n in range(len(names)):
                     self.bodyState[ names[n] ] = angles[n]
-
-                for key in self.bodyState.keys()[ 1: ]:
-                    self.bodyState[key] = self.mot.motProxy.getAngles(key, True)[0]
-                self.fkClass.setBodyState( self.bodyState )
-           
-                supportLeg = "L"
+                    
+                if self.supportLeg == "L":
+                    self.rollPID.setSP( 0.005 )
+                elif self.supportLeg == "R":
+                    self.rollPID.setSP( -0.005 )
                 # calculate COM
-                xCom,yCom,zCom = self.fkClass.calcCOM( supportLeg )
+                xCom,yCom,zCom = self.fkClass.calcCOM( self.supportLeg )
                 
                 interval = time.time() - timeStampBalance 
                 timeStampBalance = time.time()
                 pitch  = self.pitchPID.iterate( xCom, interval )
                 roll   = self.rollPID.iterate( yCom,  interval )
 
-                newRoll =  self.bodyState["LAnkleRoll"]  + atan2(roll,  zCom)
-                newPitch = self.bodyState["LAnklePitch"] + atan2(pitch, zCom)
-                self.mot.motProxy.setAngles(['LAnkleRoll', 'LAnklePitch'], \
-                                            [ newRoll,      newPitch    ], 0.4)                        
+                newRoll =  atan2(roll,  zCom)
+                newPitch = atan2(pitch, zCom)
+                self.mot.motProxy.changeAngles(['LAnkleRoll', 'LAnklePitch'], \
+                                               [ newRoll,      newPitch    ], 0.2)                        
                 
-                #print xCom,yCom,zCom
+                print xCom,yCom,zCom
                 
             if self.localize:
                 interval = time.time() - timeStampLocalize
