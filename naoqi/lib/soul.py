@@ -22,12 +22,13 @@ import motionHandler
 import time
 import math
 import socket
+import coach
 
 #set up for the logging
 import logging
 FORMAT= '[%(levelname)s]\t %(asctime)s in %(filename)s on line %(lineno)s %(message)s'
 #Log settings for the file
-logging.basicConfig(filename='sou.log',format=FORMAT, level=logging.DEBUG)
+logging.basicConfig(filename='/home/nao/naoqi/lib/soul.log',format=FORMAT, level=logging.DEBUG)
 
 #logSettings for the console
 console = logging.StreamHandler()
@@ -35,8 +36,10 @@ console.setLevel(logging.DEBUG)
 formatter = logging.Formatter(FORMAT)
 console.setFormatter(formatter)
 logging.getLogger('').addHandler(console)
+startMessage = '\n*******************************\n**       soul started        **\n**                           **\n**    by Dutch Nao Team      **\n*******************************'
+logging.info( startMessage )
 
-logging.info( 'soul start' )
+
 
 
 """ Proxy creation: protocol is first three letters with exceptions 
@@ -64,6 +67,7 @@ motProxy.setWalkArmsEnable(True, True)
 # stateController class: robot state, penalized, etc.
 gsc = gameStateController.StateController('stateController', ttsProxy, memProxy, ledProxy, sensors )
 logging.info( 'Started gsc' )
+
 
 # Motion class: motion functions etc.
 mot = motions.Motions( motProxy, posProxy )
@@ -98,6 +102,9 @@ memProxy.insertListData([['dntBallDist', '', 0], ['dntPhase', 0, 0], ['dntNaoNum
 teamColor = 0
 kickOff = 0
 penalty = 0
+
+coa = coach.coach('coach', memProxy, ledProxy)
+logging.info( 'Started coach' )
 
 audProxy = ALProxy('ALAudioDevice', '127.0.0.1', 9559)
 audProxy.setOutputVolume(60)
@@ -236,7 +243,13 @@ def Playing():
         firstCall['Set']       = True
         firstCall['Playing']   = False
         firstCall['Penalized'] = True
-
+    # if an action is set, DO IT!   
+    try:
+        if memProxy.getData('dnt'+str(robot)):
+            phase = memProxy.getData('dnt'+str(robot));
+    except:
+        pass
+        
     # Execute the phase as specified by phase variable
     phases.get(phase)()
 
@@ -379,7 +392,7 @@ def BallFoundKeep():
                 #                      dir   = A*C/B - ynew
 
                 dir = (yold - ynew ) * xnew / (xold - xnew) - ynew
-                logging.debug( 'Direction', dir )
+                logging.debug( 'Direction'+ str(dir) )
                 # if a direction has been found, clear all variables
 
                 if dir >= 0.5:
@@ -399,7 +412,7 @@ def BallFoundKeep():
                 ball_loc = list()
                 visThread.clearCache()
                 firstCall['BallFoundKeep'] = True
-                logging.debug( 'Direction', dir )
+                logging.debug( 'Direction'+ str(dir) )
     else:
         phase = 'BallNotFoundKeep'
         firstCall['BallFoundKeep'] = True
@@ -711,12 +724,15 @@ try:
     awakeSoul()
 except KeyboardInterrupt:
     logging.critical('keyboard interrupt, stopping soul and closing all threads')
-except:
-    logging.critical('error in soul, closing all threads')
+except Exception as e:
+    logging.critical('error [ %s ] in soul, closing all threads', e)
 finally:
     gsc.close()
     mHandler.close()
     visThread.close()
+    audProxy.setOutputVolume(60)
+    sentinel.enableDefaultActionDoubleClick(True)
+    sentinel.enableDefaultActionSimpleClick(True)
     
 # DEBUG #
 def testPhase(phase, interval):

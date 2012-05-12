@@ -81,7 +81,7 @@ def inverse2D(matrix):
             new_matrix[1][1] = det * a
             return new_matrix
         except:
-            logging.debug( 'Matrix can not be inverted\n', str(matrix) )
+            logging.debug( 'Matrix can not be inverted\n'+ str(matrix) )
 
  
 def Cholesky(A, ztol= 1.0e-5):
