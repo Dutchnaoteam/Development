@@ -17,7 +17,7 @@ def sample(mean, cov , dimensions):
 
     randoms = matrix.zero(dimensions, 1)
     for i in range(len(randoms)):
-        randoms[i][0] = random.gauss(0, 0.025)
+        randoms[i][0] = random.gauss(0, 0.0025)
 
     return matrix.plus( mean , matrix.mult(r, randoms))
 

@@ -19,7 +19,6 @@ def debug():
     ledProxy = ALProxy("ALLeds",         "127.0.0.1", 9559)
     sensors  = ALProxy("ALSensors",      "127.0.0.1", 9559)
     vidProxy = ALProxy("ALVideoDevice",  "127.0.0.1", 9559)
-
     hmh = headMotionHandler.HeadMotionHandler( ledProxy, memProxy,
             motProxy, vidProxy )
     mot = m.debug()
@@ -44,7 +43,7 @@ class MotionHandler(threading.Thread):
     lock = threading.Lock()
     
     def __init__( self, motionObject, hmh, ledProxy, motProxy, memProxy, 
-                 sensors, ttsProxy, vidProxy, debug=False ):
+                 sensors, ttsProxy, vidProxy, debug=True ):
         threading.Thread.__init__(self)
 
         self.running = True
@@ -250,15 +249,15 @@ class MotionHandler(threading.Thread):
                 
                 # get features from the world
                 goalLoc = self.hmh.vision.getGoal()
-                ballLoc = self.hmh.vision.getBall()
-                #print "Features {0}, BallLoc {1}".format( features, ballLoc )
-                print 'MotionHandler x,y = ', ballLoc
+                if not goalLoc:
+                    goalLoc = [None]
+ 
                 # set control vector
                 control = [0,0,0]
                 for i in range(3):
                     control[i] = self.control[i] * interval
-                # update PF and KF
-                self.PF.iteratePlus( goalLoc, control )
+                # update PF
+                self.PF.iteratePlus( list(goalLoc), control )
                 
                 # if debugging, store info in memory
                 if self.debug:
@@ -272,6 +271,7 @@ class MotionHandler(threading.Thread):
                 self.hmh.pause()
                 self.mot.keepNormalPose()
                 print "killed all"
+                self.control = [0, 0, 0]
                 time.sleep(0.5)
             else:
                 # note: thread should never be able to reach here
@@ -293,7 +293,8 @@ class MotionHandler(threading.Thread):
             t = int( particle[2] * 100 )
             toSendParticles.append( [x,y,t] )
         meanState = self.PF.meanState
-        
+        print meanState
+ 
         toSendMeanState = [0,0,0]
         for i in range(3):
             toSendMeanState[i] = int(meanState[i] * 100)

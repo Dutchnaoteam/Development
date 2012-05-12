@@ -22,7 +22,7 @@ class Motions():
     def __init__(self, motProxy, posProxy):
         self.motProxy = motProxy
         self.posProxy = posProxy
-        self.setGaitConfigSimple( 0.05 , 0.14, 0.4, 0.02, 45, 19 )
+        self.setGaitConfigSimple( 0.04 , 0.14, 0.4, 0.02, 45, 19 )
         self.setFME(False)
            
     """Set fall manager on or off"""
@@ -1342,7 +1342,7 @@ class Motions():
 
     # soft kick towards right, left leg
     def sideLeftKick(self):
-        self.motProxy.angleInterpolation([ 'LShoulderRoll', 'RShoulderRoll'], 
+        self.motProxy.angleInterpolation([ 'RShoulderRoll', 'LShoulderRoll'], 
                                          [  -0.4,            0.3], 
                                          [  [0.4],          [0.4]], True)
         
@@ -1351,7 +1351,7 @@ class Motions():
         times = list()
         
         names = ['RShoulderRoll','LHipRoll', 'LHipPitch', 'LKneePitch','LAnklePitch','RHipRoll','RHipPitch','RKneePitch']
-        angles = [[1],            [0,  0.45],[-0.4, -0.8],[1, 0.2],[-0.55, 0.6],     [0.05],   [-0.4],     [0.95]     ]
+        angles = [[1],            [0,  -0.45],[-0.4, -0.8],[1, 0.2],[-0.55, 0.6],  [-0.05],   [-0.4],     [0.95]     ]
         times =  [[0.2],          [0.1, 1.8 ],[0.1, 1], [0.5, 1],     [0.5, 1],       [1.0],     [0.5],      [0.5]     ]
         
         self.motProxy.post.angleInterpolation(names, angles, times, True)

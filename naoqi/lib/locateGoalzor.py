@@ -223,6 +223,8 @@ def run(image, yawHead ):
         tuplepart2 = calcXangle(posMax)  + yawHead, pixelsToMeters( Max )
     if tuplepart1 or tuplepart2:
         return (tuplepart2, tuplepart1) # (closest, furthest)         # return the angles
+    else:
+        return [None]
         
 def pixelsToMeters( pixels ):
     

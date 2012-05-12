@@ -171,7 +171,7 @@ def Set():
         (teamColor, penalty) = gsc.getMatchInfo()
 
         print 'In set state'
-        HeadMotionHandler.setBallScanning()                
+        HeadMotionHandler.setFeatureScanning()                
         print 'TeamColor: ' , teamColor                    
         
         # Initial pose, if not already in it
@@ -408,7 +408,7 @@ def BallFound():
     
     if ball:
         (x,y) = ball
-        if x < 0.18 and -0.04 < y < 0.04:
+        if x < 0.17 and -0.02 < y < 0.02:
             print 'Kick'
             MotionHandler.killWalk()
             phase = 'Kick'

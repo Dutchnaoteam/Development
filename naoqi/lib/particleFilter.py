@@ -5,6 +5,7 @@ Author: Auke Wiggers
 
 from random import random, gauss, uniform
 from math import cos, sin, pi, sqrt, exp, atan2
+import sys
 
 class ParticleFilter():
     """
@@ -24,12 +25,12 @@ class ParticleFilter():
     # feature coordinates per id, (x,y).
     # note that the naming is based on naoviewpoint (left poles are
     # on the left side of the nao when it sees the goal)
-    worldMap = { "RightPoleFar   ":    (6.0, 1.25),  
+    worldMap = { "RightPoleFar"   :    (6.0, 1.25),  
                  "LeftPoleFar"    :    (6.0, 2.75), 
                  "RightPoleClose" :    (0.0, 1.25), 
                  "LeftPoleClose"  :    (0.0, 2.75) }
 
-    def __init__( self, numberOfSamples, position = (0,0) ):
+    def __init__( self, numberOfSamples, position = [0,0,0] ):
         self.reset( numberOfSamples )
         self.running = False
         self.meanState = position
@@ -109,16 +110,15 @@ class ParticleFilter():
                         mostProbableFeature = idFeature
                 measurements[ i ] = bearingM, rangeM, mostProbableFeature
                 
-                for measurement in measurements:                
-                    self.iterate( measurement, control)
-                    control = [0,0,0]
+            for measurement in measurements:                
+                self.iterate( measurement, control)
+                control = [0,0,0]
                 
     def iterate( self, measurement, control):
         """ One iteration of the particle filter. """
 	
         predictedSamples = []
         weights = []
-
         for sample in self.samples:
 
             # Predict the new state based on the control vector
@@ -197,7 +197,11 @@ class ParticleFilter():
 
     def sensorModel( self, state, measurement ):
         """Sensor model calculates probability of a state given measurement """ 
-        bearingM, rangeM, idFeature = measurement
+        try:
+            bearingM, rangeM, idFeature = measurement
+        except:
+            print "Stuff went wrong namely", measurement
+            sys.exit(1)
         x,y,theta = state
 
         # Only keep a sample if it is in the field
