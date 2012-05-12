@@ -1,7 +1,8 @@
-import time
-
+""" 
+class Earlights manages the lights of the ear based on input by coach. 
+"""
 class EarLights():
-    def __init__(self, name, ledProxy):
+    def __init__(self, ledProxy):
         self.ledProxy = ledProxy
         self.ledProxy.off('EarLeds')
 

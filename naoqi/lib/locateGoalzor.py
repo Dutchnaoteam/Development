@@ -4,9 +4,8 @@ CONTENT: markGoalCV, calcXangle, convertImage, run
 '''
 import cv
 import math
-import time
 
-def markGoalCV(im, color):
+def markGoalCV(im):
     ''' 
     As made by Michael Cabot
     Image color filter, can be thresholded (70 recommended) to find 
@@ -16,7 +15,7 @@ def markGoalCV(im, color):
     OUTPUT: returns an OpenCV color filtered image with values of the 
             color match, values over a threshold of 70 are sugested
     '''
-    size = (320,240) # Size of the images #Tijmen edited
+    size = (320,240) # Size of the images
     hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
     filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
     
@@ -38,21 +37,21 @@ def markGoalCV(im, color):
     '''
     # TODO AANPASSEN TIJMEN 
     # Goalfilter values made in Eindhoven 04/2012
-    if(color == 'blue'):
-        hueMin = 106
-        hueMax = 113
-        saturationMin = 204 
-        saturationMax = 255 
-        valueMin = 119 
-        valueMax = 197
-    if(color == 'yellow'):
-        hueMin = 29 
-        hueMax = 39 
-        saturationMin = 102 
-        saturationMax = 204
-        valueMin = 188
-        valueMax = 255 
-            
+    #if(color == 'blue'):
+    #    hueMin = 106
+    #    hueMax = 113
+    #    saturationMin = 204 
+    #    saturationMax = 255 
+    #    valueMin = 119 
+    #    valueMax = 197
+    
+    # For yellow goals:    
+    hueMin = 29
+    hueMax = 37 
+    saturationMin = 106 
+    saturationMax = 220
+    valueMin = 105
+    valueMax = 255 
     
     hsvMin1 = cv.Scalar(hueMin, saturationMin, valueMin, 0)
     hsvMax1 = cv.Scalar(hueMax, saturationMax, valueMax, 0)
@@ -65,12 +64,12 @@ def calcXangle(xcoord):
     '''
     As made by Michael Cabot
     calculates the angle towards a location in an image
-    INPUT:  xcoord, a x coordinate in a [160-by-120] image
+    INPUT:  xcoord, a x coordinate in a [320-by-240] image
     OUTPUT: returns the angle to the x coordinate with the middle of
     the image being 0 degrees
     '''
     (width, height) = (320, 240)
-    xDiff = width/2 - xcoord
+    xDiff = width / 2.0 - xcoord
     distanceToFrame = 0.5 * width / 0.42860054745600146
     xAngle = math.atan(xDiff/distanceToFrame)
     return xAngle
@@ -91,7 +90,7 @@ def convertImage(picture):
     cv.SetData(image, picture.tostring(), picture.size[0]*3)
     return image    
     
-def run(image, yawHead, color):
+def run(image, yawHead ):
     '''
     By Author
     Recognizes poles of a color with a minimum lenght of 20 pixels
@@ -107,7 +106,7 @@ def run(image, yawHead, color):
     # Filter an image based on color.
     image = convertImage(image)
     #cv.SaveImage('raw' + str(time.time()) +  '.jpg', image)
-    image = markGoalCV(image, color)
+    image = markGoalCV(image )
     #cv.SaveImage('filter' + color + str(time.time()) +  '.jpg', image)
     cv.Smooth(image, image, cv.CV_GAUSSIAN, 5,5)
     
@@ -226,20 +225,10 @@ def run(image, yawHead, color):
         return (tuplepart2, tuplepart1) # (closest, furthest)         # return the angles
         
 def pixelsToMeters( pixels ):
-    # 59 = 0.3
-    # 53 = 0.4
-    # 44 = 0.5
-    # 38 = 0.6
-    # 24 = 0.7
-    # 17 = 0.8
-    # 20 = 0.9
-    # 18 = 1.0
-    # 12 = 1.1
-    # 11 = 1.2
-    #  8 = 1.3
-    #  5 = 1.9
-    # WOLFRAMFIT:
-    return 2.55 - 0.56958 * math.log( pixels )
     
+    radiusPerPixelWidth = 0.003325
+    pixels /= 2.0
+    angle = pixels * radiusPerPixelWidth
+    return 0.05 / math.tan( angle )
     
     

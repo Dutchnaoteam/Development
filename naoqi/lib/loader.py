@@ -38,4 +38,4 @@ if soul:
     senProxy.enableDefaultActionDoubleClick(False)
     os.system("python /home/nao/naoqi/lib/soul.py")
 else:
-    ttsProxy.say("I am ready for another great day")
+    ttsProxy.say("I am ready for the kill")

@@ -1,25 +1,33 @@
 """ 
 File fk-chain. 
+Author: Auke Wiggers
+
+Containing classes PID that is an implementation of a PID controller, and 
+FKChain, that enables the user to compute the positions of the body given its
+angles. 
+ 
 """
 
-from math import cos, sin, atan2
+from math import cos, sin
 import time
 
-""" 
+""" returns None
+
 Balance based on inertial unit, uses hiproll and pitch to compensate
-for external disturbances
+for external disturbances.
+
 """
 def balanceGyro(supportLeg = 'R'):
     from naoqi import ALProxy
-    mem = ALProxy("ALMemory", "169.254.35.27", 9559)
-    mot = ALProxy("ALMotion", "169.254.35.27", 9559)
+    mem = ALProxy("ALMemory", "127.0.0.1", 9559)
+    mot = ALProxy("ALMotion", "127.0.0.1", 9559)
 
     oldAngleX = mem.getData("Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value")
     oldAngleY = mem.getData("Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value")
 
     rollName  = supportLeg + 'HipRoll'
     pitchName = supportLeg + 'HipPitch'
-    oldRoll, oldPitch  = mot.getAngles([rollName, pitchName], True  )
+    oldRoll, oldPitch  = mot.getAngles([rollName, pitchName], True )
 
     # factor that determines rate of exponential smoothing
     alpha = 0.9
@@ -64,8 +72,12 @@ def balanceGyro(supportLeg = 'R'):
         oldAngleX = newAngleX
         oldAngleY = newAngleY
 
-"""PID controller with 3 factors determining output proportional, integral and
-derivative term."""
+""" returns Output based on KP, KI, KD
+
+PID controller with 3 factors determining output via proportional, integral and
+derivative term.
+
+"""
 class PID():
     def __init__(self, kP = 1, kI = 1, kD = 1):
         self.kP = kP
@@ -102,7 +114,13 @@ class PID():
         self.previous_error = error
         return output
 
-class FKChain():
+""" class FKChain
+
+Contains functions that are used to calculate 6d positions of joints and the 
+center of mass.
+
+"""
+class FKChain( ):
     #            name,           comX,      comY,     comZ,     mass
     jointCOM = {"RFoot"    : ( [ 0.01432, -0.00192, -0.01449], 0.30067 ),
                 "RKnee"    : ( [ 0.00422, -0.00252, -0.04868], 0.29159 ),
@@ -119,7 +137,7 @@ class FKChain():
                 "LPelvis"  : ( [-0.00766,  0.01200,  0.02717], 0.07117 ),
                 "RPelvis"  : ( [-0.00766, -0.01200,  0.02717], 0.07117 ) }
                     
-    # Calculate the center of mass of the nao based on the support leg.
+    # Contains angles corresponding to a joints nickname
     jointAngles = {"RFoot"  : ["RAnkleRoll",    "RAnklePitch",    0],
             "RKnee"    : [0,               "RKneePitch",     0],
             "RHip"     : ["RHipRoll",      "RHipPitch",      0],
@@ -132,113 +150,119 @@ class FKChain():
             "RElbow"   : ["RElbowRoll",     0,               "RElbowYaw"],
             "LShoulder": ["LShoulderRoll", "LShoulderPitch", 0 ],
             "LElbow"   : ["LElbowRoll",     0,               "LElbowYaw"],
-            "LPelvis"  : [0,                "RHipYawPitch",  "RHipYawPitch"],
+            "LPelvis"  : [0,                "LHipYawPitch",  "LHipYawPitch"],
             "RPelvis"  : [0,                "LHipYawPitch",  "LHipYawPitch"]
             }
 
-    # translations based on names given for jointcombis + virtual joint 'ground'
+    # Contains translations based on nicknames and virtual joint 'ground'
     translation = {("Ground", "RFoot"      ) :  [0,      0,      0.04519 ],
                    ("RFoot", "RKnee"       ) :  [0,      0,      0.1029 ],
                    ("RKnee", "RFoot"       ) :  [0,      0,     -0.1029 ],
                    ("RKnee", "RHip"        ) :  [0,      0,      0.1000 ],
                    ("RHip", "RKnee"        ) :  [0,      0,     -0.1000 ],
+                   ("RPelvis", "RHip"      ) :  [0,      0,      0     ],
                    ("RPelvis", "LPelvis"   ) :  [0,      0.100,  0     ],
                    ("RPelvis", "LShoulder" ) :  [0,      0.148,  0.1850 ],
                    ("RPelvis", "RShoulder" ) :  [0,     -0.048,  0.1850 ],
                    ("RPelvis", "Neck"      ) :  [0,      0.050,  0.2115 ],
                    ("RPelvis", "Torso"     ) :  [0,      0.050,  0.085  ],
                    ("RHip", "RPelvis"      ) :  [0,      0,      0     ],
-                   ("RPelvis", "RHip"      ) :  [0,      0,      0     ],
                    ("Ground", "LFoot"      ) :  [0,      0,      0.04519 ],
                    ("LFoot", "LKnee"       ) :  [0,      0,      0.1029 ],
                    ("LKnee", "LFoot"       ) :  [0,      0,     -0.1029 ],
                    ("LKnee", "LHip"        ) :  [0,      0,      0.1000 ],
                    ("LHip", "LKnee"        ) :  [0,      0,     -0.1000 ],
-                   ("LPelvis", "RPelvis"   ) :  [0,     -0.100,  0     ],
-                   ("LPelvis", "Torso"     ) :  [0,     -0.050,  0.085    ],
-                   ("LHip", "LPelvis"      ) :  [0,      0,      0     ],
+                   ("LHip", "LPelvis"      ) :  [0,      0,      0      ],
+                   ("LPelvis", "RPelvis"   ) :  [0,     -0.100,  0      ],
+                   ("LPelvis", "Torso"     ) :  [0,     -0.050,  0.085  ],
                    ("LPelvis", "LShoulder" ) :  [0,      0.048,  0.1850 ],
                    ("LPelvis", "RShoulder" ) :  [0,     -0.148,  0.1850 ],
                    ("LPelvis", "Neck"      ) :  [0,     -0.050,  0.2115 ],
-                   ("LPelvis", "LHip"      ) :  [0,      0,      0     ],
-                   ("RShoulder", "RElbow"  ) :  [0.105, -0.015,  0     ],
-                   ("LShoulder", "LElbow"  ) :  [0.105,  0.015,  0     ],
-                   ("Torso", "Head"        ) :  [0,      0,      0.2115 ]
+                   ("LPelvis", "LHip"      ) :  [0,      0,      0      ],
+                   ("RShoulder", "RElbow"  ) :  [0.105, -0.015,  0      ],
+                   ("LShoulder", "LElbow"  ) :  [0.105,  0.015,  0      ],
+                   ("Torso", "Head"        ) :  [0,      0,      0.2115 ],
+                   ("Torso", "RPelvis"     ) :  [0,     -0.050, -0.085  ],
+                   ("Torso", "LPelvis"     ) :  [0,      0.050,  0.085  ],
+                   ("Torso", "RShoulder"   ) :  [0,     -0.098,  0.100  ],
+                   ("Torso", "LShoulder"   ) :  [0,      0.098,  0.100  ]                   
                    }
 
     positions6D = dict()
     weightedCOM = dict()
 
-    def __init__(self):
-        pass
+    def __init__(self, motProxy):
+        self.motProxy = motProxy
     
-    bodyState = {"RAnkleRoll"    :  0.0, \
-                        "RAnklePitch"   :  0.0, \
-                        "RKneePitch"    :  0.0, \
-                        "RHipRoll"      :  0.0, \
-                        "RHipPitch"     :  0.0, \
-                        "RHipYawPitch"  :  0.0, \
-                        "LAnkleRoll"    :  0.0, \
-                        "LAnklePitch"   :  0.0, \
-                        "LKneePitch"    :  0.0, \
-                        "LHipPitch"     :  0.0, \
-                        "LHipRoll"      :  0.0, \
-                        "LHipYawPitch"  :  0.0, \
-                        "RShoulderRoll" :  0.0, \
-                        "RShoulderPitch":  0.0, \
-                        "RElbowRoll"    :  0.0, \
-                        "RElbowYaw"     :  0.0, \
-                        "LShoulderRoll" :  0.0, \
-                        "LShoulderPitch":  0.0, \
-                        "LElbowRoll"    :  0.0, \
-                        "LElbowYaw"     :  0.0, \
-                        "HeadPitch"     :  0.0, \
-                        "HeadYaw"       :  0.0, \
-                         0              :  0.0  }
+    bodyState = {   "RAnkleRoll"    :  0.0, \
+                    "RAnklePitch"   :  0.0, \
+                    "RKneePitch"    :  0.0, \
+                    "RHipRoll"      :  0.0, \
+                    "RHipPitch"     :  0.0, \
+                    "RHipYawPitch"  :  0.0, \
+                    "LAnkleRoll"    :  0.0, \
+                    "LAnklePitch"   :  0.0, \
+                    "LKneePitch"    :  0.0, \
+                    "LHipPitch"     :  0.0, \
+                    "LHipRoll"      :  0.0, \
+                    "LHipYawPitch"  :  0.0, \
+                    "RShoulderRoll" :  0.0, \
+                    "RShoulderPitch":  0.0, \
+                    "RElbowRoll"    :  0.0, \
+                    "RElbowYaw"     :  0.0, \
+                    "LShoulderRoll" :  0.0, \
+                    "LShoulderPitch":  0.0, \
+                    "LElbowRoll"    :  0.0, \
+                    "LElbowYaw"     :  0.0, \
+                    "HeadPitch"     :  0.0, \
+                    "HeadYaw"       :  0.0, \
+                    0               :  0.0   }
 
     def setBodyState( self, bodyState ):
         self.bodyState = bodyState
 
     def refreshBodyState( self ):
-        from naoqi import ALProxy
-        mot= ALProxy('ALMotion', '169.254.35.27', 9559)
         for key in self.bodyState.keys()[1:]:
-            self.bodyState[key] = mot.getAngles(key, True)[0]
+            self.bodyState[key] = self.motProxy.getAngles(key, True)[0]
       
-    """function calcCOM computes the position of the center of mass based on the
-    support leg and the state of the body (all angles)"""
+    """ returns a 3x1 vector (list)
+    
+    Function calcCOM computes the position of the center of mass based on the
+    support leg and the state of the body (all angles).
+    
+    """
     def calcCOM( self, sL = "both" ):
         self.refreshBodyState()
         # sL is supportLeg, either R or L or both
         if sL == "R" or sL == "L":
             oL = "L" if sL == "R" else "R"
     
-            order1 = ["Ground", sL+"Foot", sL+"Knee", sL+"Hip", sL+"Pelvis"]
-            order2 = [sL+"Pelvis", oL+"Pelvis", oL+"Hip", oL+"Knee", oL+"Foot"]
-            order3 = [sL+"Pelvis", "RShoulder", "RElbow"]
-            order4 = [sL+"Pelvis", "LShoulder", "LElbow"]
-            order5 = [sL+"Pelvis", "Torso", "Head"]
+            order1 = ["Ground", sL+"Foot", sL+"Knee", sL+"Hip", sL+"Pelvis", "Torso"]
+            order2 = ["Torso", oL+"Pelvis", oL+"Hip", oL+"Knee", oL+"Foot"]
+            order3 = ["Torso", "RShoulder", "RElbow"]
+            order4 = ["Torso", "LShoulder", "LElbow"]
+            order5 = ["Torso", "Head"]
     
             pos6DGround = (0.0 ,0.0 ,0.0 ,0.0 ,0.0 ,0.0 )
-            pos6DSupportHip = self.transformAll( pos6DGround,     order1 )
-            pos6DOtherFoot  = self.transformAll( pos6DSupportHip, order2, True )
-            pos6DHead       = self.transformAll( pos6DSupportHip, order5 )
-            pos6DRHand      = self.transformAll( pos6DSupportHip, order3 )
-            pos6DLHand      = self.transformAll( pos6DSupportHip, order4 )
+            pos6DTorso      = self.transformAll( pos6DGround,  order1 )
+            _               = self.transformAll( pos6DTorso,   order2,  True )
+            _               = self.transformAll( pos6DTorso,   order5 )
+            _               = self.transformAll( pos6DTorso,   order3 )
+            _               = self.transformAll( pos6DTorso,   order4 )
         else:
-            order1 = ["Ground", "RFoot", "RKnee", "RHip", "RPelvis"]
-            order2 = ["Ground", "LFoot", "LKnee", "LHip", "LPelvis"]
-            order3 = ["RPelvis", "RShoulder", "RElbow"]
-            order4 = ["RPelvis", "LShoulder", "LElbow"]
-            order5 = ["RPelvis", "Torso", "Head"]
+            order1 = ["Ground", "RFoot", "RKnee", "RHip", "RPelvis", "Torso"]
+            order2 = ["Ground", "LFoot", "LKnee", "LHip", "LPelvis", "Torso"]
+            order3 = ["Torso", "RShoulder", "RElbow"]
+            order4 = ["Torso", "LShoulder", "LElbow"]
+            order5 = ["Torso", "Head"]
     
             pos6DGroundR = (0.0, -0.04, 0.0, 0.0, 0.0, 0.0 )
             pos6DGroundL = (0.0, 0.04, 0.0, 0.0, 0.0, 0.0 )
-            pos6DRHip  = self.transformAll( pos6DGroundR, order1)
-            pos6DLHip  = self.transformAll( pos6DGroundL, order2 )
-            pos6DHead  = self.transformAll( pos6DRHip,   order5 )
-            pos6DRHand = self.transformAll( pos6DRHip,   order3 )
-            pos6DLHand = self.transformAll( pos6DRHip,   order4 )
+            pos6DTorso = self.transformAll( pos6DGroundR, order1)
+            _          = self.transformAll( pos6DGroundL, order2 )
+            _          = self.transformAll( pos6DTorso,   order5 )
+            _          = self.transformAll( pos6DTorso,   order3 )
+            _          = self.transformAll( pos6DTorso,   order4 )
     
         COM = [0,0,0]
         for _, value in self.weightedCOM.iteritems():
@@ -248,9 +272,13 @@ class FKChain():
             COM[i] /= 4.879
         return COM
     
-    """function transformAll takes a starting position vector (in 6d) and computes
+    """ returns a 6d position vector. 
+    
+    Function transformAll takes a starting position vector (in 6d) and computes
     the resulting position given a sequence of jointnames order and a bodyState
-    containing the current angles of the body"""
+    containing the current angles of the body.
+    
+    """
     def transformAll(self, pos6D, order, otherLeg = False ):
         for i in xrange(1,len(order)):
             # get jointinfo
@@ -270,11 +298,17 @@ class FKChain():
             pos6D, comVector =  self.transform( pos6D, trans, rot, com, mass)
             self.positions6D[ jointName ] = pos6D
             self.weightedCOM[ jointName ] = comVector
-            #print "Position of", jointName, pos6D[:3]
+            #   print "Position of", jointName, pos6D[:3]
     
         return pos6D
     
-    """Transforms a 6d vector based on translation/rotation"""
+    """ returns a 6d position vector plus a 3d vector containing COM.
+    
+    Transforms a 6d vector based on translation/rotation and calculates the 
+    weighted coordinates of the center of mass, as this transformation is 
+    one based on a joint. 
+    
+    """
     def transform(self, pos6D, trans, rot, com, mass):
         x,y,z,wx,wy,wz = pos6D
         t1,t2,t3 = trans

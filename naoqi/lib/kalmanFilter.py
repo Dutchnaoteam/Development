@@ -1,36 +1,57 @@
+"""
+File: kalmanFilter
+Author: Auke Wiggers
+"""
+
 import math
 import random
 import matrix
 
-# Method to create samples given the mean and covariance matrix
+""" returns a sample based on a mean and covariance
+
+Method to create samples given the mean and covariance matrix 
+
+"""
 def sample(mean, cov , dimensions):
     r = matrix.transpose( matrix.Cholesky(cov) )
 
     randoms = matrix.zero(dimensions, 1)
     for i in range(len(randoms)):
-        randoms[i][0] = random.gauss(0,0.025)
+        randoms[i][0] = random.gauss(0, 0.025)
 
     return matrix.plus( mean , matrix.mult(r, randoms))
 
+""" class KalmanFilter
+
+Creates a kalmanfilter object that performs the prediction and measurement
+step based on input given by set methods.
+
+"""
 class KalmanFilter():    
     # R = noise for covariance matrix prediction step
-    R = [[0.01,0],[0,0.01]]
+    R = [[0.01, 0],[0, 0.01]]
     # Q = noise for covariance matrix correction step
-    Q = [[0.01,0],[0,0.01]]
+    Q = [[0.01, 0],[0, 0.01]]
 
-    mu = [[0],[0]]
-    Sigma = [[0.1,0],[0,0.1]]
+    mu = [[0], [0]]
+    sigma = [[0.1, 0],[0, 0.1]]
     u = matrix.zero( 2,1 )
     z = matrix.zero( 2,1 )
-    I = [[1,0],[0,1]]
+    I = [[1, 0], [0, 1]]
     
     def __init__(self):
-	self.mu = [[0],[0]]
-	self.lost = True
-	
+        self.mu = [[0], [0]]
+        self.ballPos = None
+    
+    def reset(self, position = (0,0) ):
+        x, y = position
+        self.mu = [[x], [y]]
+        self.lost = True
+        self.ballPos = None
+        self.sigma = [[0.1, 0],[0, 0.1]]
+
+        
     def iterate(self, measurement, control ):
-        if measurement:
-	    self.lost = False
 	
         velocity = control
                 
@@ -47,7 +68,8 @@ class KalmanFilter():
         
         # rotate using nao_movements theta
         t = nao_movement_t
-        rotationmatrix = [[ math.cos( t ), -math.sin(t) ],[ math.sin(t), math.cos(t) ]]
+        rotationmatrix = [[ math.cos( t ), -math.sin(t) ], \
+                          [ math.sin( t ),  math.cos(t) ]]
 
         # Predict new measurement based on nao movement.
         # Nao moves x,y towards the ball 
@@ -57,10 +79,10 @@ class KalmanFilter():
         muBelief = matrix.mult( rotationmatrix, muBelief )
 
         # add noise to motion
-        muBelief = sample( muBelief, self.Sigma, 2)
+        muBelief = sample( muBelief, self.sigma, 2)
         
         # covariance matrix update
-        SigmaBelief = matrix.plus( self.Sigma , self.R)
+        SigmaBelief = matrix.plus( self.sigma , self.R)
 
         # ________ CORRECTION _________
 
@@ -72,11 +94,16 @@ class KalmanFilter():
             s = matrix.inverse2D( matrix.plus(  SigmaBelief, self.Q) )
             K = matrix.mult(SigmaBelief, s ) 
 
-            self.mu = matrix.plus(  muBelief,  matrix.mult(K, matrix.subtract(self.z , muBelief)) )
-            self.Sigma = matrix.mult(matrix.subtract( self.I, K ), SigmaBelief)
+            self.mu = matrix.plus( muBelief, 
+                                   matrix.mult(K, 
+                                               matrix.subtract(self.z , 
+                                                               muBelief ) 
+                                               )
+                                 )
+            self.sigma = matrix.mult(matrix.subtract( self.I, K ), SigmaBelief)
         else:
             # if no ball is found, use the predicted state!
             self.mu = muBelief
-            self.Sigma = SigmaBelief
+            self.sigma = SigmaBelief
 
         self.ballPos = self.mu[0][0], self.mu[1][0]    

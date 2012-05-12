@@ -1,8 +1,16 @@
-# File: buttonController
-# By: Camiel Verschoor, Sander Nugteren & Erik van Egmond
+"""
+File: buttonController
+Author: Camiel Verschoor, Sander Nugteren & Erik van Egmond
+"""
 
 import time
 
+""" class ButtonController
+
+Presents get methods for different buttons on the body (chest, feet) plus a 
+manual setup.
+
+"""
 class buttonController():
     # VARIABLES
     chestButtonPressed = False
@@ -31,7 +39,8 @@ class buttonController():
             return 0
                 
     def bumperButton(self):
-        return self.memProxy.getData("LeftBumperPressed", 0) or self.memProxy.getData("RightBumperPressed", 0)
+        return self.memProxy.getData("LeftBumperPressed", 0) or \
+               self.memProxy.getData("RightBumperPressed", 0)
     
     # THE FUNCTIONS TO SETUP THE NAO
     def getSetup(self):
@@ -42,7 +51,6 @@ class buttonController():
             else:
                 self.ttsProxy.say("My current team color is, red")
             self.teamColor = self.chooseTeam()
-            time.sleep(1)
             
             self.ttsProxy.say("Choose mode")
             if (self.penalty == 0):
@@ -50,18 +58,8 @@ class buttonController():
             else:
                 self.ttsProxy.say("Current mode, Penalty mode")
             self.penalty = self.chooseMode()
-            time.sleep(1)
-            
-            self.ttsProxy.say("Choose kick off")
-            if (self.kickOff == 0):
-                self.ttsProxy.say("I have kick off")
-            else:
-                self.ttsProxy.say("I do not have kick off")
-            self.kickOff = self.chooseKickOff()
-            time.sleep(1)
-            
             self.manual = False
-        return (self.teamColor, self.penalty, self.kickOff)
+        return (self.teamColor, self.penalty)
 
     def chooseTeam(self):
         startTime = time.time()
@@ -88,16 +86,3 @@ class buttonController():
                     self.ttsProxy.say("Match mode")
                 time.sleep(0.5)
         return self.penalty
-
-    def chooseKickOff(self):
-        startTime = time.time()
-        while (time.time() - startTime < 4):
-            if (self.bumperButton()):
-                if(self.kickOff == 0):
-                    self.kickOff = 1
-                    self.ttsProxy.say("Kick off")
-                else:
-                    self.kickOff = 0
-                    self.ttsProxy.say("No kick off")
-                time.sleep(0.5)
-        return self.kickOff

@@ -13,20 +13,26 @@ angle of image in height is 47.80 degrees
 radians per pixel in height is 0.834267382 radians
 radians per pixel = 0.83 / 240 = 0.00345833333   
 
-height of image is 320
-angle of image in height is 60.97 degrees
-radians per pixel in height is 1.064 radians
+width of image is 320
+angle of image in width is 60.97 degrees
+radians per pixel in width is 1.064 radians
 radians per pixel = 1.064 / 320 = 0.003325   
 '''
-
+import time
 import cv
-from math import *
-size = None
+from math import tan, cos, sin
 from naoqi import ALProxy
 motion = ALProxy("ALMotion", "127.0.0.1", 9559)
-import time
 
-def run(im, headInfo):
+size = None
+
+""" returns x,y position as a tuple
+
+Calculates the position of the ball based on position of the camera and 
+an image. Returns none if no ball found.
+
+""" 
+def run(im, headInfo, track ):
     (cam, head) = headInfo
     # convert the image 
     im = convertImage(im)
@@ -35,33 +41,40 @@ def run(im, headInfo):
     green_thresh = filterGreen(im)
 
     im = boundedBox(green_thresh, im)
+    #cv.SaveImage( str(time.time()) +  '.jpg', im)
+    
     # filter the image
     im = filterImage(im)
     #cv.SaveImage('filter' + str(time.time()) +  '.jpg', im)
     # blur the image
-    cv.Smooth(im, im, cv.CV_BLUR, 2, 2)
+    cv.Smooth(im, im, cv.CV_BLUR, 4, 4)
     # find the max value in the image    
-    (minVal, maxValue, minLoc, maxLocation) = cv.MinMaxLoc(im)
+    (_, maxValue, _, maxLocation) = cv.MinMaxLoc(im)
     #print maxValue/256.0
     
     # if the maxValue isn't hight enough return 'None'
     if maxValue/256.0 < 0.4:
         return None
     
-    # else, finish head tasks
-    motion.killTasksUsingResources( ['HeadYaw', 'HeadPitch'] )
+    # if tracking
+    if track:
+        # else, finish head tasks
+        motion.killTasksUsingResources( ['HeadYaw', 'HeadPitch'] )
     
     # calculate the angles to the ball
     #(xAngle, yAngle) = calcAngles((xcoord, ycoord ), cam)
     # calculate the position of the ball
-    position = calcPosition(maxLocation, cam, head)
-    (xPos, yPos, xAngle, yAngle) = position
+    position = calcPosition(maxLocation, cam, head, track)
+    (xPos, yPos, _, _) = position
     
-    #print position
-    #track(position)
     return (xPos, yPos)
 
-def calcPosition(coord, cam, headInfo):
+def calcPosition(coord, cam, headInfo, track):
+    """ calcPosition(coord, cam, headInfo) -> 4d tuple with positions
+    
+    Calculate x,y position based on position in image and camera position.
+    
+    """
     (width, height) = size
     #print 'size: ', width, ', ', height
     # coord with origin in the upperleft corner of the image
@@ -76,26 +89,22 @@ def calcPosition(coord, cam, headInfo):
     radiusPerPixelWidth = 0.003325
     xAngle = xCoord * radiusPerPixelWidth    
     yAngle = yCoord * radiusPerPixelHeight
-    if -1 < xAngle < 1 and -1 < yAngle < 1:
-        yAngle = -0.47 - headInfo[0] if yAngle + headInfo[0] < -0.47 else yAngle
-        motion.changeAngles(['HeadPitch', 'HeadYaw'], [0.3*yAngle, 0.3*xAngle], 0.7)  # 0.3*angles for smoother movements, optional. Smoothinggg. 
-
-    #print 'angle from camera: ' + str(xAngle) + ', ' + str(yAngle)
+    if track:
+        if -1 < xAngle < 1 and -1 < yAngle < 1:
+            yAngle = -0.47 if yAngle + headInfo[0] < -0.47 \
+                                         else yAngle
+            motion.changeAngles(['HeadPitch', 'HeadYaw'], \
+                                [0.3*yAngle, 0.3*xAngle], 0.7)
+                                # 0.3*angles for smoother movements, optional. 
 
     # the position (x, y, z) and angle (roll, pitch, yaw) of the camera
     (x,y,z, roll,pitch,yaw) = cam
-    #print 'cam: ', cam
-
-    # the pitch has an error of 0.940063x + 0.147563
-    # print 'correctedPitch: ', pitch
     
-    # position of the ball where
-    # origin with position and rotation of camera
-    #ballRadius = 0.0325     # in meters
-    ballRadius = 0.065
-    xPos = (z-ballRadius) / tan(pitch + yAngle)
+    # position of the ball where origin with position and rotation of camera
+    # ballRadius = 0.0325 in meters
+    ballDiameter = 0.065
+    xPos = (z-ballDiameter) / tan(pitch + yAngle)
     yPos = tan(xAngle) * xPos
-    #print 'position from camera: ', xPos, ', ', yPos
     # position of the ball where
     #  origin with position of camera and rotation of body 
     xPos = cos(yaw)*xPos + -sin(yaw)*yPos
@@ -104,11 +113,9 @@ def calcPosition(coord, cam, headInfo):
     #  origin with position and rotation of body
     xPos += x
     yPos += y
-    #print 'position ball: ', xPos, ', ', yPos
-    #print 'new yaw/pitch: ', xAngle+yaw, yAngle+pitch
-    #print 'z / tan(pitch): ',(z-ballRadius) / tan(pitch)
     return (xPos, yPos, xAngle, yAngle)
-    
+
+"""Convert image to cv Format"""
 def convertImage(picture):
     global size
     size = picture.size
@@ -118,11 +125,12 @@ def convertImage(picture):
     return image
 
 def filterImage(im):
+    """Filter a cv image for the correct color"""
     # Size of the images
     (width, height) = size
     
     hsvFrame = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 3)
-    filter = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 1)
+    filtered = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 1)
     #filter2 = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 1)
     
     # Values Iran 4/2012
@@ -130,19 +138,24 @@ def filterImage(im):
     #hsvMax1 = cv.Scalar(9,  255,  256, 0)
     
     # Values Eindhoven 4/2012
-    # TODO AANPASSEN TIJMEN
-    hsvMin1 = cv.Scalar(4,  109,  142, 0)
-    hsvMax1 = cv.Scalar(14,  230,  255, 0)
+    #hsvMin1 = cv.Scalar(4,  109,  142, 0)
+    #hsvMax1 = cv.Scalar(14,  230,  255, 0)
     
-    #hsvMin2 = cv.Scalar(170,  90,  130, 0)
-    #hsvMax2 = cv.Scalar(200, 256, 256, 0)
+    # Values RoboW 2012 day 1
+    hsvMin1 = cv.Scalar(12,  158, 213, 0)
+    hsvMax1 = cv.Scalar(20,  255, 255, 0)
+
+    # Values RoboW 2012 day 2
+    hsvMin1 = cv.Scalar(9,   146, 167, 0)
+    hsvMax1 = cv.Scalar(17,  255, 255, 0)
 
     # Color detection using HSV
     cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
-    cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filter)
+    cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filtered)
     #cv.InRangeS(hsvFrame, hsvMin2, hsvMax2, filter2)
     #cv.Or(filter, filter2, filter)
-    return filter
+    return filtered
+
 
 def filterGreen(im):
     """filterGreen(im) -> single-channel IplImage
@@ -151,7 +164,7 @@ def filterGreen(im):
     """
     size = cv.GetSize(im)
     hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
-    filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
+    filtered = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
     ####################
     # filters for green# 
 
@@ -160,21 +173,27 @@ def filterGreen(im):
     #hsvMax1 = cv.Scalar(100,  190,  210, 0)
     
     # Eindhoven values 4/2012 Aanpassen Tijmen
-    hsvMin1 = cv.Scalar(46,  94,  89, 0)
-    hsvMax1 = cv.Scalar(75,  204,  212, 0)
+    # hsvMin1 = cv.Scalar(46,  94,  89, 0)
+    # hsvMax1 = cv.Scalar(75,  204,  212, 0)
+    
+    # RoboW values 
+    hsvMin1 = cv.Scalar(50, 51,  66, 0)
+    hsvMax1 = cv.Scalar(90, 199, 255, 0)
 
     # Color detection using HSV
     cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
-    cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filter)
+    cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filtered)
 
-    return filter
+    return filtered
 
 def boundedBox(im_filter, im_orig):
     """ boundedBox(im_filter, im_orig) -> im_orig
     
     calculates a bounding box around the white pixels of a
     single-channel thresholded image and sets it as ROI on
-    the original image"""
+    the original image
+    
+    """
     bbox = cv.BoundingRect(cv.GetMat(im_filter))
 
     # checking if a box is found
@@ -184,40 +203,3 @@ def boundedBox(im_filter, im_orig):
 
     cv.SetImageROI(im_orig, bbox)
     return im_orig
-
-def zero(m,n):
-    new_matrix = [[0 for row in range(n)] for col in range(m)]
-    return new_matrix
- 
-def show(matrix):
-    # Print out matrix
-    for col in matrix:
-        print(col) 
- 
-def mult(matrix1,matrix2):
-    # Matrix multiplication
-    if len(matrix1[0]) != len(matrix2):
-        # Check matrix dimensions
-        print('Matrices must be m*n and n*p to multiply!')
-    else:
-        # Multiply if correct dimensions
-        new_matrix = zero(len(matrix1),len(matrix2[0]))
-        for i in range(len(matrix1)):
-            for j in range(len(matrix2[0])):
-                for k in range(len(matrix2)):
-                    new_matrix[i][j] += matrix1[i][k]*matrix2[k][j]
-        return new_matrix
-            
-# form a rotation translation matrix            
-def rtmatrix(rotation, translation):
-    [a1, a2, a3] = rotation # 1 = roll 2 = pitch 3 = yaw
-    [t1, t2, t3] = translation # xyz
-    # calculate the transformation matrix 
-    matrix = [[math.cos(a1) * math.cos(a3) - math.sin(a1) * math.cos(a2) * math.sin(a3), 
-               -math.sin(a1) * math.cos(a3) - math.cos(a1) * math.cos(a2) * math.sin(a3),
-               math.sin(a2) * math.sin(a3), t1 ],
-              [math.cos(a1) * math.sin(a3) + math.sin(a1) * math.cos(a2) * math.cos(a3), 
-              -math.sin(a1) * math.sin(a3) + math.cos(a1) * math.cos(a2) * math.cos(a3),
-              -math.sin(a2) * math.cos(a3), t2 ],
-              [math.sin(a1) * math.sin(a2), math.cos(a1) * math.sin(a2) , math.cos(a2) , t3 ],[0,0,0,1]]
-    return matrix

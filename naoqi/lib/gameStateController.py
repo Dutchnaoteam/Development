@@ -1,13 +1,19 @@
-# File: gameStateController
-# File: gameStateController
-# By: Camiel Verschoor, Sander Nugteren & Erik van Egmond
+"""
+File: gameStateController
+Author: Camiel Verschoor, Sander Nugteren & Erik van Egmond
+"""
 
-from socket import *
 import time
 import gameController as gameC
 import buttonController as buttonC
 import threading
 
+""" Class StateController
+
+A threaded class that keeps checking gamecontroller and buttons for changes 
+in the game state.  
+
+"""
 class StateController(threading.Thread):
     # VARIABLES
     f = open('/home/nao/naoinfo/NAOINFO.txt','r')
@@ -18,9 +24,8 @@ class StateController(threading.Thread):
     lastCheck = 0
     secondaryState = 0
 
-    def __init__(self, name, ttsProxy, memProxy, ledProxy, sensors ):
+    def __init__(self, ledProxy, memProxy, sensors, ttsProxy ):
         threading.Thread.__init__(self)
-        self.name = name
         self.running = True
         self.bc = buttonC.buttonController( ttsProxy, memProxy, sensors )
         self.gc = gameC.gameController( self.team )
@@ -36,25 +41,36 @@ class StateController(threading.Thread):
         now = time.time()
         
         while(self.running):
-            previous = self.state
             # if gamecontroller active
             if self.gc.controlledRefresh():
-                gcState = self.gc.getGameState()                # get state from GameController
-                buttonState = self.listenToButtons(buttonState) # get buttonstate 
-
-                if (buttonState == 10 or self.gc.getPenalty(self.robot, self.team)):
+                # get state from GameController
+                gcState = self.gc.getGameState()                
+                # get buttonstate
+                if self.bc.chestButton():             
+                    buttonState = self.listenToButtons( self.state )  
+                
+                # if penalized
+                if (buttonState == 10 or self.gc.getPenalty(self.robot, \
+                                                            self.team)):
                     self.state = 10
                 else:
                     self.state = gcState
                 self.manageLeds( self.state )
-            # if gamecontroller not active, listen to buttons for some time (10 seconds) then try refreshing
+            # if gamecontroller not active, listen to buttons for some time 
+            # (10 seconds) then try refreshing
             else: 
                 #print 'Gc, not active, listen to buttonInterface'
                 now = time.time()
                 while time.time() - now < 10.0:
-                    self.state = self.listenToButtons( self.state )
+                    if self.bc.chestButton():
+                        self.state = self.listenToButtons( self.state )
                     self.manageLeds( self.state )
 
+    """ returns None
+    
+    Uses chestleds to display gamestate 
+    
+    """
     def manageLeds( self, state ): 
         # case initial
         if state == 0:
@@ -66,10 +82,10 @@ class StateController(threading.Thread):
                 self.ledProxy.fadeRGB('LeftFootLeds', 0x00ff0000, 0)
         elif self.state == 1:
             # ChestLed is blue
-            self.ledProxy.fadeRGB('ChestLeds',0x000000ff, 0)
+            self.ledProxy.fadeRGB('ChestLeds', 0x000000ff, 0)
         elif self.state == 2:
             # ChestLed is yellow
-            self.ledProxy.fadeRGB('ChestLeds', 0x00ffff00, 0)       # set chestledcolor to green
+            self.ledProxy.fadeRGB('ChestLeds', 0x00ffff00, 0)       
             # Team color must be displayed on left foot (Reference to rules)
             if (self.getTeamColor == 0):
                 self.ledProxy.fadeRGB('LeftFootLeds', 0x000000ff, 0)
@@ -80,34 +96,34 @@ class StateController(threading.Thread):
             self.ledProxy.fadeRGB('ChestLeds', 0x0000ff00, 0)
         elif self.state == 10:
             # ChestLed is red 
-            self.ledProxy.fadeRGB('ChestLeds',0x00ff0000, 0)                               
+            self.ledProxy.fadeRGB('ChestLeds', 0x00ff0000, 0)
         elif self.state == 4:
             # Leds are off
             self.ledProxy.off('AllLeds')                                
-
+    
+    """ Get the current state """
     def getState(self):
         return self.state
 
+    """ return number corresponding to gameState
+
+    Invoked if button pressed, change state accordingly
+    
+    """
     def listenToButtons(self, buttonState):
-        state = 0
-        if self.bc.chestButton(): #change the phase if the ChestButton was pressed
-            if(buttonState == 0):    # initial   -> penalized
-                state = 10
-            elif(buttonState == 10): # penalized -> playing
-                state = 3
-            elif(buttonState == 3):  # playing   -> penalized
-                state = 10
-            else:                    # all other states ? -> playing
-                state = 3
-        else:
-            state = buttonState      # if not pressed, remain in current state
+        if(buttonState == 0):    # initial   -> penalized
+            state = 10
+        elif(buttonState == 10): # penalized -> playing
+            state = 3
+        elif(buttonState == 3):  # playing   -> penalized
+            state = 10
+        else:                    # all other states ? -> playing
+            state = 3
         return state
-        
+    
+    """Invoke manual setup"""
     def getSetup(self):
         return self.bc.getSetup()
-
-    def setup(self, teamColor = 0, penalty = 0):
-        return self.bc.setup(teamColor, penalty)
 
     # GET FUNCTIONS
     def getTeamNumber(self):
@@ -128,28 +144,27 @@ class StateController(threading.Thread):
         return self.secondaryState
 
     def getMatchInfo(self):
-        teamColor = kickOff = penalty = 0
+        teamColor = kickOff = 0
         if self.gc.controlledRefresh():
             teamColor = self.gc.getTeamColor('we')
             penalty = self.gc.getSecondaryState()
-            kickOff = self.gc.getKickOff()
         else:
-            (teamColor, penalty, kickOff) = self.bc.getSetup()
+            (teamColor, penalty) = self.bc.getSetup()
         self.secondaryState = penalty
-        return (teamColor, penalty, kickOff)
-
+        return (teamColor, penalty)
 
     # Closes thread
     def close(self):
         self.running = False
         self.gc.close()
 
-# This code will only be executed if invoked directly. Not when imported from another file.
-# It shows how to use this module
+""" This code will only be executed if invoked directly. Not when imported from 
+another file. It shows how to use this module
+
+"""
 if __name__ == '__main__':
-    sc = stateController("stateController")
+    sc = StateController()
     sc.start()
-    now = time.time()
     while (sc.getState() != 4):
         pass
     sc.close()

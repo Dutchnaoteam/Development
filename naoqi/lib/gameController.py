@@ -1,10 +1,14 @@
-# File: GameController
-# By: Sander Nugteren and Erik van Egmond
+"""
+File: GameController
+Author: Sander Nugteren and Erik van Egmond
+"""
 
-from socket import *
+from socket import socket, AF_INET, SOCK_DGRAM
 import time
 
-# Double Dictionary
+"""
+For some reason, a class had to be made to represent a double dict. 
+"""
 class Ddict(dict):
     def __init__(self, default=None):
         self.default = default
@@ -36,7 +40,8 @@ class gameController():
     getTeamColor()
     getGoalColor()
 
-    More info about the GameController: http://sourceforge.net/projects/robocupgc/
+    More info about the GameController: 
+    http://sourceforge.net/projects/robocupgc/
     '''
     # VARIABLES
     ourTeamNum = 0
@@ -55,9 +60,13 @@ class gameController():
     
     ourGC = True
     # CONSTRUCTOR
-    def __init__(self, ourTeamNum, host = '255.255.255.255', port=3838, interval=0.25):
+    def __init__(self, ourTeamNum, host = '255.255.255.255', port=3838, 
+                 interval=0.25):
         '''
-        Contstructor for the GameController class. Creates an instance of GameController which listens to the specified host and port every interval seconds.
+        Contstructor for the GameController class. Creates an instance of 
+        GameController which listens to the specified host and port every 
+        interval seconds.
+
         Defaults are host = 255.255.255.255, port = 3838 interval = 0,25.
         '''
         self.ourTeamNum = ourTeamNum
@@ -66,17 +75,19 @@ class gameController():
         self.host = host
         self.port = port
         # Create socket and bind to address
-        self.socket = socket(AF_INET,SOCK_DGRAM,)
-        self.socket.bind((host,port))
-        self.socket.setblocking(0)
+        self.socket = socket(AF_INET, SOCK_DGRAM)
+        self.socket.bind( (host, port) )
+        self.socket.setblocking( 0 )
 
     # DESTRUCTOR
     def __del__(self):
         self.socket.close()
-
+    
+    """ Close the socket safely """
     def close(self):
         self.socket.close()
     
+    """Refresh info sent by gc"""
     def controlledRefresh(self):
         active = False
         data = ''
@@ -84,7 +95,7 @@ class gameController():
             
         while time.time() - now < 4:
             try:
-                data, addr = self.socket.recvfrom(1024)
+                data, _ = self.socket.recvfrom(1024)
             except:
                 pass
             if data:
@@ -95,22 +106,29 @@ class gameController():
         
     def refresh(self, data):
         '''
-        Refreshes all the (private) variables by reading the incoming Gamecontroller data at the specified port at the specified host. Returns False if the gamestate is finished, returns True otherwise.
+        Refreshes all the (private) variables by reading the incoming 
+        Gamecontroller data at the specified port at the specified host. 
+        Returns False if the gamestate is finished, returns True otherwise.
         '''
         
         if time.time() - self.time > self.interval:
-            # Try to listen to the socket
-            # FIXME gebruik iets als select.select([self.scoket], [self.socket], [self.socket], 1)
-            # om te kijken of er al nieuwe data binnen is, dan is de timer niet nodig
-            # Set the socket parameters
-                
-            if not(ord(data[68]) == self.ourTeamNum or ord(data[20]) == self.ourTeamNum):
+            """ 
+            Try to listen to the socket.
+            TODO gebruik iets als select.select([self.scoket], [self.socket],
+            [self.socket], 1) om te kijken of er al nieuwe data binnen is, 
+            dan is de timer niet nodig
+   
+            Set the socket parameters
+            """   
+            if not(ord(data[68]) == self.ourTeamNum or \
+                   ord(data[20]) == self.ourTeamNum):
                 print 'wrong gc'
             else:
                 self.header = data[0:4]
                 # Data
                 self.gameState = ord(data[9])
-                self.version = (ord(data[7]), ord(data[6]), ord(data[5]), ord(data[4]))
+                self.version = (ord(data[7]), ord(data[6]),
+                                ord(data[5]), ord(data[4]))
                 self.robotsPerTeam = ord(data[8])
                 self.firstHalf = ord(data[10])
                 self.kickoff = ord(data[11])
@@ -121,31 +139,37 @@ class gameController():
 
                 for t in (0, 1):
                     # Team is a pointer to the team dictionary
-                    team = self.we if ord(data[20+(48*t)]) == self.ourTeamNum else self.them
+                    team = self.we if ord(data[20+(48*t)]) == self.ourTeamNum \
+                                   else self.them
                     team['teamColor'] = ord(data[21+(48*t)])
                     team['goalColor'] = ord(data[22+(48*t)])
                     team['score'] = ord(data[23+(48*t)])
                     #likewise for robot
                     for r in xrange(0, self.robotsPerTeam):
                         # robot = team['nao'+str(r)]
-                        team['nao'+str(r)]['penalty'] = self.stringToDecimal([data[24 + r*4 +(48*t)], data[25 + r*4+(48*t)]])
-                        team['nao'+str(r)]['unpenalizedCountdown'] = self.stringToDecimal([data[26+r*4+(48*t)], data[27+r*4+(48*t)]])
-                        #print 'r' + str(r)
-                        #print _stringToDecimal([data[24 + r*4 +(48*t)], data[25 + r*4+(48*t)]])
-
+                        team['nao'+str(r)]['penalty'] = \
+                            self.stringToDecimal( [ data[24 + r*4 + (48*t) ], 
+                                                    data[25 + r*4 + (48*t) ] ]
+                                                )
+                        team['nao'+str(r)]['unpenalizedCountdown'] = \
+                            self.stringToDecimal( [ data[26 + r*4 + (48*t) ], 
+                                                    data[27 + r*4 + (48*t) ] ]
+                                                )
                 self.time = time.time()
     
-    def gcActive():
+    """Return if gc is actively sending or not""" 
+    def gcActive( self ):
         return self.gcActive
     
+    """Convert string messages to numerical"""
     def stringToDecimal(self, data):
         res = "0"
         for i in range(len(data)-1,-1,-1):
-            s = str(bin(ord(data[i])))
-            s = s[2:len(s)]
-            while (len(s) < 8):
-                s = "0"+s
-            res += s
+            string = str( bin( ord(data[i]) ) )
+            string = string[ 2:len(string) ]
+            while (len(string) < 8):
+                string = "0"+string
+            res += string
         return int(res,2)
 
     # GET METHODS
@@ -157,7 +181,8 @@ class gameController():
 
     def getPenalty(self, robot, team=6):
         '''
-        Returns the penalty of the robot'th nao in the given team. If no team is specified, team = 6 (the Dutch Nao Team for SPL2011).
+        Returns the penalty of the robot'th nao in the given team. If no team 
+        is specified, team = 6 (the Dutch Nao Team for SPL2011).
         BALL_HOLDING            1
         PLAYER_PUSHING          2
         OBSTRUCTION             3
@@ -177,16 +202,21 @@ class gameController():
         
     def getAvailableNaos(self, team=6):
         '''
-        Returns an array with booleans representing which robots are penalized in the given team. For example, if the array is [1,0,1,1] then robot 2 is penalized. If no team is specified, team = 6 (the Dutch Nao Team for SPL2011).
+        Returns an array with booleans representing which robots are penalized 
+        in the given team. For example, if the array is [1,0,1,1] then robot 2 
+        is penalized. If no team is specified, team = 6 (the Dutch Nao Team 
+        for SPL2011).
         '''
-        res = zeros(4, Int)
+        res = list()
         for i in xrange(0, self.robotsPerTeam-1):
-            res[i] = self.getPenalty(i, team)==0
+            res.append( self.getPenalty(i, team)==0 )
         return res
 
     def getUnpenalizedCountdown(self, robot, team=6):
         '''
-        Returns how many seconds until the robot'th nao in the given team is going to unpenalized. If no team is specified, team = 6 is used (the Dutch Nao Team for SPL2011).
+        Returns how many seconds until the robot'th nao in the given team is 
+        going to unpenalized. If no team is specified, team = 6 is used 
+        (the Dutch Nao Team for SPL2011).
         '''
         countdown = 0
         if team == self.ourTeamNum:
@@ -256,7 +286,7 @@ class gameController():
         '''
         return self.secondsRemaining
 
-    def getTeamColor(self,team):
+    def getTeamColor(self, team):
         '''
         Returns the color of team 'team'.
         0 = CYAN
@@ -269,7 +299,7 @@ class gameController():
             teamcolor = self.them['teamColor']
         return teamcolor
         
-    def getGoalColor(self,team):
+    def getGoalColor(self, team):
         '''
         Returns the color of the goal of team 'team'.
         0 = BLUE
