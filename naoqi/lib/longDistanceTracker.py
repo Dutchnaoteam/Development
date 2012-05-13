@@ -107,13 +107,13 @@ def calcPosition(coord, cam, headInfo, track):
     yPos = tan(xAngle) * xPos
     # position of the ball where
     #  origin with position of camera and rotation of body 
-    xPos = cos(yaw)*xPos + -sin(yaw)*yPos
-    yPos = sin(yaw)*xPos +  cos(yaw)*yPos
+    xPos1 = cos(yaw)*xPos + -sin(yaw)*yPos
+    yPos1 = sin(yaw)*xPos +  cos(yaw)*yPos
     # position of the ball where
     #  origin with position and rotation of body
-    xPos += x
-    yPos += y
-    return (xPos, yPos, xAngle, yAngle)
+    xPos1 += x
+    yPos1 += y
+    return (xPos1, yPos1, xAngle, yAngle)
 
 """Convert image to cv Format"""
 def convertImage(picture):
