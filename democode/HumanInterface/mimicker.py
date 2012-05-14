@@ -2,8 +2,7 @@ from naoqi import ALProxy
 import sys
 import time
 import threading
-import math
-from socket import *
+from socket import socket, AF_INET, SOCK_STREAM
 
 # create brokers for nao
 motion = ALProxy("ALMotion", "127.0.0.1", 9559)
@@ -26,8 +25,8 @@ class Receiver(threading.Thread):
         connections -- number of connections
         """
         threading.Thread.__init__(self)
-        self.connections = connections        # number of connections that is to be started
-        self.conn        = list()             # reset list to prevent pipe errors
+        self.connections = connections      # numberofconnections to be started
+        self.conn        = list()           # reset list to prevent pipe errors
         self.data          = ""
         self.extractedData = None 
         
@@ -96,18 +95,6 @@ class Receiver(threading.Thread):
         '''Stops main program loop'''
         self.running = False
 
-# global variable to see if Nao is standing or stancing 
-stancing = False
-
-def stanceOrStand( arg ):
-    global stancing
-    if arg == 1 and not stancing:
-        stance()
-        stancing = True
-    elif arg == 0 and stancing:
-        normalPose()
-        stancing = False
-        
 def startMimic(connections = 1, interval = 99999):
     '''Start mimicking of user
     
@@ -141,8 +128,7 @@ def startMimic(connections = 1, interval = 99999):
         # start interval in which mimicking occurs
         now = time.time()
         while time.time() - now < interval:
-            walk = 0
-    
+            
             # if Nao has fallen:
             currentPose = pose.getActualPoseAndTime()[0]
             # get up according to pose
@@ -164,8 +150,8 @@ def startMimic(connections = 1, interval = 99999):
                 names = list()
                 keys = list()
                 
-                walk = 0
-                
+                walking = False
+                stancing = False
                 # loop over the data                                    
                 for i in xrange(0, len(data), 2):
                     name = data[i]
@@ -176,17 +162,17 @@ def startMimic(connections = 1, interval = 99999):
                         
                     # if name indicates a button state    
                     if name in buttons:
-                        argument = arguments[name]
-                        if key and not walk:
+                        if key and not walking:
+                            argument = arguments[name]
                             function = buttons[name]
                             function( argument )
 
                             # if wiimote arrowbutton
-                            if name == 'Up' or name == 'Down' or name == 'Left' or name == 'Right':
-                                walk += key
-                                function( arguments[name] )
-                            
-                    # if data indicates existing jointname and not a duplicate                        
+                            if name in ['Up', 'Down', 'Left', 'Right']:
+                                walking = True
+                            elif name == "A":
+                                stancing = True
+                    # if data indicates existing jointname and not a duplicate
                     elif not(name in names) and name in ranges:
                         (minRange, maxRange) = ranges[name]
                         # and in range
@@ -197,19 +183,10 @@ def startMimic(connections = 1, interval = 99999):
                 # if jointnames and values are found, execute motion
                 if len(names) > 0:
                     motion.setAngles(names, keys, 0.5)                
-                    '''
-                    # check to see if walking, walk in direction of headyaw
-                    if "RShoulderPitch" in walkArm and "RShoulderRoll" in walkArm and "RElbowRoll" in walkArm and "RElbowYaw" in walkArm: 
-                        if 0.3 > walkArm['RShoulderPitch'] > -0.3 and 0.3 > walkArm['RShoulderRoll'] > -0.3 and 0.3 > walkArm['RElbowRoll'] and 0.3 > walkArm['RElbowYaw'] > -0.3:
-                            [direction] = motion.getAngles('HeadYaw', True)
-                            y = max(-1, min(1, 0.5 * math.tan(direction)))
-                            motion.setWalkTargetVelocity(0.5,  y, direction/6.0, 0.5)
-                        else:
-                            if motion.walkIsActive():
-                                motion.post.setWalkTargetVelocity(0, 0, 0, 0)
-                    '''                
-                if walk == 0:
+                if not walking:
                     motion.setWalkTargetVelocity(0, 0, 0, 0)
+                if not stancing:
+                    normalPose()
         rec.stopRec()
         print 'Mimicking stopped.'
         
@@ -236,7 +213,7 @@ def walk(arg):
     (x,y,t,f) = arg
     motion.setWalkTargetVelocity(x,y,t,f)
     
-def normalPose(arg=0):
+def normalPose(force=False):
     '''Stand in a normal pose (up straight)'''
     
     names = list()
@@ -245,7 +222,7 @@ def normalPose(arg=0):
      
     names.append('HeadPitch')
     times.append([1])
-    angles.append([ [ -0.5 , [ 3, -1.00000, 0.00000], [ 3, 0.00000, 0.00000]]])        
+    angles.append([ [ -0.5 , [ 3, -1.00000, 0.00000], [ 3, 0.00000, 0.00000]]])
         
     names.append('HeadYaw')
     times.append([1])
@@ -298,8 +275,6 @@ def normalPose(arg=0):
 
     motion.post.angleInterpolationBezier(names, times, angles)    
             
-
-# Stand up from the back
 def backToStand():
     # lie down on back, move arms towards pushing position and legs upwards
     motion.setAngles(['HeadPitch', 'HeadYaw'], [-0.4, 0.0], 0.4)
@@ -539,7 +514,7 @@ def bellyToStand():
 
     motion.angleInterpolationBezier(names, times, angles)
     
-def stance(arg=0):
+def stance(arg=1):
     '''Bend the knees in a crouching manner'''
     names = list()
     angles = list()
@@ -555,7 +530,7 @@ def stance(arg=0):
     
     motion.post.angleInterpolation(names, angles, times, True)
     
-def kickStraight(angle = 0):
+def kickStraight(arg=1):
     # angle slightly positive, kick towards left with rightleg
     names = ['RShoulderRoll', 'RShoulderPitch', 'LShoulderRoll', 'LShoulderPitch', 'RHipRoll', 'RHipPitch', 'RKneePitch', \
              'RAnklePitch', 'RAnkleRoll', 'LHipRoll', 'LHipPitch', 'LKneePitch', 'LAnklePitch', 'LAnkleRoll']
@@ -587,14 +562,14 @@ ranges = {  'HeadYaw'        : (-2.0857  , 2.0857 ),
             'RWristYaw'      : (-2.0857  , 2.0857 ),
             'LWristYaw'      : (-2.0857  , 2.0857 )  } 
 
-buttons = { 'A'    : stanceOrStand ,
-            'B'    : kickStraight ,
-            'Up'   : walk ,
-            'Down' : walk ,
-            'Left' : walk ,
+buttons = { 'A'    : stance,
+            'B'    : kickStraight,
+            'Up'   : walk,
+            'Down' : walk,
+            'Left' : walk,
             'Right': walk }
             
-arguments = {'A'  : 0,
+arguments = {'A'  : 1,
              'B'  : 0,
              'Up' : (0.75, 0, 0, 1),
              'Down' : (-0.75, 0, 0, 1) ,
