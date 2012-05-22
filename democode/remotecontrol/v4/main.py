@@ -23,8 +23,6 @@
 import sys
 import platform
 import os
-import time
-import pygame
 
 ##########################
 ##      CLASSES
@@ -34,11 +32,11 @@ class termOutput:
     cmdDict = {}
     cmdIdx = 0
     cmdSize = 10
-    buttonDefinition = None
+    process = None
     
-    def __init__(self, cmdSize, buttonDefinition):
+    def __init__(self, cmdSize, process):
         self.cmdSize = cmdSize
-        self.buttonDefinition = buttonDefinition
+        self.process = process
         self.clear()
         
     #display a message that the cmd is executing...
@@ -57,22 +55,29 @@ class termOutput:
     #display the last 'cmdSize' commands from command-list
     # --> if 'cmdSize' = -1, all commands are shown
     def refresh(self):
-        self.clear()
-        
-        sys.stdout.write('\n')
-        sys.stdout.write("   --------- REMOTE NAO CONTROL --------- " + '\n')
-        sys.stdout.write("           http://dutchnaoteam.nl         " + '\n')
-        sys.stdout.write("   -------------------------------------- " + '\n')
-        sys.stdout.write('\n')
-        sys.stdout.write("  Button Usage for '[" + sys.argv[1] + ", " + sys.argv[2]+  "]': \n")
-        sys.stdout.write( self.buttonDefinition() )
-        sys.stdout.write('\n')
-        sys.stdout.write("   -------------------------------------- " + '\n')
-        
-        for i in self.cmdDict:
-            sys.stdout.write(self.formatLine(i))
-            if (i != self.cmdIdx):
-                sys.stdout.write(" Done" + '\n')
+        if (((self.cmdSize == -1) and (self.cmdIdx == 0)) or (self.cmdSize != -1)):
+            self.clear()
+            
+            sys.stdout.write('\n')
+            sys.stdout.write("   --------- REMOTE NAO CONTROL --------- " + '\n')
+            sys.stdout.write("           http://dutchnaoteam.nl         " + '\n')
+            sys.stdout.write("   -------------------------------------- " + '\n')
+            sys.stdout.write('\n')
+            sys.stdout.write("  Button Usage for '[" + sys.argv[1] + ", " + sys.argv[2]+  "]': \n")
+            sys.stdout.write("  Press '" + process.getQuitCommand() + "' to quit." '\n')
+            sys.stdout.write('\n')
+            sys.stdout.write( process.getButtonDefinition() )
+            sys.stdout.write('\n')
+            sys.stdout.write("   -------------------------------------- " + '\n')
+            
+        if (self.cmdSize != -1):    
+            #for i in self.cmdDict:
+            for i in xrange(self.cmdIdx-self.cmdSize, self.cmdIdx):
+                sys.stdout.write(self.formatLine( i + 1 ))
+                if (i != self.cmdIdx):
+                    sys.stdout.write(" Done" + '\n')
+        else:
+            sys.stdout.write(self.formatLine(self.cmdIdx))
         
     def refreshLine(self):
         sys.stdout.write('\r' + self.formatLine(self.cmdIdx) + " Done" + '\n')
@@ -94,11 +99,11 @@ class termOutput:
             os.system('cls')
         else:
             os.system('clear')
-            
-##########################
-##      SYSTEM CALL
-#############
 
+##########################
+##      FUNCTIONS
+#############
+            
 def listFiles(dir):
     sys.path.append(dir)
     subdirlist = []
@@ -109,7 +114,10 @@ def listFiles(dir):
         for subdir in subdirlist:
             listFiles(subdir) 
             
-            
+##########################
+##      SYSTEM CALL
+#############
+                        
 if (len(sys.argv) <= 3):
     sys.stdout.write( '\n')
     sys.stdout.write( "Usage:" + '\n\n')
@@ -122,80 +130,73 @@ if (len(sys.argv) <= 3):
 else: 
     sys.stdout.write( "> Searching folders in current directory... " )
     listFiles(os.getcwd())
-    sys.stdout.write( "done" + '\n')   
+    sys.stdout.write( "\r> Searching folders in current directory... done" + '\n')   
     
     sys.stdout.write( "> Importing naoqi... " )
     from naoqi import ALProxy
-    sys.stdout.write( "done" + '\n')
+    sys.stdout.write( "\r> Importing naoqi... done" + '\n')
 
-    sys.stdout.write( "> Setting connection data: " + '\n' )
+    motionProxy = None
+    poseProxy = None
     IPADRESS = sys.argv[3]
     PORT = 9559
-
+    
+    sys.stdout.write( "> Setting connection data... " + '\n' )
     try:
         sys.stdout.write( ">>> setting motion proxy... " + '\n' )
         motionProxy = ALProxy("ALMotion", IPADRESS, PORT)
-        sys.stdout.write( ">>> setting motion proxy... done" + '\n' )
+        sys.stdout.write( "\r>>> setting motion proxy... done" + '\n' )
         sys.stdout.write( ">>> setting pose proxy... " )
         poseProxy = ALProxy("ALRobotPose", IPADRESS, PORT)
-        sys.stdout.write( "done" + '\n')    
+        sys.stdout.write( "\r>>> setting pose proxy... done" + '\n')    
     except Exception, ee:
         sys.stdout.write( '\n>> ' + str(ee) + '\n\n')
         sys.stdout.write( "Error: Cannot connect to Nao" + '\n')
         exit()
+    sys.stdout.write( "\r> Setting connection data... done" + '\n' )
     
-    sys.stdout.write( "> Importing event-process file..." + '\n')
+    
+    sys.stdout.write( "> Importing event-process file...")
     try:
         process = __import__(sys.argv[2])
-    except ImportError, ee:
+        if (not hasattr(process, "init")):
+            sys.stdout.write("\nError: Event-Process File '" + sys.argv[2] + "' does not contain the function: 'init'" + '\n')
+            exit()
+        elif (not hasattr(process, "getButtonDefinition")):
+            sys.stdout.write("\nError: Event-Process File '" + sys.argv[2] + "' does not contain the function: 'getButtonDefinition'" + '\n')
+            exit()
+        elif (not hasattr(process, "processEvent")):
+            sys.stdout.write("\nError: Event-Process File '" + sys.argv[2] + "' does not contain the function: 'processEvent'" + '\n')
+            exit()
+        process.init(motionProxy, poseProxy)
+    except Exception, ee:
         sys.stdout.write( '\n>> ' + str(ee) + '\n\n')
-        sys.stdout.write( "Error: Event-Process file '" + sys.argv[2] + "' does not exist." + '\n')
-        exit()        
-    except SyntaxError, ee: 
-        sys.stdout.write( '\n>> ' + str(ee) + '\n\n')
-        sys.stdout.write( "Error: Event-Process file '" + sys.argv[2] + "' has syntax error." + '\n')
+        sys.stdout.write( "Error: can't load event-process file: '" + sys.argv[1] + "'" + '\n')
         exit()
-            
-    if (not hasattr(process, "init")):
-        sys.stdout.write("Error: Event-Process File '" + sys.argv[2] + "' does contain the function: 'init'" + '\n')
-        exit()
-    elif (not hasattr(process, "buttonDefinition")):
-        sys.stdout.write("Error: Event-Process File '" + sys.argv[2] + "' does contain the function: 'buttonDefinition'" + '\n')
-        exit()
-    elif (not hasattr(process, "processEvent")):
-        sys.stdout.write("\nError: Event-Process File '" + sys.argv[2] + "' does contain the function: 'processEvent'" + '\n')
-        exit()
-        
-    process.init(motionProxy, poseProxy)
-
-    sys.stdout.write( "> Importing event-process file... done" + '\n')
-
-    sys.stdout.write( "> Initializing input-system..." + '\n')
-    pygame.init()
+    sys.stdout.write( "\r> Importing event-process file... done" + '\n')
+    
+    
+    sys.stdout.write( "> Initializing input-system... " )
     try:
         input = __import__(sys.argv[1])
-        function = "init" + sys.argv[1]
-        
-        if (not hasattr(input, function)):
-            sys.stdout.write("\nError: input-system '" + sys.argv[1] + "' does contain the function: '" + function + "'" + '\n')
+        if (not hasattr(input, "init")):
+            sys.stdout.write("\nError: input-system '" + sys.argv[1] + "' does contain the function: 'init'" + '\n')
+            exit()
+        elif (not hasattr(input, "getQuitCommand")):
+            sys.stdout.write("\nError: input-system  '" + sys.argv[1] + "' does contain the function: 'getQuitCommand'" + '\n')
             exit()
         elif (not hasattr(input, "getAction")):
             sys.stdout.write("\nError: input-system  '" + sys.argv[1] + "' does contain the function: 'getAction'" + '\n')
-            exit()
- 
-        #init input
-        setGlobal = getattr(input, "setGlobal")
-        setGlobal(pygame, sys)
-        
-        initFunction = getattr(input, function)
-        initFunction()
+            exit()      
+        input.init(sys.argv)
     except Exception, ee:
         sys.stdout.write( '\n>> ' + str(ee) + '\n\n')
         sys.stdout.write( "Error: can't load input system: '" + sys.argv[1] + "'" + '\n')
         exit()
-    sys.stdout.write( "> Initializing input-system... done" + '\n')
-    
-    output = termOutput(15, process.buttonDefinition)
+    sys.stdout.write( "\r> Initializing input-system... done" + '\n')
+
+    #setup display (output)
+    output = termOutput(15, process)
     output.refresh()
     output.waiting()
 
@@ -204,7 +205,6 @@ else:
         action = input.getAction()
         if (action == "quit"): 
             sys.stdout.write( "Quitting system" + '\n')
-            pygame.quit()
             exit()
         elif ( not(action == None)):
             process.processEvent(output, action)
