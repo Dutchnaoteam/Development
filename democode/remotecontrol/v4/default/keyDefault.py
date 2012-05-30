@@ -20,12 +20,18 @@ class state:
     superSpeed = 0
 
 #init event-processor
-def init(motionproxy, poseproxy):
+def init(IPADRESS):
     global motion, old_state, new_state
-    motion = motions.Motions(motionproxy, poseproxy)
+    PORT = 9559
+
+    from naoqi import ALProxy
+    motionProxy = ALProxy("ALMotion", IPADRESS, PORT)
+    poseProxy = ALProxy("ALRobotPose", IPADRESS, PORT)
+    motion = motions.Motions(motionProxy, poseProxy)
+    
     old_state = state()
     new_state = state()
-    new_state.stiff = 1 if(motionproxy.getStiffnesses('Body')[0] > 0) else 0
+    new_state.stiff = 1 if(motionProxy.getStiffnesses('Body')[0] > 0) else 0
 
 #retrieve button definition
 def getButtonDefinition():
@@ -113,40 +119,40 @@ def processEvent(display, event):
         else:                     #button is released
             new_state.superSpeed = 0
    
-
-   
-   
     #WALKING
+    # note: the 'elif' after a 'if keyEvent == x' statement is necessary because
+    # the robot could have changed direction (have a different speed: forward/backwards for example). \
+    # Resetting the speed whould thus result in incorrect behaviour 
     
-    if (keyID == 273):             # up
-        if (keyEvent == 2):        #button is pressed
+    if (keyID == 273):                                      # up
+        if (keyEvent == 2):                                 #button is pressed
             new_state.veloX = walkVelocityForward
-        else:                      #button is released
+        elif(new_state.veloX == walkVelocityForward):       #button is released
             new_state.veloX = 0        
-    elif (keyID == 274):           # down
-        if (keyEvent == 2):        #button is pressed
+    elif (keyID == 274):                                    # down
+        if (keyEvent == 2):                                 #button is pressed
             new_state.veloX = -walkVelocityForward
-        else:                      #button is released
+        elif (new_state.veloX == -walkVelocityForward):     #button is released
             new_state.veloX = 0 
-    elif (keyID == 276):           # left
-        if (keyEvent == 2):        #button is pressed
+    elif (keyID == 276):                                    # left
+        if (keyEvent == 2):                                 #button is pressed
             new_state.veloY = walkVelocityLeft
-        else:                      #button is released
+        elif (new_state.veloY == walkVelocityLeft):         #button is released
             new_state.veloY = 0
-    elif (keyID == 275):           # right
-        if (keyEvent == 2):        #button is pressed
+    elif (keyID == 275):                                    # right
+        if (keyEvent == 2):                                 #button is pressed
             new_state.veloY = -walkVelocityLeft
-        else:                      #button is released
+        elif (new_state.veloY == -walkVelocityLeft):        #button is released
             new_state.veloY = 0 
-    elif (keyID == 97):            #a- rotate left
-        if (keyEvent == 2):        #button is pressed
+    elif (keyID == 97):                                     #a- rotate left
+        if (keyEvent == 2):                                 #button is pressed
             new_state.veloT = rotateVelocityLeft
-        else:                      #button is released
+        elif (new_state.veloT == rotateVelocityLeft):       #button is released
             new_state.veloT = 0 
-    elif (keyID == 115):           #s- rotate right right
-        if (keyEvent == 2):        #button is pressed
+    elif (keyID == 115):                                    #s- rotate right right
+        if (keyEvent == 2):                                 #button is pressed
             new_state.veloT = -rotateVelocityLeft
-        else:                      #button is released
+        elif (new_state.veloT == -rotateVelocityLeft):      #button is released
             new_state.veloT = 0 
 
     #do movement
@@ -156,9 +162,18 @@ def processEvent(display, event):
             (old_state.superSpeed != new_state.superSpeed) ):
     
         if (new_state.superSpeed == 1):
-            sX = 1 if (new_state.veloX > 0) else 0
-            sY = 1 if (new_state.veloY > 0) else 0
-            sT = 1 if (new_state.veloT > 0) else 0
+            sX = 0
+            if (new_state.veloX > 0):   sX = 1
+            elif (new_state.veloX < 0): sX = -1
+            
+            sY = 0
+            if (new_state.veloY > 0):   sY = 1
+            elif (new_state.veloY < 0): sY = -1
+            
+            sT = 0
+            if (new_state.veloT > 0):   sT = 1
+            elif (new_state.veloT < 0): sT = -1
+                
             display.execute("walk: x:" + str(sX) + "\t y:"+ str(sY) + "\t t:" + str(sT) + "\t stiff:" + str(new_state.stiff))
             motion.setWalkTargetVelocity(sX,sY,sT,1)
             display.done()

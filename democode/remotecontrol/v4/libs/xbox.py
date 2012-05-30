@@ -2,22 +2,28 @@ import pygame
 import sys
 
 # initialize input controller
-def init(argv):
+def init(inputID):
     pygame.init()
     pygame.joystick.init()
     joysticksFound = pygame.joystick.get_count()
     if (joysticksFound > 0):
         sys.stdout.write( "found: " + str(joysticksFound) + " joystick(s)" + '\n')
-        joystickID = 0
-        if (len(argv) > 3):
-            joystickID = int(sys.argv[3])
-        sys.stdout.write( ">>> selected joystick: " + str(joystickID) + '\n')
-        joystick = pygame.joystick.Joystick(joystickID)	
+        
+        #get all joysticks
+        joysticks = {}
+        for x in range(joysticksFound):
+            joysticks[x] = pygame.joystick.Joystick(x)
+            sys.stdout.write( ">>> Joysticks('" + str(x) + "'): " + joystick.get_name() + '\n')
+        
+        #select joystick
+        sys.stdout.write( ">> Selected joystick: #" + str(inputID) + '\n')
+        joystick = joysticks[inputID]	
         joystick.init()
-        sys.stdout.write( ">>> joystick initialized: "  + joystick.get_name() + '\n')
+        sys.stdout.write( ">> Joystick initialized: "  + joystick.get_name() + '\n')
     else:
         sys.stdout.write( "\nError: No joystick is found" + '\n')
-        exit
+        pygame.quit()
+        exit()
         
 # return name of hardcoded button definition which quits the program 
 def getQuitCommand():

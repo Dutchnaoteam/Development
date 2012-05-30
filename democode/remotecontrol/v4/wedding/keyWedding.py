@@ -15,17 +15,25 @@ class state:
     veloT      = 0
     superSpeed = 0
 
-def init(motionproxy, poseproxy):
+def init(IPADRESS):
     global motion, old_state, new_state
-    motion = motions.Motions(motionproxy, poseproxy)
+    PORT = 9559
+
+    from naoqi import ALProxy
+    motionProxy = ALProxy("ALMotion", IPADRESS, PORT)
+    poseProxy = ALProxy("ALRobotPose", IPADRESS, PORT)
+    speechProxy = ALProxy("ALTextToSpeech", IPADRESS, PORT)
+    motion = motions.Motions(motionProxy, poseProxy, speechProxy)
+    
     old_state = state()
     new_state = state()
-    new_state.stiff = 1 if(motionproxy.getStiffnesses('Body')[0] > 0) else 0
+    new_state.stiff = 1 if(motionProxy.getStiffnesses('Body')[0] > 0) else 0
         
 def getButtonDefinition():
     text  = "   1 = ring for reuben (rightarm)\n"
     text += "   2 = ring for kim (leftarm)\n"
     text += "   r = stand-up when fallen\n"
+    text += "   h = set head to (0,0)\n"
     text += "   t = toggle stiffness\n"
     text += "   p = pauze mode (stance, stiff=off)\n"
     text += "   n = normal pose(stiff=on)\n"
@@ -105,8 +113,8 @@ def processEvent(display, event):
                 motion.normalPose()
                 display.done()
                 
+                
     #actions which are allowed todo when walking
-    
     #toggle 'superspeed'
     if (keyID == 32):             # space-bar
         if (keyEvent == 2):       #button is pressed
@@ -128,38 +136,47 @@ def processEvent(display, event):
             motion.rightArm()
             display.done()
             
+    #set head        
+    if ((keyID == 104) and (keyEvent == 2)):
+        display.execute("Head positioning")
+        pos = motion.getHeadPos()
+        motion.changeHead(-pos[0],-pos[1])
+        display.done()
    
     #WALKING
+    # note: the 'elif' after a 'if keyEvent == x' statement is necessary because
+    # the robot could have changed direction (have a different speed: forward/backwards for example). \
+    # Resetting the speed whould thus result in incorrect behaviour 
     
-    if (keyID == 273):             # up
-        if (keyEvent == 2):        #button is pressed
+    if (keyID == 273):                                      # up
+        if (keyEvent == 2):                                 #button is pressed
             new_state.veloX = walkVelocityForward
-        else:                      #button is released
+        elif(new_state.veloX == walkVelocityForward):       #button is released
             new_state.veloX = 0        
-    elif (keyID == 274):           # down
-        if (keyEvent == 2):        #button is pressed
+    elif (keyID == 274):                                    # down
+        if (keyEvent == 2):                                 #button is pressed
             new_state.veloX = -walkVelocityForward
-        else:                      #button is released
+        elif (new_state.veloX == -walkVelocityForward):     #button is released
             new_state.veloX = 0 
-    elif (keyID == 276):           # left
-        if (keyEvent == 2):        #button is pressed
+    elif (keyID == 276):                                    # left
+        if (keyEvent == 2):                                 #button is pressed
             new_state.veloY = walkVelocityLeft
-        else:                      #button is released
+        elif (new_state.veloY == walkVelocityLeft):         #button is released
             new_state.veloY = 0
-    elif (keyID == 275):           # right
-        if (keyEvent == 2):        #button is pressed
+    elif (keyID == 275):                                    # right
+        if (keyEvent == 2):                                 #button is pressed
             new_state.veloY = -walkVelocityLeft
-        else:                      #button is released
+        elif (new_state.veloY == -walkVelocityLeft):        #button is released
             new_state.veloY = 0 
-    elif (keyID == 97):            #a- rotate left
-        if (keyEvent == 2):        #button is pressed
+    elif (keyID == 97):                                     #a- rotate left
+        if (keyEvent == 2):                                 #button is pressed
             new_state.veloT = rotateVelocityLeft
-        else:                      #button is released
+        elif (new_state.veloT == rotateVelocityLeft):       #button is released
             new_state.veloT = 0 
-    elif (keyID == 115):           #s- rotate right right
-        if (keyEvent == 2):        #button is pressed
+    elif (keyID == 115):                                    #s- rotate right right
+        if (keyEvent == 2):                                 #button is pressed
             new_state.veloT = -rotateVelocityLeft
-        else:                      #button is released
+        elif (new_state.veloT == -rotateVelocityLeft):      #button is released
             new_state.veloT = 0 
 
     #do movement
@@ -169,9 +186,18 @@ def processEvent(display, event):
             (old_state.superSpeed != new_state.superSpeed) ):
     
         if (new_state.superSpeed == 1):
-            sX = 1 if (new_state.veloX > 0) else 0
-            sY = 1 if (new_state.veloY > 0) else 0
-            sT = 1 if (new_state.veloT > 0) else 0
+            sX = 0
+            if (new_state.veloX > 0):   sX = 1
+            elif (new_state.veloX < 0): sX = -1
+            
+            sY = 0
+            if (new_state.veloY > 0):   sY = 1
+            elif (new_state.veloY < 0): sY = -1
+            
+            sT = 0
+            if (new_state.veloT > 0):   sT = 1
+            elif (new_state.veloT < 0): sT = -1
+                
             display.execute("walk: x:" + str(sX) + "\t y:"+ str(sY) + "\t t:" + str(sT) + "\t stiff:" + str(new_state.stiff))
             motion.setWalkTargetVelocity(sX,sY,sT,1)
             display.done()
@@ -180,5 +206,6 @@ def processEvent(display, event):
             motion.setWalkTargetVelocity(new_state.veloX, new_state.veloY, new_state.veloT,1)
             display.done()
             
+        #oldstate is a shallow copy of the just processed newstate!
         old_state = copy.copy(new_state)
-        
+    

@@ -20,12 +20,18 @@ class state:
     superSpeed = 0
 
 #init event-processor
-def init(motionproxy, poseproxy):
+def init(IPADRESS):
     global motion, old_state, new_state
-    motion = motions.Motions(motionproxy, poseproxy)
+    PORT = 9559
+
+    from naoqi import ALProxy
+    motionProxy = ALProxy("ALMotion", IPADRESS, PORT)
+    poseProxy = ALProxy("ALRobotPose", IPADRESS, PORT)
+    motion = motions.Motions(motionProxy, poseProxy)
+    
     old_state = state()
     new_state = state()
-    new_state.stiff = 1 if(motionproxy.getStiffnesses('Body')[0] > 0) else 0
+    new_state.stiff = 1 if(motionProxy.getStiffnesses('Body')[0] > 0) else 0
 
 #retrieve button definition
 def getButtonDefinition():

@@ -8,25 +8,13 @@ class Motions():
         
     def leftArm(self):
         self.normalPose()
-        from naoqi import ALProxy
-        a = ALProxy("ALTextToSpeech", sys.argv[3], 9559)
         self.motProxy.setAngles(['LShoulderPitch', 'LElbowYaw'], [-1.4, 1.0], 0.2)
-        #self.motProxy.setAngles(['LShoulderPitch', 'LElbowYaw', 'LWristYaw'], [-1.4, 1.0, 0], 0.2)
-        a.say("Reubens ring for the lovely Kim Boermaans")
-        #self.motProxy.openHand('LHand')
+        self.speechProxy.say("Reubens ring for the lovely Kim Boermaan")
         
     def rightArm(self):
         self.normalPose()
-        from naoqi import ALProxy
-        a = ALProxy("ALTextToSpeech", sys.argv[3], 9559)
         self.motProxy.setAngles(['RShoulderPitch', 'RElbowYaw'], [-1.4, -1.0], 0.2)
-        #self.motProxy.setAngles(['RShoulderPitch', 'RElbowYaw', 'RWristYaw'], [-1.4, -1.0, 0], 0.2)
-        a.say("Kims ring for the amazing Reuben Smith")
-        #self.motProxy.openHand('RHand')
-
-        
-        
-        
+        self.speechProxy.say("Kims ring for the dashing Reuben Smith")
         
 ###############################################    
 #   ORIGINAL MOTIONS BELOW
@@ -41,9 +29,10 @@ class Motions():
                          ['TorsoWx', 0.0], \
                          ['TorsoWy', 0.05]]
     
-    def __init__(self, motProxy, posProxy):
+    def __init__(self, motProxy, posProxy, speechProxy):
         self.motProxy = motProxy
         self.posProxy = posProxy
+        self.speechProxy = speechProxy
         self.setGaitConfigSimple( 0.07 , 0.14, 0.4, 0.015, 40, 21 )
         self.setFME(False)
         
