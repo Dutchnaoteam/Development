@@ -1,6 +1,8 @@
-# Written by: Camiel Verschoor
-# Date: 1 April 2012
-# Description: Loads the football code if the any footbumper is pressed
+"""
+File: loader.py
+Author: Camiel Verschoor
+Description: Loads soul.py if the any footbumpers is pressed
+""" 
 
 from naoqi import ALProxy
 import time
@@ -19,15 +21,19 @@ senProxy.enableDefaultActionDoubleClick(True)
 audProxy.setOutputVolume(60)
 
 # Soul variable
+ask = True
 soul = False
 
-ttsProxy.say("Shall I activate my soul?")
-start = time.time()
-
-while time.time() - start < 2:
-    if (((memProxy.getData("LeftBumperPressed", 0) != 0.0) or \
-         (memProxy.getData("RightBumperPressed", 0) != 0.0)) or \
-        ((len(sys.argv) > 1 ) and (sys.argv[1] == "True"))):
+if len(sys.argv) > 1:
+    if sys.argv[1] == "True":
+        soul = True
+        ask = False
+if ask:
+    ttsProxy.say("Shall I activate my soul?")
+    start = time.time()
+    while time.time() - start < 2:
+        if ((memProxy.getData("LeftBumperPressed",  0) != 0.0) or \
+            (memProxy.getData("RightBumperPressed", 0) != 0.0)):
             soul = True
             break
 
@@ -38,4 +44,4 @@ if soul:
     senProxy.enableDefaultActionDoubleClick(False)
     os.system("python /home/nao/naoqi/lib/soul.py")
 else:
-    ttsProxy.say("I am ready for the kill")
+    ttsProxy.say("Soul not activated.")

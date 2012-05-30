@@ -47,8 +47,8 @@ def findGoal(image, head, cam):
     stepsizeX = [4, 2, 1]
     stepsizeY = 5
     
-    thresholdYellow =
-    thresholdGreen  =
+    #thresholdYellow =
+    #thresholdGreen  =
     
     foundPole  = False
     gapFound   = False    

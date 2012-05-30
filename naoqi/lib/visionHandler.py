@@ -10,6 +10,7 @@ import time
 import Image
 import math
 import threading
+import cv 
 
 def debug():
     """ debug() -> visionHandler object
@@ -70,14 +71,14 @@ class VisionHandler(threading.Thread):
 
         self.KF       = kalmanFilter.KalmanFilter( ) 
         self.timeStampLocalize = time.time()
-        self.control = [0,0,0]                
+        self.control = [0, 0, 0]                
         
     def __del__(self):
         self.running = False
         
     def run(self):
-        self.timeStampLocalize = time.time()
         """ Main loop """
+        self.timeStampLocalize = time.time()
         # currently no safe way to stop thread
         while self.running:
             # scanning states if a ball should be found and tracked
@@ -88,6 +89,7 @@ class VisionHandler(threading.Thread):
                 with self.lock:
                     self.checkedBall = False
                 self.goalLoc = None
+                
             # localizing looks for features to use, but also the ball
             elif self.featureScanning:
                 # take a snapshot
@@ -106,8 +108,8 @@ class VisionHandler(threading.Thread):
                     self.checkedGoal = False
                 self.ballLoc = None
             else:
-                self.memProxy.insertData("dntBallDist", 0)
                 # no ballscanning or goalscanning, leds turn off entirely
+                self.memProxy.insertData("dntBallDist", 0)
                 self.ledProxy.off("RightFaceLeds")
                 self.ledProxy.off("LeftFaceLeds")                
                 self.ballLoc = None
@@ -116,7 +118,7 @@ class VisionHandler(threading.Thread):
                     self.checkedGoal = False
                     self.checkedBall = False
                 time.sleep(0.5)
-                self.control = [0,0,0]
+                self.control = [0, 0, 0]
                 self.timeStampLocalize = time.time()
                 
     def getBall(self):
@@ -141,10 +143,10 @@ class VisionHandler(threading.Thread):
         """Try to unsubscribe from the camera""" 
         try:
             self.vidProxy.unsubscribe("python_GVM")
-        except:
-            pass
+        except Exception as inst:
+            print "Unsubscribing impossible:", inst
     
-    def subscribe(self, resolution = 1):
+    def subscribe(self, resolution=1):
         """ subscribe() -> String visionID
 
         Subscribe to the camera feed.
@@ -171,9 +173,17 @@ class VisionHandler(threading.Thread):
         # shot[0]=width, shot[1]=height, shot[6]=image-data
         size = (shot[0], shot[1])
         picture = Image.frombuffer("RGB", size, shot[6], "raw", "BGR", 0, 1)
-        return (picture, (camPos, headAngles))
+        
+        size = picture.size
+        # convert the type to OpenCV
+        image = cv.CreateImageHeader(size, cv.IPL_DEPTH_8U, 3)
+        cv.SetData(image, picture.tostring(), picture.size[0]*3)
+        hsvFrame = cv.CreateImage(cv.GetSize(image), cv.IPL_DEPTH_8U, 3)
+        cv.CvtColor(image, hsvFrame, cv.CV_BGR2HSV)
     
-    def findBall(self, image, headinfo, track = False ):
+        return (hsvFrame, (camPos, headAngles))
+    
+    def findBall(self, image, headinfo, track=True ):
         """ getBall(image, headinfo) -> tuple BallLocation
 
         Search a given image for a ball. Return None if no ball found.        
@@ -184,7 +194,7 @@ class VisionHandler(threading.Thread):
             # Right leds turn green
             self.ledProxy.fadeRGB("RightFaceLeds", 0x0000ff00, 0)
             self.seenBall = True
-            (x,y) = ballLoc
+            (x, y) = ballLoc
             if x < -0.5 or x > 6 or y < -4 or y > 4:
                 ballLoc = None
             else:
@@ -192,10 +202,10 @@ class VisionHandler(threading.Thread):
         else:            
             self.seenBall = False
             self.memProxy.insertData("dntBallDist", 0)
-            self.ledProxy.fadeRGB("RightFaceLeds",0x00ff0000, 0)
+            self.ledProxy.fadeRGB("RightFaceLeds", 0x00ff0000, 0)
             
         interval = time.time() - self.timeStampLocalize
-        timeStampLocalize = time.time()
+        self.timeStampLocalize = time.time()
         control = []
         for i in range(3):
             control.append( self.control[i] * interval ) 
@@ -214,18 +224,17 @@ class VisionHandler(threading.Thread):
         """
         # Filter the snapshots and return the angle and the color
         (_, head) = headinfo
-        goalLoc = None
-        yellow = goalFinder.run(image, head[1])
-        if yellow:
-            goalLoc = yellow
+        goalLoc = goalFinder.run(image, head[1])
+        if goalLoc[0]:
             # yellow goal -> yellow leds
-            self.ledProxy.fadeRGB("LeftFaceLeds",0x00ff3000, 0)
+            self.ledProxy.fadeRGB("LeftFaceLeds", 0x00ff3000, 0)
         else:
             self.ledProxy.off("LeftFaceLeds")
         return goalLoc
     
     # start tracking of ball
     def setBallScanning(self, arg = True, trackBall = True):
+        """ set the main loop to only scan for ball """
         self.ballScanning = arg
         self.goalScanning = False
         self.featureScanning = False
@@ -233,18 +242,22 @@ class VisionHandler(threading.Thread):
         self.ledProxy.off("LeftFaceLeds")
         
     def setGoalScanning(self, arg  = True):
+        """ set the main loop to only scan for goal """
         self.goalScanning = arg
         self.ballScanning = False
         self.featureScanning = False
         self.ledProxy.off("RightFaceLeds")
         
-    def setFeatureScanning( self, arg = True, trackBall = True ):
+    def setFeatureScanning( self, arg=True, trackBall=True ):
+        """ set the main loop to scan for all features """
         self.featureScanning = arg
         self.goalScanning = False
         self.ballScanning = False
-        self.trackBall = False
+        self.trackBall = trackBall
 
-    def pause( self ):    
+    def pause( self ):  
+        """ set the main loop to not scan for everything, 
+        reset every variable """
         self.featureScanning = False
         self.goalScanning = False
         self.ballScanning = False
@@ -254,11 +267,11 @@ class VisionHandler(threading.Thread):
             self.checkedBall = False
             self.checkedGoal = False
         
-    # close thread
     def close(self):
+        """ close thread """
         self.running = False
            
-    # clear variables
     def clearCache(self):
+        """ clear variables """
         self.ballLoc = None  
         self.goalLoc = None

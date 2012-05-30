@@ -22,7 +22,7 @@ class Motions():
     def __init__(self, motProxy, posProxy):
         self.motProxy = motProxy
         self.posProxy = posProxy
-        self.setGaitConfigSimple( 0.04 , 0.14, 0.4, 0.02, 45, 19 )
+        self.setGaitConfigSimple(0.06, 0.15, 0.5, 0.02, 30, 17)
         self.setFME(False)
            
     """Set fall manager on or off"""
@@ -283,8 +283,8 @@ class Motions():
         
         self.normalPose(True)
         
-    # Stand up from belly
     def bellyToStand(self):
+        """Stand up from belly"""
         names = list()
         times = list()
         angles = list()
@@ -544,8 +544,9 @@ class Motions():
                         [ 0.0, [ 3, -0.36667, 0.00000], [ 3, 0.00000, 0.00000]]])
         
         self.motProxy.angleInterpolationBezier(names, times, angles)
-    """ Kick with angle and location as input """    
+
     def cartesianRight( self, angle, x, y, interval1 = 0.1, interval2= 0.09, interval3 =0.09):
+        """ Kick with angle and location as input """    
         
         # maxima input:
         # angle -> -0.3 to 0.5 (with x = 0.05, y =  0.00) 
@@ -1342,26 +1343,25 @@ class Motions():
 
     # soft kick towards right, left leg
     def sideLeftKick(self):
-        self.motProxy.angleInterpolation([ 'RShoulderRoll', 'LShoulderRoll'], 
-                                         [  -0.4,            0.3], 
-                                         [  [0.4],          [0.4]], True)
+        self.motProxy.angleInterpolation(['RShoulderRoll', 'LShoulderRoll'], 
+                                         [-0.4,             0.3], 
+                                         [[0.4],           [0.4]], True)
         
         names = list()
         angles = list()
         times = list()
         
         names = ['RShoulderRoll','LHipRoll', 'LHipPitch', 'LKneePitch','LAnklePitch','RHipRoll','RHipPitch','RKneePitch']
-        angles = [[1],            [0,  -0.45],[-0.4, -0.8],[1, 0.2],[-0.55, 0.6],  [-0.05],   [-0.4],     [0.95]     ]
-        times =  [[0.2],          [0.1, 1.8 ],[0.1, 1], [0.5, 1],     [0.5, 1],       [1.0],     [0.5],      [0.5]     ]
+        angles = [[-1],           [0,   0.45],[-0.4, -0.8],[1, 0.2],    [-0.55, 0.6], [0.05],   [-0.4],     [0.95]      ]
+        times =  [[0.2],          [0.1, 1.8 ],[0.1, 1], [0.5, 1],     [0.5, 1],       [1.0],     [0.5],      [0.5]      ]
         
         self.motProxy.post.angleInterpolation(names, angles, times, True)
         time.sleep(1.9)
-        
-        self.motProxy.post.angleInterpolationWithSpeed('LHipRoll', [-0.1], 1.0, True)
+        self.motProxy.post.angleInterpolationWithSpeed(['LHipRoll', 'RShoulderRoll'], [-0.1, -0.1], 1.0, True)
         time.sleep(1.0)
         self.motProxy.angleInterpolation(['LHipRoll','LHipPitch','LKneePitch','LAnklePitch'], 
-                                     [[0.0],    [-0.6],    [1.3],       [-0.6]], 
-                                     [[0.5],    [0.6],      [0.6],       [0.6]], True)
+                                         [[0.0],     [-0.6],     [1.3],       [-0.6]], 
+                                         [[0.5],     [0.6],      [0.6],       [0.6]], True)
         time.sleep(0.6)
         
         # soft kick towards left, right leg

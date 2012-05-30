@@ -34,7 +34,6 @@ def keyRelease(event):
 def update():
     # Receive messages
     data,addr = sock.recvfrom(1024)
-    print "updating"   ,time.time() 
     # Send messages
     sock.send("Up " + str(keys["Up"]) +
               " Down " + str(keys["Down"]) +

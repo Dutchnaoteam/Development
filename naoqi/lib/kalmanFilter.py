@@ -7,52 +7,37 @@ import math
 import random
 import matrix
 
-""" returns a sample based on a mean and covariance
-
-Method to create samples given the mean and covariance matrix 
-
-"""
-def sample(mean, cov , dimensions):
-    r = matrix.transpose( matrix.Cholesky(cov) )
-
-    randoms = matrix.zero(dimensions, 1)
-    for i in range(len(randoms)):
-        randoms[i][0] = random.gauss(0, 0.0025)
-
-    return matrix.plus( mean , matrix.mult(r, randoms))
-
-""" class KalmanFilter
-
-Creates a kalmanfilter object that performs the prediction and measurement
-step based on input given by set methods.
-
-"""
 class KalmanFilter():    
+    """ class KalmanFilter
+
+    Creates a kalmanfilter object that performs the prediction and measurement
+    step based on input given by set methods.
+
+    """
     # R = noise for covariance matrix prediction step
-    R = [[0.01, 0],[0, 0.01]]
+    R = [[0.01, 0], [0, 0.01]]
     # Q = noise for covariance matrix correction step
-    Q = [[0.01, 0],[0, 0.01]]
+    Q = [[0.01, 0], [0, 0.01]]
 
     mu = [[0], [0]]
-    sigma = [[0.1, 0],[0, 0.1]]
-    u = matrix.zero( 2,1 )
-    z = matrix.zero( 2,1 )
+    sigma = [[0.1, 0], [0, 0.1]]
+    u = matrix.zero( 2, 1 )
+    z = matrix.zero( 2, 1 )
     I = [[1, 0], [0, 1]]
     
     def __init__(self):
         self.mu = [[0], [0]]
         self.ballPos = None
     
-    def reset(self, position = (0,0) ):
-        x, y = position
-        self.mu = [[x], [y]]
-        self.lost = True
+    def reset(self, position = (0, 0) ):
+        """Reset the kalman filters mu and sigma"""
+        xPos, yPos = position
+        self.mu = [[xPos], [yPos]]
         self.ballPos = None
-        self.sigma = [[0.1, 0],[0, 0.1]]
-
+        self.sigma = [[0.1, 0], [0, 0.1]]
         
     def iterate(self, measurement, control ):
-	
+        """ Perform one iteration (prediction/correction) """
         velocity = control
                 
         # known are speeds, convert to absolute movements
@@ -65,11 +50,10 @@ class KalmanFilter():
         muBelief = self.mu
         
         # ________ PREDICTION ________
-        
         # rotate using nao_movements theta
-        t = nao_movement_t
-        rotationmatrix = [[ math.cos( t ), -math.sin(t) ], \
-                          [ math.sin( t ),  math.cos(t) ]]
+        theta = nao_movement_t
+        rotationmatrix = [[ math.cos( theta ), -math.sin(theta) ], \
+                          [ math.sin( theta ),  math.cos(theta) ]]
 
         # Predict new measurement based on nao movement.
         # Nao moves x,y towards the ball 
@@ -82,17 +66,16 @@ class KalmanFilter():
         muBelief = sample( muBelief, self.sigma, 2)
         
         # covariance matrix update
-        SigmaBelief = matrix.plus( self.sigma , self.R)
+        sigmaBelief = matrix.plus( self.sigma , self.R)
 
         # ________ CORRECTION _________
-
         if measurement:
             self.z[0][0] = measurement[0]
             self.z[1][0] = measurement[1]
 
             # Since C = [1,0;0,1], drop it
-            s = matrix.inverse2D( matrix.plus(  SigmaBelief, self.Q) )
-            K = matrix.mult(SigmaBelief, s ) 
+            inverse = matrix.inverse2D( matrix.plus(  sigmaBelief, self.Q) )
+            K = matrix.mult(sigmaBelief, inverse ) 
 
             self.mu = matrix.plus( muBelief, 
                                    matrix.mult(K, 
@@ -100,10 +83,27 @@ class KalmanFilter():
                                                                muBelief ) 
                                                )
                                  )
-            self.sigma = matrix.mult(matrix.subtract( self.I, K ), SigmaBelief)
+            self.sigma = matrix.mult(matrix.subtract( self.I, K ), sigmaBelief)
         else:
             # if no ball is found, use the predicted state!
             self.mu = muBelief
-            self.sigma = SigmaBelief
+            self.sigma = sigmaBelief
 
         self.ballPos = self.mu[0][0], self.mu[1][0]    
+
+def sample(mean, cov, dimensions):
+    """ sample(mean, covariance, dimensions) -> vector of size dimensions x 1
+
+    Method to create samples given the mean and covariance matrix using 
+    Cholesky
+
+    """
+    transposed = matrix.transpose( matrix.Cholesky(cov) )
+
+    randoms = matrix.zero(dimensions, 1)
+    for i in range(len(randoms)):
+        randoms[i][0] = random.gauss(0, 0.0025)
+
+    return matrix.plus( mean , matrix.mult(transposed, randoms))
+
+        

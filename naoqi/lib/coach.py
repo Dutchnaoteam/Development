@@ -1,4 +1,5 @@
 """ 
+File: coach.py
 Creator: Sander Nugteren, Erik van Egmond, Auke Wiggers
 """
 import time

@@ -1,25 +1,23 @@
 """
 File: buttonController
-Author: Camiel Verschoor, Sander Nugteren & Erik van Egmond
+Author: Camiel Verschoor, Sander Nugteren&Erik van Egmond
 """
 
 import time
 
-""" class ButtonController
-
-Presents get methods for different buttons on the body (chest, feet) plus a 
-manual setup.
-
-"""
 class buttonController():
-    # VARIABLES
+    """ class ButtonController
+    
+    Presents get methods for different buttons on the body (chest, feet) plus a 
+    manual setup.
+    
+    """
     chestButtonPressed = False
     manual = True
     teamColor = 0
     penalty = 0
     kickOff = 0
 
-    # CONSTRUCTOR
     def __init__(self, ttsProxy, memProxy, sensors, interval=0.5):
         self.interval = interval
         #self.chestButtonPressed = False
@@ -28,8 +26,9 @@ class buttonController():
         self.ttsProxy = ttsProxy
         self.sensors  = sensors
         
-    # FUNCTIONS
     def chestButton(self):
+        """Return if the chestbutton is pressed. TODO raise a flag instead of 
+        dedicated checking"""
         if self.memProxy.getData("ChestButtonPressed", 0):
             print 'Pressed'
             while self.memProxy.getData("ChestButtonPressed", 0):
@@ -39,11 +38,12 @@ class buttonController():
             return 0
                 
     def bumperButton(self):
+        """Return if a bumper has been pressed"""
         return self.memProxy.getData("LeftBumperPressed", 0) or \
                self.memProxy.getData("RightBumperPressed", 0)
     
-    # THE FUNCTIONS TO SETUP THE NAO
     def getSetup(self):
+        """Incur manual setup"""
         if self.manual:
             self.ttsProxy.say("This is the manual setup. Choose my team")
             if (self.teamColor == 0):
@@ -62,6 +62,7 @@ class buttonController():
         return (self.teamColor, self.penalty)
 
     def chooseTeam(self):
+        """Choose a teamcolor using bumpers"""
         startTime = time.time()
         while (time.time() - startTime < 4):
             if (self.bumperButton()):
@@ -75,6 +76,7 @@ class buttonController():
         return self.teamColor
 
     def chooseMode(self):
+        """Choose penalty/non-penalty mode"""        
         startTime = time.time()
         while (time.time() - startTime < 4):
             if (self.bumperButton()):

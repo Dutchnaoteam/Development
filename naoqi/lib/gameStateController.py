@@ -8,13 +8,13 @@ import gameController as gameC
 import buttonController as buttonC
 import threading
 
-""" Class StateController
-
-A threaded class that keeps checking gamecontroller and buttons for changes 
-in the game state.  
-
-"""
 class StateController(threading.Thread):
+    """ Class StateController
+    
+    A threaded class that keeps checking gamecontroller and buttons for changes 
+    in the game state.  
+    
+    """
     # VARIABLES
     f = open('/home/nao/naoinfo/NAOINFO.txt','r')
     robot = int(f.readline())
@@ -24,11 +24,11 @@ class StateController(threading.Thread):
     lastCheck = 0
     secondaryState = 0
 
-    def __init__(self, ledProxy, memProxy, sensors, ttsProxy ):
+    def __init__(self, ledProxy, memProxy, sensors, ttsProxy):
         threading.Thread.__init__(self)
         self.running = True
-        self.bc = buttonC.buttonController( ttsProxy, memProxy, sensors )
-        self.gc = gameC.gameController( self.team )
+        self.bc = buttonC.buttonController( ttsProxy, memProxy, sensors)
+        self.gc = gameC.gameController(self.team)
         self.ledProxy = ledProxy
         
     def __del__(self):
@@ -47,7 +47,7 @@ class StateController(threading.Thread):
                 gcState = self.gc.getGameState()                
                 # get buttonstate
                 if self.bc.chestButton():             
-                    buttonState = self.listenToButtons( self.state )  
+                    buttonState = self.listenToButtons(self.state)  
                 
                 # if penalized
                 if (buttonState == 10 or self.gc.getPenalty(self.robot, \
@@ -66,12 +66,12 @@ class StateController(threading.Thread):
                         self.state = self.listenToButtons( self.state )
                     self.manageLeds( self.state )
 
-    """ returns None
-    
-    Uses chestleds to display gamestate 
-    
-    """
     def manageLeds( self, state ): 
+        """ returns None
+        
+        Uses chestleds to display gamestate. TODO make this non-iterative? 
+        
+        """
         # case initial
         if state == 0:
             self.ledProxy.off('AllLeds')
@@ -101,16 +101,16 @@ class StateController(threading.Thread):
             # Leds are off
             self.ledProxy.off('AllLeds')                                
     
-    """ Get the current state """
     def getState(self):
+        """ Get the current state """
         return self.state
 
-    """ return number corresponding to gameState
-
-    Invoked if button pressed, change state accordingly
-    
-    """
     def listenToButtons(self, buttonState):
+        """ listenToButtons( buttonState ) -> None
+    
+        Invoked if button pressed, change state accordingly
+        
+        """
         if(buttonState == 0):    # initial   -> penalized
             state = 10
         elif(buttonState == 10): # penalized -> playing
@@ -121,30 +121,31 @@ class StateController(threading.Thread):
             state = 3
         return state
     
-    """Invoke manual setup"""
     def getSetup(self):
+        """Invoke manual setup"""
         return self.bc.getSetup()
 
-    # GET FUNCTIONS
     def getTeamNumber(self):
+        """ The current team number """
         return self.team
 
     def getRobotNumber(self):
+        """ The current robot number """
         return self.robot
 
     def getTeamColor(self, side):
+        """ The current team color """
         return self.gc.getTeamColor(side)
 
-    def getKickOff(self):
-        return self.gc.getKickOff()
-
     def getSecondaryState(self):
+        """ If in penalty state, return True """
         if self.gc.controlledRefresh():
             return self.gc.getSecondaryState()
         return self.secondaryState
 
     def getMatchInfo(self):
-        teamColor = kickOff = 0
+        """ The current teamColor and penalty phase y/n """
+        teamColor = penalty = 0
         if self.gc.controlledRefresh():
             teamColor = self.gc.getTeamColor('we')
             penalty = self.gc.getSecondaryState()
@@ -153,15 +154,11 @@ class StateController(threading.Thread):
         self.secondaryState = penalty
         return (teamColor, penalty)
 
-    # Closes thread
     def close(self):
+        """ Safely closes this thread """
         self.running = False
         self.gc.close()
 
-""" This code will only be executed if invoked directly. Not when imported from 
-another file. It shows how to use this module
-
-"""
 if __name__ == '__main__':
     sc = StateController()
     sc.start()

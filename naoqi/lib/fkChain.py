@@ -1,29 +1,30 @@
 """ 
 File fk-chain. 
 Author: Auke Wiggers
-
-Containing classes PID that is an implementation of a PID controller, and 
-FKChain, that enables the user to compute the positions of the body given its
-angles. 
+Description: Containing classes PID that is an implementation of a PID 
+controller, and FKChain, that enables the user to compute the positions of 
+the body given its angles. 
  
 """
 
 from math import cos, sin
 import time
 
-""" returns None
-
-Balance based on inertial unit, uses hiproll and pitch to compensate
-for external disturbances.
-
-"""
-def balanceGyro(supportLeg = 'R'):
+def balanceGyro(supportLeg='R'):
+    """ balanceGyro(supportLeg)-> None
+    
+    Balance based on inertial unit, uses hiproll and pitch to compensate
+    for external disturbances.
+    
+    """
     from naoqi import ALProxy
     mem = ALProxy("ALMemory", "127.0.0.1", 9559)
     mot = ALProxy("ALMotion", "127.0.0.1", 9559)
 
-    oldAngleX = mem.getData("Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value")
-    oldAngleY = mem.getData("Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value")
+    oldAngleX = mem.getData(\
+        "Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value")
+    oldAngleY = mem.getData(\
+        "Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value")
 
     rollName  = supportLeg + 'HipRoll'
     pitchName = supportLeg + 'HipPitch'
@@ -72,13 +73,13 @@ def balanceGyro(supportLeg = 'R'):
         oldAngleX = newAngleX
         oldAngleY = newAngleY
 
-""" returns Output based on KP, KI, KD
-
-PID controller with 3 factors determining output via proportional, integral and
-derivative term.
-
-"""
 class PID():
+    """ class PID
+    
+    PID controller with 3 factors determining output via proportional, integral and
+    derivative term.
+    
+    """
     def __init__(self, kP = 1, kI = 1, kD = 1):
         self.kP = kP
         self.kI = kI
@@ -90,15 +91,19 @@ class PID():
         self.desired      = 0
     
     def reset(self):
+        """Reset this PID controller (i.e. restore all values to 0)"""
         self.previous_error = 0
         self.proportional = 0
         self.integral     = 0
         self.derivative   = 0
         
     def setSP( self, setpoint ):
+        """Set the desired value (aka setpoint) of this PID controller"""
         self.desired = setpoint
 
     def iterate(self, processvalue, dt ):
+        """returns Output based on KP, KI, KD. See documentation of PID
+        controller (wikipedia) for more about this process."""
         error = self.desired - processvalue
 
         # Proportional part is the current error
@@ -114,13 +119,13 @@ class PID():
         self.previous_error = error
         return output
 
-""" class FKChain
-
-Contains functions that are used to calculate 6d positions of joints and the 
-center of mass.
-
-"""
 class FKChain( ):
+    """ class FKChain
+    
+    Contains functions that are used to calculate 6d positions of joints and the 
+    center of mass.
+    
+    """
     #            name,           comX,      comY,     comZ,     mass
     jointCOM = {"RFoot"    : ( [ 0.01432, -0.00192, -0.01449], 0.30067 ),
                 "RKnee"    : ( [ 0.00422, -0.00252, -0.04868], 0.29159 ),
@@ -185,8 +190,7 @@ class FKChain( ):
                    ("Torso", "RPelvis"     ) :  [0,     -0.050, -0.085  ],
                    ("Torso", "LPelvis"     ) :  [0,      0.050,  0.085  ],
                    ("Torso", "RShoulder"   ) :  [0,     -0.098,  0.100  ],
-                   ("Torso", "LShoulder"   ) :  [0,      0.098,  0.100  ]                   
-                   }
+                   ("Torso", "LShoulder"   ) :  [0,      0.098,  0.100  ] }
 
     positions6D = dict()
     weightedCOM = dict()
@@ -219,25 +223,28 @@ class FKChain( ):
                     0               :  0.0   }
 
     def setBodyState( self, bodyState ):
+        """Set the current bodystate as a dict {jointname: value}"""
         self.bodyState = bodyState
 
     def refreshBodyState( self ):
+        """Reset the bodystate using getangles"""
         for key in self.bodyState.keys()[1:]:
             self.bodyState[key] = self.motProxy.getAngles(key, True)[0]
       
-    """ returns a 3x1 vector (list)
-    
-    Function calcCOM computes the position of the center of mass based on the
-    support leg and the state of the body (all angles).
-    
-    """
-    def calcCOM( self, sL = "both" ):
+    def calcCOM( self, sL="both" ):
+        """ calcCOM(supportLeg) -> 3d position vector of COM
+        
+        Function calcCOM computes the position of the center of mass based on 
+        the support leg and the state of the body (all angles).
+        
+        """
         self.refreshBodyState()
         # sL is supportLeg, either R or L or both
         if sL == "R" or sL == "L":
             oL = "L" if sL == "R" else "R"
     
-            order1 = ["Ground", sL+"Foot", sL+"Knee", sL+"Hip", sL+"Pelvis", "Torso"]
+            order1 = ["Ground", sL+"Foot", sL+"Knee", sL+"Hip", sL+"Pelvis", 
+                      "Torso"]
             order2 = ["Torso", oL+"Pelvis", oL+"Hip", oL+"Knee", oL+"Foot"]
             order3 = ["Torso", "RShoulder", "RElbow"]
             order4 = ["Torso", "LShoulder", "LElbow"]
@@ -272,14 +279,15 @@ class FKChain( ):
             COM[i] /= 4.879
         return COM
     
-    """ returns a 6d position vector. 
-    
-    Function transformAll takes a starting position vector (in 6d) and computes
-    the resulting position given a sequence of jointnames order and a bodyState
-    containing the current angles of the body.
-    
-    """
-    def transformAll(self, pos6D, order, otherLeg = False ):
+    def transformAll(self, pos6D, order, otherLeg=False ):
+        """ transformAll(6d pos vector, list of joints, boolean) -> 
+        6d position vector [x,y,z,roll,pitch,yaw]. 
+        
+        Function transformAll takes a starting position vector (in 6d) and 
+        computes the resulting position given a sequence of jointnames order 
+        and a bodyState containing the current angles of the body.
+        
+        """
         for i in xrange(1,len(order)):
             # get jointinfo
             jointName = order[i]
@@ -302,14 +310,15 @@ class FKChain( ):
     
         return pos6D
     
-    """ returns a 6d position vector plus a 3d vector containing COM.
-    
-    Transforms a 6d vector based on translation/rotation and calculates the 
-    weighted coordinates of the center of mass, as this transformation is 
-    one based on a joint. 
-    
-    """
     def transform(self, pos6D, trans, rot, com, mass):
+        """ transform(6d position vector, 3d trans, 3d rot, 3d com, float mass)
+        -> 6d position vector, 3d vector containing COM coordinates.
+        
+        Transforms a 6d vector based on translation/rotation and calculates the 
+        weighted coordinates of the center of mass, as this transformation is 
+        one based on a joint. 
+        
+        """
         x,y,z,wx,wy,wz = pos6D
         t1,t2,t3 = trans
     
@@ -349,4 +358,4 @@ class FKChain( ):
         wx += rot[0]
         wy += rot[1]
         wz += rot[2]
-        return (newX, newY,newZ, wx,wy,wz), (comX, comY, comZ)
+        return (newX, newY, newZ, wx, wy, wz), (comX, comY, comZ)

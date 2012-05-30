@@ -1,12 +1,6 @@
-'''
-convertImage
-filter
-blur
-minMax
-if maxValue < x:
-    return None
-calculatePosition
-return (xPos, yPos, xAngle, yAngle)
+""""
+File: longDistanceTracker.py
+Authors: Michael Cabot&Auke Wiggers
 
 height of image is 240
 angle of image in height is 47.80 degrees
@@ -17,8 +11,7 @@ width of image is 320
 angle of image in width is 60.97 degrees
 radians per pixel in width is 1.064 radians
 radians per pixel = 1.064 / 320 = 0.003325   
-'''
-import time
+"""
 import cv
 from math import tan, cos, sin
 from naoqi import ALProxy
@@ -26,43 +19,40 @@ motion = ALProxy("ALMotion", "127.0.0.1", 9559)
 
 size = None
 
-""" returns x,y position as a tuple
-
-Calculates the position of the ball based on position of the camera and 
-an image. Returns none if no ball found.
-
-""" 
 def run(im, headInfo, track ):
+    """ returns x,y position as a tuple
+
+    Calculates the position of the ball based on position of the camera and 
+    an image. Returns none if no ball found.
+
+    """ 
+    global size
+    size = cv.GetSize(im)
     (cam, head) = headInfo
     # convert the image 
-    im = convertImage(im)
-
+    #im = convertImage(im)
     #use filterGreen to take only the image
     green_thresh = filterGreen(im)
-
     im = boundedBox(green_thresh, im)
-    #cv.SaveImage( str(time.time()) +  '.jpg', im)
-    
+    #cv.SaveImage( str(time.time()) +  ".jpg", im)
     # filter the image
     im = filterImage(im)
-    #cv.SaveImage('filter' + str(time.time()) +  '.jpg', im)
+    #cv.SaveImage("filter" + str(time.time()) +  ".jpg", im)
     # blur the image
     cv.Smooth(im, im, cv.CV_BLUR, 4, 4)
     # find the max value in the image    
     (_, maxValue, _, maxLocation) = cv.MinMaxLoc(im)
     #print maxValue/256.0
     
-    # if the maxValue isn't hight enough return 'None'
+    # if the maxValue isn't above a threshold return None 
     if maxValue/256.0 < 0.4:
         return None
     
-    # if tracking
+    # if tracking, center the vision on the ball
     if track:
-        # else, finish head tasks
-        motion.killTasksUsingResources( ['HeadYaw', 'HeadPitch'] )
+        # finish other head tasks
+        motion.killTasksUsingResources( ["HeadYaw", "HeadPitch"] )
     
-    # calculate the angles to the ball
-    #(xAngle, yAngle) = calcAngles((xcoord, ycoord ), cam)
     # calculate the position of the ball
     position = calcPosition(maxLocation, cam, head, track)
     (xPos, yPos, _, _) = position
@@ -76,29 +66,31 @@ def calcPosition(coord, cam, headInfo, track):
     
     """
     (width, height) = size
-    #print 'size: ', width, ', ', height
+    #print "size: ", width, ", ", height
     # coord with origin in the upperleft corner of the image
     (xCoord, yCoord) = coord
-    #print 'pixelCoord from upperLeft: ', xCoord, ', ', yCoord
+    #print "pixelCoord from upperLeft: ", xCoord, ", ", yCoord
     # change the origin to centre of the image
     xCoord = -xCoord + width/2.0
     yCoord = yCoord - height/2.0
-    #print 'pixelCoord from centre: ', xCoord, ', ', yCoord
+    #print "pixelCoord from centre: ", xCoord, ", ", yCoord
     # convert pixel coord to angle
     radiusPerPixelHeight = 0.00345833333
     radiusPerPixelWidth = 0.003325
-    xAngle = xCoord * radiusPerPixelWidth    
+
+    xAngle = xCoord * radiusPerPixelWidth      
     yAngle = yCoord * radiusPerPixelHeight
+
     if track:
         if -1 < xAngle < 1 and -1 < yAngle < 1:
             yAngle = -0.47 if yAngle + headInfo[0] < -0.47 \
                                          else yAngle
-            motion.changeAngles(['HeadPitch', 'HeadYaw'], \
-                                [0.3*yAngle, 0.3*xAngle], 0.7)
-                                # 0.3*angles for smoother movements, optional. 
+            motion.changeAngles(["HeadPitch", "HeadYaw"], \
+                                [0.7*yAngle,  0.7*xAngle], 0.8)
+                                # 0.7*angles for smoother movements, optional. 
 
     # the position (x, y, z) and angle (roll, pitch, yaw) of the camera
-    (x,y,z, roll,pitch,yaw) = cam
+    (x, y, z, roll, pitch, yaw) = cam
     
     # position of the ball where origin with position and rotation of camera
     # ballRadius = 0.0325 in meters
@@ -115,8 +107,8 @@ def calcPosition(coord, cam, headInfo, track):
     yPos1 += y
     return (xPos1, yPos1, xAngle, yAngle)
 
-"""Convert image to cv Format"""
 def convertImage(picture):
+    """Convert image to cv Format"""
     global size
     size = picture.size
     # convert the type to OpenCV
@@ -126,12 +118,7 @@ def convertImage(picture):
 
 def filterImage(im):
     """Filter a cv image for the correct color"""
-    # Size of the images
-    (width, height) = size
-    
-    hsvFrame = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 3)
     filtered = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 1)
-    #filter2 = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 1)
     
     # Values Iran 4/2012
     #hsvMin1 = cv.Scalar(4,  140,  140, 0)
@@ -142,16 +129,15 @@ def filterImage(im):
     #hsvMax1 = cv.Scalar(14,  230,  255, 0)
     
     # Values RoboW 2012 day 1
-    hsvMin1 = cv.Scalar(12,  158, 213, 0)
-    hsvMax1 = cv.Scalar(20,  255, 255, 0)
+    #hsvMin1 = cv.Scalar(12,  158, 213, 0)
+    #hsvMax1 = cv.Scalar(20,  255, 255, 0)
 
     # Values RoboW 2012 day 2
     hsvMin1 = cv.Scalar(9,   146, 167, 0)
     hsvMax1 = cv.Scalar(17,  255, 255, 0)
 
     # Color detection using HSV
-    cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
-    cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filtered)
+    cv.InRangeS(im, hsvMin1, hsvMax1, filtered)
     #cv.InRangeS(hsvFrame, hsvMin2, hsvMax2, filter2)
     #cv.Or(filter, filter2, filter)
     return filtered
@@ -161,9 +147,9 @@ def filterGreen(im):
     """filterGreen(im) -> single-channel IplImage
 
     Thresholds an image for the color green
+    
     """
     size = cv.GetSize(im)
-    hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
     filtered = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
     ####################
     # filters for green# 
@@ -172,7 +158,7 @@ def filterGreen(im):
     #hsvMin1 = cv.Scalar(60,  3,  90, 0)
     #hsvMax1 = cv.Scalar(100,  190,  210, 0)
     
-    # Eindhoven values 4/2012 Aanpassen Tijmen
+    # Eindhoven values 4/2012
     # hsvMin1 = cv.Scalar(46,  94,  89, 0)
     # hsvMax1 = cv.Scalar(75,  204,  212, 0)
     
@@ -181,8 +167,7 @@ def filterGreen(im):
     hsvMax1 = cv.Scalar(90, 199, 255, 0)
 
     # Color detection using HSV
-    cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
-    cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filtered)
+    cv.InRangeS(im, hsvMin1, hsvMax1, filtered)
 
     return filtered
 

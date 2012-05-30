@@ -17,15 +17,11 @@
 """
 
 import gameStateController          # Controls the states of the nao
-import motions                      # All motion actions
 import motionHandler
-import headMotionHandler
 import time
 import math
 
-
-""" Proxy creation: protocol is first three letters with exceptions 
-TextToSpeech (tts), RobotPose (pos), Sentinel and Sensors """
+# Proxy creation 
 from naoqi import ALProxy
 audProxy = ALProxy('ALAudioDevice', '127.0.0.1', 9559)
 ledProxy = ALProxy('ALLeds', '127.0.0.1', 9559)
@@ -46,24 +42,12 @@ sentinel.enableHeatMonitoring(False)
 motProxy.setWalkArmsEnable(True, True)
 
 # stateController class: robot state, penalized, etc.
-gsc = gameStateController.StateController( ledProxy, memProxy, 
-                                           sensors, ttsProxy )
-print 'Started gsc'
+GSC = gameStateController.StateController(ledProxy, memProxy, 
+                                          sensors, ttsProxy)
 
-# Motion class: motion functions etc.
-mot = motions.Motions( motProxy, posProxy )
-print 'Made motion object'
-# Motionhandlers: threaded instance handling motion updates
-HeadMotionHandler = headMotionHandler.HeadMotionHandler(ledProxy, memProxy, 
-                                                        motProxy, vidProxy)
-HeadMotionHandler.start()
-print 'Started headmotionHandler'
-
-MotionHandler = motionHandler.MotionHandler( mot, HeadMotionHandler, 
-                                            ledProxy, motProxy, memProxy, 
-                                            sensors,  ttsProxy, vidProxy, )
-MotionHandler.start()
-print 'motionHandler started'
+# Motionhandler: threaded instance handling motion updates
+MotionHandler = motionHandler.MotionHandler(ledProxy, memProxy, motProxy, posProxy, 
+                 vidProxy)
 
 # ball location(s)
 ball_loc = list()
@@ -73,14 +57,14 @@ state = 0
 phase = 'BallNotFound'
 
 # Robots own variables
-robot = gsc.getRobotNumber()
+robot = GSC.getRobotNumber()
 memProxy.insertListData([['dntBallDist', '', 0], ['dntPhase', 0, 0], 
                          ['dntNaoNum', robot, 0]])
 teamColor = 1
 penalty = 0
 
 audProxy.setOutputVolume(60)
-#(teamColor, penalty) = gsc.getMatchInfo()
+#(teamColor, penalty) = GSC.getMatchInfo()
 teamColor = 0
 penalty = 0
 audProxy.setOutputVolume(0)
@@ -107,22 +91,17 @@ def Initial():
 
     if firstCall['Initial']:
         print 'In initial state'
-
-        mot.stiff()                           # stiffness on
-        MotionHandler.killWalk()
-        HeadMotionHandler.pause()             # do not find the ball in Initial
-        print 'TeamColor: ' , teamColor       
+        MotionHandler.mot.stiff()    # stiffness on
+        MotionHandler.pause()
 
         # if a regular player
         if playerType == 0:
             phase = 'BallNotFound'
-            mot.normalPose(True)              # normalPose, forcing call
         # if a keeper
         else:
             phase = 'BallNotFoundKeep'
-            mot.keepNormalPose()
         
-        # Empty variables
+        # Empty all variables
         ball_loc = list()        
        
         firstCall['Initial']   = False
@@ -141,10 +120,9 @@ def Ready():
 
     # Reinitialize phases, stand ready for match
     if firstCall['Ready']:
-        # stop ballfinding, there is no ball anyway
-        MotionHandler.localize = True
-        
         print 'In ready state'
+        # restart featurescanning
+        MotionHandler.restart(trackBall=True)
         MotionHandler.killWalk()
 
         firstCall['Initial'] = True
@@ -156,30 +134,28 @@ def Ready():
 
 
 def Set():
-    '''Set state: start searching for ball. CAUTION: Game is started in Set phase
-    instead of Initial in penalty shootout!
+    '''Set state: start searching for ball. CAUTION: Game is started in Set 
+    phase instead of Initial in penalty shootout!
     ledProxy:  Chest Yellow
     '''
     global teamColor
-    global kickOff
+    global penalty
     global phase
     global firstCall
     # if the first iteration
     if firstCall['Set']:
-        MotionHandler.killWalk()
-        # update info about team, possible that game is started in set phase
-        (teamColor, penalty) = gsc.getMatchInfo()
-
         print 'In set state'
-        HeadMotionHandler.setFeatureScanning()                
-        print 'TeamColor: ' , teamColor                    
-        
+        # update info about team, possible that game is started in set phase
+        (teamColor, penalty) = GSC.getMatchInfo()
         # Initial pose, if not already in it
-        mot.stiff()
+        MotionHandler.restart(restartKF=False)
+        MotionHandler.mot.stiff()
+        MotionHandler.killWalk()
+        
         if playerType == 0:
-            mot.normalPose()
+            MotionHandler.normalPose()
         else:
-            mot.keepNormalPose()
+            MotionHandler.keepNormalPose()
 
         audProxy.setOutputVolume(0)                        # set volume to zero
 
@@ -190,7 +166,6 @@ def Set():
         firstCall['Penalized'] = True
 
     # Head movements allowed in the set state
-    # FIND A BALL #
     ball = MotionHandler.getKalmanBallPos()
     if ball:
         if playerType == 0:
@@ -206,10 +181,10 @@ def Playing():
     global firstCall
    
     if firstCall['Playing']:
-        MotionHandler.killWalk()
-        MotionHandler.restart()
-        HeadMotionHandler.setFeatureScanning()
         print 'In playing state'
+        
+        MotionHandler.killWalk()
+        
         firstCall['Initial']   = True
         firstCall['Ready']     = True
         firstCall['Set']       = True
@@ -232,7 +207,7 @@ def Penalized():
         if playerType == 0:                                # if a player, goto unpenalized phase
             phase = 'Unpenalized'
         else:                                              # if a keeper, go to ballnotfoundkeep..
-            if gsc.getSecondaryState() or firstCall['FirstPress']:         # if penalty shootout
+            if GSC.getSecondaryState() or firstCall['FirstPress']:         # if penalty shootout
                 phase = 'BallNotFoundKeep'
             else:                                          # else, become a player
                 phase = 'Unpenalized'
@@ -246,79 +221,77 @@ def Penalized():
         
 def Finished():
     MotionHandler.close()                                  # stop walking
-    mot.stance()                                           # sit down
-    mot.setHead(0,0)                                       # set head straight
+    MotionHandler.stance()                                 # sit down
+    MotionHandler.hmh.setHead(0,0)                         # set head straight
     time.sleep(1)                                          # wait until seated etc
-    mot.killKnees()                                        # stiffness off to prevent heating
-    if not gsc.getSecondaryState():                        # if not penalty shootout
-        gsc.close()
+    MotionHandler.mot.killKnees()                                        # stiffness off to prevent heating
+    if not GSC.getSecondaryState():                        # if not penalty shootout
+        GSC.close()
         audProxy.setOutputVolume(85)                       # volume on
 
 ## PHASES
-
 # KEEPER
 # BallFoundKeep()
 # BallNotFoundKeep()
 # InGoalArea()
 
 def BallFoundKeep():
+    """Goalie sees the ball. Keep track of previous positions to calculate
+    where the ball is going, as there is no ball model yet. TODO ballmodel"""
     global phase
     global ball_loc
     global firstCall
-
+    global timeStampKeeper
+    
     if firstCall['BallFoundKeep']:
-        mot.stance()
+        MotionHandler.stance()
         firstCall['BallFoundKeep'] = False
+        timeStampKeeper = time.time()
+        time.sleep(0.1)
         
     maxlength = 6
     halfmaxlength = (maxlength/2.0)
 
-    #  FIND A BALL  #
     ball = MotionHandler.getKalmanBallPos()
     if ball:
-        #if ball[0] < 0.3 and (ball[1] < 0.5 or ball[1] > -0.5):
-        #    phase = 'InGoalArea'
-        #    mot.move('normalPose')
-        #    VisionHandler.findBall()
-        #    return True
+        # ballpositions are kept in a list
         (x,y) = ball
-
-        length = len(ball_loc)
-        if length == maxlength:
-            ball_loc = ball_loc[1:]
+        if len(ball_loc) == maxlength:
+            del( ball_loc[0] )
             ball_loc.append(ball)
         else:
             ball_loc.append( ball )
-        if length == maxlength:
+        if len(ball_loc) == maxlength:
             xold = 0
             yold = 0
             xnew = 0
             ynew = 0
-
-            # shift elements sidewards, newest ballloc becomes nr <maxlength>, oldest is thrown away
-            for number in range(maxlength):
+            # calculate 2 mean values (called old/new)
+            for number in xrange(halfmaxlength):
                 (x,y) = ball_loc[number]
+                xold += x
+                yold += y
+            for number in xrange(int(halfmaxlength), maxlength):
+                (x,y) = ball_loc[number]                
+                xnew += x
+                ynew += y
 
-                # add to xold/new and yold/new variables, number 0 is oldest, number <maxlength> most recent ballloc
-                if 0 <= number < halfmaxlength:
-                    xold += x
-                    yold += y
-                else:
-                    xnew += x
-                    ynew += y
             # calculate the mean of measurements
             xold /= halfmaxlength
             yold /= halfmaxlength
             xnew /= halfmaxlength
             ynew /= halfmaxlength
-
             
             # calc diff in distance
             distold = math.sqrt(xold**2 + yold**2)
             distnew = math.sqrt(xnew**2 + ynew**2)
-            speed = distold - distnew
+            interval = time.time() - timeStampKeeper
+            timeStampKeeper = time.time()
+            
+            speed = (distold - distnew) / interval
 
-            print 'Ball moving from ', xold, yold, 'to', xnew, ynew, '(mean). Speed', speed
+            print 'Ball moving from ', xold, yold, 'to', xnew, ynew, \
+                  '(mean). Speed', speed
 
             # calculate direction if speed is high enough
             if speed > 0.2 or (distnew < 1 and speed > 0.05 ):
@@ -355,26 +328,25 @@ def BallFoundKeep():
                                      A*C/B = ynew - dir
                                      dir   = A*C/B - ynew
                 """
-                dir = (yold - ynew ) * xnew / (xold - xnew) - ynew
-                print 'Direction', dir
+                direction = (yold - ynew ) * xnew / (xold - xnew) - ynew
+                print 'Direction', direction
                 # if a direction has been found, clear all variables
-                MotionHandler.dive(dir)
+                MotionHandler.dive(direction)
                 phase = 'BallNotFoundKeep'
 
                 ball_loc = list()
                 firstCall['BallFoundKeep'] = True
-                print 'Direction', dir
+                print 'Direction', direction
     else:
         phase = 'BallNotFoundKeep'
         firstCall['BallFoundKeep'] = True
 
 def BallNotFoundKeep():
-    """ Keeper lost track of ball
-    """
+    """ Keeper lost track of ball, stand up after it can not be found to 
+    prevent heated knees """
     global phase
     global ball_loc
-        
-    HeadMotionHandler.setBallScanning()
+    
     # if a ball is found
     if MotionHandler.getKalmanBallPos():
         # reinitialize
@@ -383,7 +355,7 @@ def BallNotFoundKeep():
         firstCall['BallNotFoundKeep'] = True
     elif firstCall['BallNotFoundKeep']:
         memProxy.insertData('dntBallDist', 0)
-        mot.keepNormalPose()
+        MotionHandler.keepNormalPose()
         firstCall['BallNotFoundKeep'] = False
 
 
@@ -402,7 +374,6 @@ def BallFound():
     if firstCall['BallFound']:
         firstCall['BallFound'] = False
         firstCall['BallNotFound'] = True
-        HeadMotionHandler.setBallScanning()
     
     ball = MotionHandler.getKalmanBallPos()
     
@@ -414,16 +385,20 @@ def BallFound():
             phase = 'Kick'
         else:         
             print 'Soul x,y =', x,y
+            if x < 0.3:
+                MotionHandler.hmh.setBallScanning()
+                
             theta = math.atan2(y, x)
             # hacked influencing of perception, causing walking forward to have
             # priority
+            x = 4.0 * (x - 0.17)  
+            y *= 0.5 
             theta *= 0.4      
-            x = (3.0 * (x - 0.17))  
-            y *= 0.6 
-            MotionHandler.sWTV(x , y, theta, max ( 1-x, 0.85 ))
-            time.sleep(0.05)
+            MotionHandler.sWTV(x , y, theta, max ( 1-x, 0.95 ))
+            time.sleep(0.025)
+            
     else:
-        x,y = MotionHandler.hmh.vision.KF.ballPos
+        x,y = MotionHandler.vis.KF.ballPos
         print 'Not seen ball', x, y
         theta = math.atan2( y, x ) 
         MotionHandler.postWalkTo( 0,0, math.copysign( theta, y ) / 2.0 )
@@ -432,7 +407,7 @@ def BallFound():
         phase = 'BallNotFound'
 
 def BallNotFound():
-    """ Ball not found, look for it """
+    """ Ball not found, turn if still no ball is found """
     global ball_loc
     global phase
 
@@ -440,91 +415,92 @@ def BallNotFound():
     if firstCall['BallNotFound']:
         memProxy.insertData('dntPhase', 'BallNotFound')
         MotionHandler.killWalk()
-        HeadMotionHandler.setBallScanning()
         firstCall['BallFound'] = True
         firstCall['BallNotFound'] = False
         
     # try to find a ball
-    ball = MotionHandler.getKalmanBallPos()
-    if ball:
-        phase = 'BallFound'
-        firstCall['BallNotFound'] = True
-    else:
+    now = time.time()
+    while time.time() - now < 2:
+        ball = MotionHandler.getKalmanBallPos()
+        if ball:
+            phase = 'BallFound'
+            firstCall['BallNotFound'] = True
+            break
+    if not MotionHandler.mot.isWalking():
         # if no ball is found circle slowly while searching for it
-        MotionHandler.postWalkTo(0, 0, 2)
+        MotionHandler.sWTV(0, 0, 0.2, 0.8)
  
 def Kick():
-    """ Look for a goal, kick ball in correct direction """
+    """ Kick ball in correct direction based on particle filter """
     global phase
-    print 'Kick phase '
+    print "Kick phase"
     ball     = MotionHandler.getKalmanBallPos()
     position = MotionHandler.getParticleFilterPos()
     if not ball:
-        print 'Ball gone'
-        phase = 'BallNotFound'
+        print "Ball gone"
+        phase = "BallNotFound"
     elif ball[0] > 0.25 or ball[1] > 0.1 or ball[1] < -0.1:
-        print 'Ball too far'
-        phase = 'BallFound'
+        print "Ball too far"
+        phase = "BallFound"
     else:
         # Cases 1-3, if you see your own goal, kick to the other side
         if teamColor == 0:
-            print 'Trying to score in the far goal'
+            print "Trying to score in the far goal from", position
             goalPosX, goalPosY = (6, 2)
         else:
-            print 'Trying to score in the close goal'
+            print "Trying to score in the close goal from", position
             goalPosX, goalPosY = (0, 2)
         
         x, y, t   = position
         kickangle = math.atan2( goalPosY - y, goalPosX - x ) + t            
-        
+       
         if abs(kickangle) < 1:
-            MotionHandler.walkTo(0, math.copysign( 0.03, kickangle ) , 0)
+            MotionHandler.walkTo(0, ball[1] + math.copysign( 0.035, kickangle ), 0)
         MotionHandler.kick(kickangle)
-        phase = 'BallNotFound'
+        phase = "BallNotFound"
         
 def Unpenalized():
-    """When unpenalized, a player starts at the side of the field
-    """
+    """When unpenalized, a player starts at the side of the field """
     global phase
     global playerType
-
-    memProxy.insertListData([['dntBallDist', '', 0], 
-                             ['dntPhase', 'ReturnField', 0]])
-
+    # TODO reset particlefilter at certain position
     # if case this nao is a keeper, convert to player until state changes 
     # to initial/ready/set, where it is set to keeper again
     playerType = 0
+    memProxy.insertListData([["dntBallDist", "", 0], 
+                             ["dntPhase", "ReturnField", 0]])
 
-    MotionHandler.restart()
-    HeadMotionHandler.setFeatureScanning()
-    # so no matter what, it's always good to walk forward (2 meters, to 
+    position = [2, 0, -1.5]
+    MotionHandler.restart(position)
+    # so no matter what, it"s always good to walk forward (2 meters, to 
     # the center of the field)
-    if not(mot.isWalking()):
+    if not(MotionHandler.mot.isWalking()):
         MotionHandler.postWalkTo(2, 0, 0)
-    phase = 'ReturnField'
+    phase = "ReturnField"
 
 def ReturnField():
-    # and while you're walking forward..
+    # and while you"re walking forward..
     global phase
-    if mot.isWalking():
+    if MotionHandler.mot.isWalking():
         # ..search for a ball
         if MotionHandler.getKalmanBallPos():
-            phase = 'BallFound'
+            phase = "BallFound"
     else:
-        phase = 'BallNotFound'
+        phase = "BallNotFound"
 
 ##### OPERATING SYSTEM #####
 
 def awakeSoul():
-    gsc.start()
+    GSC.start()
+    MotionHandler.start()
     state = 0
-    print 'Awakened!'
-    while(state != 4 or gsc.getSecondaryState()):
-        #print 'soul.py State: ', state
-        state = gsc.getState()
+    print "Awakened!"
+    while(state != 4 or GSC.getSecondaryState()):
+        #print "soul.py State: ", state
+        state = GSC.getState()
         states.get(state)()
-    print 'Slumbering....'
-    gsc.close()
+    print "Slumbering...."
+    GSC.close()
     MotionHandler.close()
    
 # DICTIONARIES
@@ -538,28 +514,28 @@ states =     {
     }
 
 phases =     {
-    'BallFound': BallFound,
-    'BallNotFound': BallNotFound,
-    'Kick' : Kick,
-    'BallFoundKeep': BallFoundKeep,
-    'BallNotFoundKeep': BallNotFoundKeep,
-    'Unpenalized': Unpenalized,
-    'ReturnField': ReturnField,
+    "BallFound": BallFound,
+    "BallNotFound": BallNotFound,
+    "Kick" : Kick,
+    "BallFoundKeep": BallFoundKeep,
+    "BallNotFoundKeep": BallNotFoundKeep,
+    "Unpenalized": Unpenalized,
+    "ReturnField": ReturnField,
 }
 
 # Dictionary that stores if a phase has been called once already.
 # TODO find a better way to check if a phase or state has been called already, 
 # perhaps keeping track of the previous (or all previous, as a log) states?
-firstCall = {'Initial' : True,
-             'Ready' : True,
-             'Set': True,
-             'Playing': True,
-             'Penalized': True,
-             'BallFoundKeep' : True,
-             'BallNotFoundKeep' : True,
-             'BallFound' : True,
-             'BallNotFound' : True,
-             'FirstPress' : True}
+firstCall = {"Initial" : True,
+             "Ready" : True,
+             "Set": True,
+             "Playing": True,
+             "Penalized": True,
+             "BallFoundKeep" : True,
+             "BallNotFoundKeep" : True,
+             "BallFound" : True,
+             "BallNotFound" : True,
+             "FirstPress" : True}
 
 awakeSoul()
 

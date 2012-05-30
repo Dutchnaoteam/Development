@@ -1,73 +1,71 @@
-'''
-AUTHOR:  Justin van Zanten
-CONTENT: markGoalCV, calcXangle, convertImage, run
-'''
+"""
+File: LocateGoalzor.py
+Author:  Justin van Zanten
+"""
 import cv
 import math
 
 def markGoalCV(im):
-    ''' 
+    """ 
     As made by Michael Cabot
     Image color filter, can be thresholded (70 recommended) to find 
     locations containing the calibrated color
     INPUT:  im, a [160-by-120] image needed to be filtered
-            color, the filter color a string, can be 'blue' or 'yellow'
+            color, the filter color a string, can be "blue" or "yellow"
     OUTPUT: returns an OpenCV color filtered image with values of the 
             color match, values over a threshold of 70 are sugested
-    '''
-    size = (320,240) # Size of the images
-    hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
-    filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
+    """
+    filtered = cv.CreateImage(cv.GetSize(im), cv.IPL_DEPTH_8U, 1)
     
-    # Goalfilter values (made in Istanbul 06/07/2011)
-    '''if(color == 'blue'):
+    """
+    --------------------------------------------------------
+    Goalfilter values (made in Istanbul 06/07/2011)
+    if(color == "blue"):
         hueMin = 116
         hueMax = 130
         saturationMin = 117 
         saturationMax = 255 
         valueMin = 134 
         valueMax = 210
-    if(color == 'yellow'):
+    if(color == "yellow"):
         hueMin = 20 
         hueMax = 41 
         saturationMin = 100 
         saturationMax = 255
         valueMin = 60
         valueMax = 210 
-    '''
-    # TODO AANPASSEN TIJMEN 
-    # Goalfilter values made in Eindhoven 04/2012
-    #if(color == 'blue'):
-    #    hueMin = 106
-    #    hueMax = 113
-    #    saturationMin = 204 
-    #    saturationMax = 255 
-    #    valueMin = 119 
-    #    valueMax = 197
+    ---------------------------------------------------------
+    Goalfilter values made in Eindhoven 04/2012
+    if(color == "blue"):
+        hueMin = 106
+        hueMax = 113
+        saturationMin = 204 
+        saturationMax = 255 
+        valueMin = 119 
+        valueMax = 197
+    """
     
-    # For yellow goals:    
+    # GoalFilter values yellow RoboW 05/2012:    
     hueMin = 29
     hueMax = 37 
     saturationMin = 106 
     saturationMax = 220
     valueMin = 105
     valueMax = 255 
+    hsvMin = cv.Scalar(hueMin, saturationMin, valueMin, 0)
+    hsvMax = cv.Scalar(hueMax, saturationMax, valueMax, 0)
+    cv.InRangeS(im, hsvMin, hsvMax, filtered)
     
-    hsvMin1 = cv.Scalar(hueMin, saturationMin, valueMin, 0)
-    hsvMax1 = cv.Scalar(hueMax, saturationMax, valueMax, 0)
-    cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
-    cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filter)
-    
-    return filter
+    return filtered
     
 def calcXangle(xcoord):
-    '''
+    """
     As made by Michael Cabot
     calculates the angle towards a location in an image
     INPUT:  xcoord, a x coordinate in a [320-by-240] image
     OUTPUT: returns the angle to the x coordinate with the middle of
     the image being 0 degrees
-    '''
+    """
     (width, height) = (320, 240)
     xDiff = width / 2.0 - xcoord
     distanceToFrame = 0.5 * width / 0.42860054745600146
@@ -75,12 +73,12 @@ def calcXangle(xcoord):
     return xAngle
 
 def convertImage(picture):
-    ''' 
+    """ 
     As made by Michael Cabot
     converts a robot image into an OpenCV image
     INPUT:  picture, a robot taken snapshot
     OUTPUT: an OpenCV image
-    '''
+    """
     global size
     size = (320, 240)
     # resize the image
@@ -91,27 +89,26 @@ def convertImage(picture):
     return image    
     
 def run(image, yawHead ):
-    '''
-    By Author
+    """
     Recognizes poles of a color with a minimum lenght of 20 pixels
     INPUT:  image, a [160-by-120] image needed to be filtered
             yawHead, the Robot Head Yaw, to make the angle absolute
-            color, the filter color a string, can be 'blue' or 'yellow'
+            color, the filter color a string, can be "blue" or "yellow"
     OUTPUT: returns a tuple (x, y) containing to angles for the best two
             poles. (None,None) is given if poles are missing
             At one missing pole (angle, None) will be returned
             (None, angle) will never be returned.
-    '''
+    """
 
     # Filter an image based on color.
-    image = convertImage(image)
-    #cv.SaveImage('raw' + str(time.time()) +  '.jpg', image)
+    #image = convertImage(image)
+    #cv.SaveImage("raw" + str(time.time()) +  ".jpg", image)
     image = markGoalCV(image )
-    #cv.SaveImage('filter' + color + str(time.time()) +  '.jpg', image)
+    #cv.SaveImage("filter" + color + str(time.time()) +  ".jpg", image)
     cv.Smooth(image, image, cv.CV_GAUSSIAN, 5,5)
     
     threshold = 70   # threshold for the grayscale
-    (width, height) = (320,240) # resolution of the input images
+    (width, height) = cv.GetSize(image) # resolution of the input images
     
     #######################ALGORITHMICDIVISION#######################
     
@@ -158,7 +155,7 @@ def run(image, yawHead ):
       
     # Group the veritcal lines together.
     sortedlines = sorted(lines.keys())
-    currentBlob = 'empty'
+    currentBlob = "empty"
     upperline = 0
     underline = 0
     # initiate top two maximum values
@@ -168,8 +165,8 @@ def run(image, yawHead ):
     posNotQuiteAsMax = None
     
     for i in xrange(len(lines)-1):                                      # iterate from left to right (only where a line is found)
-        if (currentBlob == 'empty'):                                    # remember first line
-            currentBlob = 'full'
+        if (currentBlob == "empty"):                                    # remember first line
+            currentBlob = "full"
             underline = sortedlines[i]
         left = sortedlines[i]
         right = sortedlines[i+1]
@@ -194,7 +191,7 @@ def run(image, yawHead ):
                     else:
                         posNotQuiteAsMax = pos
                         NotQuiteAsMax = dif
-            currentBlob = 'empty'                                       # repeat for the next line found
+            currentBlob = "empty"                                       # repeat for the next line found
     if ((upperline - underline) > 3):                                   # when passed through all the lines, save the last ()
         pos = (upperline + underline)/2                                 # if its greater than the others found
         dif = upperline - underline
@@ -222,12 +219,11 @@ def run(image, yawHead ):
     if posMax:
         tuplepart2 = calcXangle(posMax)  + yawHead, pixelsToMeters( Max )
     if tuplepart1 or tuplepart2:
-        return (tuplepart2, tuplepart1) # (closest, furthest)         # return the angles
+        return [tuplepart2, tuplepart1] # (closest, furthest)         # return the angles
     else:
         return [None]
         
 def pixelsToMeters( pixels ):
-    
     radiusPerPixelWidth = 0.003325
     pixels /= 2.0
     angle = pixels * radiusPerPixelWidth
