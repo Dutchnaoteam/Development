@@ -1,3 +1,6 @@
+# download 3Dx driver from 3dconnexxion.com
+# download comptypes (python plugin) from "http://sourceforge.net/projects/comtypes/"
+
 from comtypes.client import GetEvents, CreateObject
 
 class SensorListener:
@@ -30,8 +33,6 @@ def PumpMessages():
         print "bla2"
 
         
-        
-        
 def main():
     # Get device
     device = CreateObject("TDxInput.Device")
@@ -40,10 +41,11 @@ def main():
         con = GetEvents(device.sensor, SensorListener(device.sensor))
         print con
         try:
+            print "bla4"
             PumpMessages()
         except KeyboardInterrupt:
             return
-        bla3
+        print "bla3"
 
 if __name__ == "__main__":
     main()

@@ -63,13 +63,13 @@ def processEvent(display, event):
     #print event data
     #display.execute(str(event))
     #display.done()
-    
+            
     # a button is pressed
-    if (input.type == 10):
-        button = input.dict["button"]
+    if (event.type == 10):
+        button = event.dict["button"]
     
         #only perfom action when robot is not walking!
-        if (not (motionclass.isWalking())):
+        if (not (motion.isWalking())):
             if (button == 0):       #A - stand-up when falling down
                 display.execute("standing up")
                 motion.standUp()
@@ -104,10 +104,10 @@ def processEvent(display, event):
        
 
     #superspeed
-    if (input.type == 10) or (input.type == 11):
-        button = input.dict["button"]
+    if (event.type == 10) or (event.type == 11):
+        button = event.dict["button"]
         if (button == 2):        #X (superspeed)
-            if (input.type == 2):       #button is pressed
+            if (event.type == 10):       #button is pressed
                 new_state.superSpeed = 1
             else:                     #button is released
                 new_state.superSpeed = 0
@@ -116,8 +116,8 @@ def processEvent(display, event):
     #WALKING
     
     #arrows        
-    if (input.type == 9):
-        dir = input.dict["value"]
+    if (event.type == 9):
+        dir = event.dict["value"]
         
         #set veloY
         if (dir[0] == 0):    #no movement
@@ -136,16 +136,16 @@ def processEvent(display, event):
             new_state.veloX = -walkVelocityForward
             
     #rotate robot            
-    if (input.type == 7):
-        angle = round(input.dict["value"], 1)
-        axis = input.dict["axis"]
+    if (event.type == 7):
+        angle = event.dict["value"]
+        axis = event.dict["axis"]
         
         if (axis == 4):             #right joystick, horizontal movement
             if (angle < -0.6):      #rotate left
                 new_state.veloT = rotateVelocityLeft
             elif (angle > 0.6):     #rotate right
                 new_state.veloT = -rotateVelocityLeft
-            elif ((angle  > -0.2) and (angle < 0.2)): 
+            elif ((angle  > -0.4) and (angle < 0.4)): 
                 new_state.veloT = 0             
 
     #do movement
@@ -155,9 +155,18 @@ def processEvent(display, event):
             (old_state.superSpeed != new_state.superSpeed) ):
     
         if (new_state.superSpeed == 1):
-            sX = 1 if (new_state.veloX > 0) else 0
-            sY = 1 if (new_state.veloY > 0) else 0
-            sT = 1 if (new_state.veloT > 0) else 0
+            sX = 0
+            if (new_state.veloX > 0):   sX = 1
+            elif (new_state.veloX < 0): sX = -1
+            
+            sY = 0
+            if (new_state.veloY > 0):   sY = 1
+            elif (new_state.veloY < 0): sY = -1
+            
+            sT = 0
+            if (new_state.veloT > 0):   sT = 1
+            elif (new_state.veloT < 0): sT = -1
+            
             display.execute("walk: x:" + str(sX) + "\t y:"+ str(sY) + "\t t:" + str(sT) + "\t stiff:" + str(new_state.stiff))
             motion.setWalkTargetVelocity(sX,sY,sT,1)
             display.done()

@@ -13,7 +13,9 @@ def getButtonDefinition():
     return text
 
 def processEvent(display, event):
-    display.execute(str(event))
-    display.done()
+    #display.execute(str(event))
+    #display.done()
     #time.sleep(1)
+    print str(event)
+    time.sleep(0.1)
     

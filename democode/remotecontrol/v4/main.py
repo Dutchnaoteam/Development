@@ -33,13 +33,13 @@ class termOutput:
     cmdDict = {}
     cmdIdx = 0
     cmdSize = 10
-    process = None
+    eventHandler = None
     input = None
     system = None
     
-    def __init__(self, cmdSize, process, input, system):
+    def __init__(self, cmdSize, eventHandler, input, system):
         self.cmdSize = cmdSize
-        self.process = process
+        self.eventHandler = eventHandler
         self.input = input
         self.system = system
         self.clear()
@@ -69,11 +69,11 @@ class termOutput:
             sys.stdout.write("   -------------------------------------- " + '\n')
             sys.stdout.write('\n')
             sys.stdout.write("  Button Usage for system: \n")
-            sys.stdout.write("        (input:" + self.system[0] + ", process:" + self.system[1] + ") \n")
+            sys.stdout.write("   (input:" + self.system[0] + ", event-handler:" + self.system[1] + ") \n")
             sys.stdout.write('\n')
             sys.stdout.write("  Press '" + input.getQuitCommand() + "' to quit." '\n')
             sys.stdout.write('\n')
-            sys.stdout.write( process.getButtonDefinition() )
+            sys.stdout.write( eventHandler.getButtonDefinition() )
             sys.stdout.write('\n')
             sys.stdout.write("   -------------------------------------- " + '\n')
             
@@ -134,16 +134,16 @@ def listFiles(dir):
  
 arguments = len(sys.argv) - 2
 
-if (len(sys.argv) <= 1):
+if (len(sys.argv) <= 1) or (sys.argv[1] == "help"):
     sys.stdout.write( '\n')
     sys.stdout.write( "Usage:" + '\n\n')
     sys.stdout.write( "bash> python main.py <NaoIPadress> [-i <..> -p <..> -id <..> -d <..> -u <...>]" + '\n\n')    
     sys.stdout.write( "    <NaoIPadress>                            \n          ip adress of Nao, e.g. 192.168.0.24" + '\n\n')
     sys.stdout.write( "-i  <InputDevice>      default: 'keyboard'   \n          type of inputDevice (e.g. 'keyboard' or 'joystick')" + '\n\n')
-    sys.stdout.write( "-p  <EventProcessFile> default: 'keyDefault' \n          name of file which processes data of <inputDevice> (e.g. 'keyDefault')" + '\n\n')
+    sys.stdout.write( "-p  <EventHandler>     default: 'dummy'      \n          name of file which processes data of <inputDevice> (e.g. 'keyDefault')" + '\n\n')
     sys.stdout.write( "-d  <displayLines>     default: '10'         \n          number of commands shown in output, -1 = all" + '\n\n')
     sys.stdout.write( "-id <inputID>          default: '0'          \n          ID of input-object to use when multiple are connected" + '\n\n')
-    sys.stdout.write( "-u  <updateFrequency>  default: '20'         \n          maximum number of processable-events processed per second" + '\n\n')
+    sys.stdout.write( "-u  <updateFrequency>  default: '5'          \n          maximum number of processable-events processed per second" + '\n\n')
     sys.stdout.write( '\n')
 elif (arguments%2 == 1):
     sys.stdout.write( "Error: not an even number of arguments provided:" + '\n')
@@ -156,12 +156,12 @@ else:
     #-u  = number of instructions processed by system 
 
     #default values
-    inputType       = 'keyboard'
-    inputTypeID     = 0
-    processFile     = 'keyDefault'
-    cmdLines        = 10
-    robotIPadress   = sys.argv[1]
-    updateFreq      = 20 #updates per second
+    inputType           = 'keyboard'
+    inputTypeID         = 0
+    eventHandlerFile    = 'dummy'
+    cmdLines            = 10
+    robotIPadress       = sys.argv[1]
+    updateFreq          = 5 #updates per second
     
     # parse commands
     for i in range(arguments/2):
@@ -181,31 +181,31 @@ else:
         else:                       # not recognised
             sys.stdout.write( "Unknown Command '" + cmd + "' with value '" + str(val) + "', command ommitted." + '\n')
     
-    
+
     #start system
     sys.stdout.write( "> Searching folders in current directory... " )
     listFiles(os.getcwd())
     sys.stdout.write( "\r> Searching folders in current directory... done" + '\n')   
   
   
-    sys.stdout.write( "> Importing event-process file... \n")
+    sys.stdout.write( "> Importing event-handler... \n")
     try:
-        process = __import__(processFile)
-        if (not hasattr(process, "init")):
-            sys.stdout.write("\nError: Event-Process File '" + processFile + "' does not contain the function: 'init'" + '\n')
+        eventHandler = __import__(eventHandlerFile)
+        if (not hasattr(eventHandler, "init")):
+            sys.stdout.write("\nError: event-handler '" + eventHandlerFile + "' does not contain the function: 'init'" + '\n')
             exit()
-        elif (not hasattr(process, "getButtonDefinition")):
-            sys.stdout.write("\nError: Event-Process File '" + processFile + "' does not contain the function: 'getButtonDefinition'" + '\n')
+        elif (not hasattr(eventHandler, "getButtonDefinition")):
+            sys.stdout.write("\nError: event-handler '" + eventHandlerFile + "' does not contain the function: 'getButtonDefinition'" + '\n')
             exit()
-        elif (not hasattr(process, "processEvent")):
-            sys.stdout.write("\nError: Event-Process File '" + processFile + "' does not contain the function: 'processEvent'" + '\n')
+        elif (not hasattr(eventHandler, "processEvent")):
+            sys.stdout.write("\nError: event-handler '" + eventHandlerFile + "' does not contain the function: 'processEvent'" + '\n')
             exit()
-        process.init(robotIPadress)
+        eventHandler.init(robotIPadress)
     except Exception, ee:
         sys.stdout.write( '\n>> ' + str(ee) + '\n\n')
-        sys.stdout.write( "Error: can't load event-process file: '" + processFile + "'" + '\n')
+        sys.stdout.write( "Error: can't load event-handler: '" + eventHandlerFile + "'" + '\n')
         exit()
-    sys.stdout.write( "\r> Importing event-process file... done" + '\n')
+    sys.stdout.write( "\r> Importing event-handler ... done" + '\n')
     
     
     sys.stdout.write( "> Initializing input-system... " )
@@ -223,13 +223,14 @@ else:
         input.init(inputTypeID)
     except Exception, ee:
         sys.stdout.write( '\n>> ' + str(ee) + '\n\n')
-        sys.stdout.write( "Error: can't load input system: '" + inputType + "'" + '\n')
+        sys.stdout.write( "Error: can't load input-system: '" + inputType + "'" + '\n')
         exit()
     sys.stdout.write( "\r> Initializing input-system... done" + '\n')
 
+    time.sleep(5)
     
     #setup display (output)
-    output = termOutput(cmdLines, process, input, (inputType, processFile))
+    output = termOutput(cmdLines, eventHandler, input, (inputType, eventHandlerFile))
     output.refresh()
     output.waiting()
 
@@ -248,7 +249,7 @@ else:
                 sys.stdout.write( "Quitting system" + '\n')
                 exit()
             elif ( not(action == None)):
-                process.processEvent(output, action)
+                eventHandler.processEvent(output, action)
                 
             # check updateFrequency
             dt = time.time() - st
