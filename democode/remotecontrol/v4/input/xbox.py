@@ -48,14 +48,14 @@ def getAction():
         # ifso, validateEventQueue (return None if no valid events are on the queue)
         if (not emptyQueue()):
             event = validateEventQueue(event)
-            if (event != None):
-                event = checkJoystickEvent(event)
+#            print "q: " + str(event)
 
     #no items in queue & no legal items in queue
     # --> wait for legal event
     if (event == None) or (not validateEvent(event, "wait")):
         event = waitForEvent()
-   
+#        print "w: " + str(event)
+        
     #register button press / joystick movement
     if ((event.type == pygame.JOYBUTTONDOWN) or (event.type == pygame.JOYBUTTONUP)):
         buttonState[event.button] = event.type
@@ -75,11 +75,15 @@ def quit():
  
 #validate event-queue 
 def validateEventQueue(event):
-    #if first event is a joystick-movement, allow it.
-    # --> joystickmotion is (almost) always a queue.
+    #if first event is a joystick-movement, 
+    # allow it if it is the only item in queue
     if (event.type == pygame.JOYAXISMOTION):
-        return event
-    elif (validateEvent(event, "queue")):
+        event = checkJoystickEvent(event)
+        if (not (pygame.event.peek((pygame.JOYBUTTONUP, pygame.JOYBUTTONDOWN, pygame.JOYHATMOTION, pygame.JOYBALLMOTION)))):
+            return event
+
+    #    return event
+    if (validateEvent(event, "queue")):
         return event
     else:
         #validate alle events in queue untill:
@@ -87,6 +91,7 @@ def validateEventQueue(event):
         # - or, no events are left
         while (True):
             event = pollEvent()
+            event = checkJoystickEvent(event)
             if (event.type == pygame.NOEVENT):
                 return None
             if (validateEvent(event, "queue")):
@@ -108,14 +113,15 @@ def validateEvent(event, type):
     # - hat release
     # - button release
     if (type == "queue"):
-        #print "queue: " + str(event) 
         #joystick is released
         if (event.type == pygame.JOYAXISMOTION):
             if (-0.1 <= event.dict["value"] <= 0.1):
                 if (event.axis in joystickState):
                     if (joystickState[event.axis] == event.dict["value"]):
                         return False
-                return True
+                    else:
+                        return True
+            
         #hat-pad to original position
         if (event.type == pygame.JOYHATMOTION):
             if (event.dict["value"] == (0,0)):
@@ -174,18 +180,22 @@ def pollEvent():
 # ifso, search most recent joystick motion in queue (= final position)
 def checkJoystickEvent(event):
     if (event.type == pygame.JOYAXISMOTION):
-        while (peekEvent().type == pygame.JOYAXISMOTION):
-            event = pollEvent()
-        
-        #while (True):
-        #    if (peekEvent().type == pygame.JOYAXISMOTION):
-        #        event = pollEvent()
-        #    else:
-        #        return event
+        axis = event.dict["axis"]
+        while (True):
+            e = peekEvent()
+            if (e.type == pygame.JOYAXISMOTION):
+                if (e.axis == axis):
+                    event = pollEvent()
+                else:
+                    return event
+            else:
+                return event
     return event
 
 #process event: continious values are rounded to 1 decimal
 def processEvent(event):
     if (event.type == pygame.JOYAXISMOTION):
         event.dict["value"] = round(event.dict["value"], 1)
+        if (-0.1 <= event.dict["value"] <= 0.1):
+            event.dict["value"] = 0.0
     return event

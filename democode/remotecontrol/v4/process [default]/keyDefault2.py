@@ -10,7 +10,6 @@ new_state = None
 walkVelocityForward = 0.4     
 walkVelocityLeft = 0.5
 rotateVelocityLeft = 0.4
-noMovementVelocity = 0.01
 
 #used state of robot: walking direction
 class state:
@@ -47,7 +46,6 @@ def getButtonDefinition():
     text += "   down = move backward\n"
     text += "   left = move left\n"
     text += "   right = move right\n"
-    text += "   shift = stop moving\n"
     text += "   space = maximum speed\n"
     return text    
 
@@ -73,6 +71,10 @@ def processEvent(display, event):
     keyEvent = event[0]
     keyID = event[1]
     
+    #show key-data:
+    #display.execute(str(event))
+    #display.done()
+    
     #motions which can only be executed when robot does nothing
     if (keyEvent == 2): #key is pressed
         if (not(motion.isWalking())):
@@ -90,35 +92,23 @@ def processEvent(display, event):
                     motion.stiff()
                     new_state.stiff = 1
                 display.done()
-        if (keyID == 100):
-            display.execute("shoot left")
-            new_state.veloX = 0
-            new_state.veloY = 0
-            new_state.veloT = 0
-            motion.setWalkTargetVelocity(0,0,0,1)
-            motion.normalPose()
-            motion.cartesianLeft(0,0.08,0)
-            display.done()
-        elif (keyID == 102):
-            display.execute("shoot right")
-            new_state.veloX = 0
-            new_state.veloY = 0
-            new_state.veloT = 0
-            motion.setWalkTargetVelocity(0,0,0,1)
-            motion.normalPose()
-            motion.cartesianRight(0,0.08,0)
-            display.done()
-        elif (keyID == 303):
-            new_state.veloX = 0
-            new_state.veloY = 0
-            new_state.veloT = 0
-        elif (keyID == 112):
-            display.execute("Pausing")
-            motion.stance()
-            time.sleep(2)
-            motion.kill()
-            new_state.stiff = 0
-            display.done()
+            elif (keyID == 100):      #d - shoot with left leg
+                display.execute("shoot left")
+                motion.normalPose()
+                motion.cartesianLeft(0,0.08,0)
+                display.done()
+            elif (keyID == 102):     #f - shoot with right leg
+                display.execute("shoot right")
+                motion.normalPose()
+                motion.cartesianRight(0,0.08,0)
+                display.done()
+            elif (keyID == 112):     #p - pausing
+                display.execute("Pausing")
+                motion.stance()
+                time.sleep(2)
+                motion.kill()
+                new_state.stiff = 0
+                display.done()
                 
     #actions which are allowed todo when walking
     
@@ -138,41 +128,33 @@ def processEvent(display, event):
         if (keyEvent == 2):                                 #button is pressed
             new_state.veloX = walkVelocityForward
         elif(new_state.veloX == walkVelocityForward):       #button is released
-            new_state.veloX = noMovementVelocity        
+            new_state.veloX = 0        
     elif (keyID == 274):                                    # down
         if (keyEvent == 2):                                 #button is pressed
             new_state.veloX = -walkVelocityForward
         elif (new_state.veloX == -walkVelocityForward):     #button is released
-            new_state.veloX = noMovementVelocity
+            new_state.veloX = 0 
     elif (keyID == 276):                                    # left
         if (keyEvent == 2):                                 #button is pressed
             new_state.veloY = walkVelocityLeft
         elif (new_state.veloY == walkVelocityLeft):         #button is released
-            new_state.veloY = noMovementVelocity
+            new_state.veloY = 0
     elif (keyID == 275):                                    # right
         if (keyEvent == 2):                                 #button is pressed
             new_state.veloY = -walkVelocityLeft
         elif (new_state.veloY == -walkVelocityLeft):        #button is released
-            new_state.veloY = noMovementVelocity
+            new_state.veloY = 0 
     elif (keyID == 97):                                     #a- rotate left
         if (keyEvent == 2):                                 #button is pressed
             new_state.veloT = rotateVelocityLeft
         elif (new_state.veloT == rotateVelocityLeft):       #button is released
-            new_state.veloT = noMovementVelocity
+            new_state.veloT = 0 
     elif (keyID == 115):                                    #s- rotate right right
         if (keyEvent == 2):                                 #button is pressed
             new_state.veloT = -rotateVelocityLeft
         elif (new_state.veloT == -rotateVelocityLeft):      #button is released
-            new_state.veloT = noMovementVelocity
+            new_state.veloT = 0 
 
-    #toggle "no-movement" values
-    if ((new_state.veloX == noMovementVelocity) or (new_state.veloX == -noMovementVelocity)):
-        new_state.veloX = -new_state.veloX
-    if ((new_state.veloY == noMovementVelocity) or (new_state.veloY == -noMovementVelocity)):
-        new_state.veloY = -new_state.veloY
-    if ((new_state.veloT == noMovementVelocity) or (new_state.veloT == -noMovementVelocity)):
-        new_state.veloT = -new_state.veloT
-    
     #do movement
     if  ((old_state.veloX != new_state.veloX) or \
             (old_state.veloY != new_state.veloY) or \
@@ -181,16 +163,16 @@ def processEvent(display, event):
     
         if (new_state.superSpeed == 1):
             sX = 0
-            if (new_state.veloX > noMovementVelocity):   sX = 1
-            elif (new_state.veloX < -noMovementVelocity): sX = -1
+            if (new_state.veloX > 0):   sX = 1
+            elif (new_state.veloX < 0): sX = -1
             
             sY = 0
-            if (new_state.veloY > noMovementVelocity):   sY = 1
-            elif (new_state.veloY < -noMovementVelocity): sY = -1
+            if (new_state.veloY > 0):   sY = 1
+            elif (new_state.veloY < 0): sY = -1
             
             sT = 0
-            if (new_state.veloT > noMovementVelocity):   sT = 1
-            elif (new_state.veloT < -noMovementVelocity): sT = -1
+            if (new_state.veloT > 0):   sT = 1
+            elif (new_state.veloT < 0): sT = -1
                 
             display.execute("walk: x:" + str(sX) + "\t y:"+ str(sY) + "\t t:" + str(sT) + "\t stiff:" + str(new_state.stiff))
             motion.setWalkTargetVelocity(sX,sY,sT,1)

@@ -143,25 +143,19 @@ if (len(sys.argv) <= 1) or (sys.argv[1] == "help"):
     sys.stdout.write( "-p  <EventHandler>     default: 'dummy'      \n          name of file which processes data of <inputDevice> (e.g. 'keyDefault')" + '\n\n')
     sys.stdout.write( "-d  <displayLines>     default: '10'         \n          number of commands shown in output, -1 = all" + '\n\n')
     sys.stdout.write( "-id <inputID>          default: '0'          \n          ID of input-object to use when multiple are connected" + '\n\n')
-    sys.stdout.write( "-u  <updateFrequency>  default: '5'          \n          maximum number of processable-events processed per second" + '\n\n')
+    sys.stdout.write( "-u  <updateFrequency>  default: '10'         \n          maximum number of processable-events processed per second" + '\n\n')
     sys.stdout.write( '\n')
 elif (arguments%2 == 1):
     sys.stdout.write( "Error: not an even number of arguments provided:" + '\n')
     sys.stdout.write( str(len(sys.argv)) + " " + str(sys.argv) + '\n')
 else: 
-    #-p  = event-process file
-    #-i  = input type
-    #-d  = number of cmd-lines in display-output
-    #-id = ID of input device
-    #-u  = number of instructions processed by system 
-
     #default values
     inputType           = 'keyboard'
     inputTypeID         = 0
     eventHandlerFile    = 'dummy'
     cmdLines            = 10
     robotIPadress       = sys.argv[1]
-    updateFreq          = 5 #updates per second
+    updateFreq          = 10 #updates per second
     
     # parse commands
     for i in range(arguments/2):
@@ -169,7 +163,7 @@ else:
         val = sys.argv[i*2+3]
         
         if (cmd == '-p'):           #processfile
-            processFile = val
+            eventHandlerFile = val
         elif (cmd == '-i'):         #input system
             inputType = val
         elif (cmd == '-id'):        #input system ID    
@@ -227,20 +221,21 @@ else:
         exit()
     sys.stdout.write( "\r> Initializing input-system... done" + '\n')
 
-    time.sleep(5)
+    time.sleep(2)
     
     #setup display (output)
     output = termOutput(cmdLines, eventHandler, input, (inputType, eventHandlerFile))
     output.refresh()
     output.waiting()
 
-    updateTime = 1/updateFreq
+    updateTime = 1.0/updateFreq
     
     #start reading input
     while True:
     
         try:
             st = time.time()
+            #print "st: " + str(st)
             
             #get input & process input
             action = input.getAction()
@@ -252,8 +247,13 @@ else:
                 eventHandler.processEvent(output, action)
                 
             # check updateFrequency
-            dt = time.time() - st
+            et = time.time()
+            #print "et: " + str(et)
+            dt = et - st
+            #print "dt: " + str(dt)
+            #print "uT: " + str(updateTime)
             if (dt < updateTime):
+                #print("wait: " + str(updateTime - dt))
                 time.sleep(updateTime - dt)
             
         except Exception, ee:
