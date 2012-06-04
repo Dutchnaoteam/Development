@@ -1,0 +1,15 @@
+Metadata-Version: 1.0
+Name: wiiuse
+Version: 0.12
+Summary: Python wrapper for the wiiuse interface to the Wiimote
+Home-page: http://code.google.com/p/pywiiuse/
+Author: Tim Swast
+Author-email: tswast@gmail.com
+License: BSD
+Description: pywiiuse for wiiuse v0.12
+        
+        Ctypes wrapper for wiiuse.
+        
+        
+Keywords: wii
+Platform: UNKNOWN
