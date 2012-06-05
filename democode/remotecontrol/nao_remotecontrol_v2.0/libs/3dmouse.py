@@ -1,3 +1,21 @@
+########################################################
+# 3D-MOUSE - LIBRARY FOR REMOTE-NAO-CONTROL FRAMEWORK
+########################################################
+#   May 2012, Hessel van der Molen, hmolen.science@gmail.com
+#   Dutch Nao Team - http://dutchnaoteam.nl
+#
+#   Requires:
+#   - python    [threading, time, sys]
+#   - pygame    [python library: http://pygame.org]
+#   - comtypes  [python library: http://sourceforge.net/projects/comtypes/]
+#   - ctypes    [python library: default on python 2.5+]
+#   - remote control framework
+#   - keyboard
+#   - 3D mouse (spaceNavigator from 3Dconexxion.nl)
+#   - 3D mouse drivers (http://www.3dconnexion.com/service/drivers.html)
+#
+#   Processes input from 3D-mouse and returns events (rotations & translations) to framework
+
 import pygame
 import threading
 import time
@@ -9,6 +27,7 @@ from ctypes.wintypes import *
 
 ESCAPEBUTTON = 27
 
+#processes sensor readings
 class SensorListener:
     def __init__(self, sensor):
         self.sensor = sensor
@@ -23,8 +42,8 @@ class SensorListener:
         d["tz"] = round(self.sensor.Translation.Z, 1)
         event = pygame.event.Event(pygame.USEREVENT, d)
         pygame.event.post(event)
-   
-        
+
+#Thread listening to 3D-mouse        
 class mouse_thread(threading.Thread):
     device = None
     con = None
@@ -56,7 +75,6 @@ class mouse_thread(threading.Thread):
         pass
         
         
-
 mouseThread = None
 def init(inputID):
     global mouseThread

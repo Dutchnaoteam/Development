@@ -1,3 +1,18 @@
+########################################################
+# XBOX 360 WIRED USB CONTROLLER - LIBRARY FOR REMOTE-NAO-CONTROL FRAMEWORK
+########################################################
+#   May 2012, Hessel van der Molen, hmolen.science@gmail.com
+#   Dutch Nao Team - http://dutchnaoteam.nl
+#
+#   Requires:
+#   - python    [sys]
+#   - pygame    [python library: http://pygame.org]
+#   - remote control framework
+#   - XboX controller
+#   [only wired XboX 360 are supported (or equivalent). Wireless controllers with battery pack do not work!]
+#
+#   Processes input from xbox controller and returns events (key-pres & release, joystickmovement, hatmovement) to framework
+
 import pygame
 import sys
 
@@ -48,13 +63,11 @@ def getAction():
         # ifso, validateEventQueue (return None if no valid events are on the queue)
         if (not emptyQueue()):
             event = validateEventQueue(event)
-#            print "q: " + str(event)
 
     #no items in queue & no legal items in queue
     # --> wait for legal event
     if (event == None) or (not validateEvent(event, "wait")):
         event = waitForEvent()
-#        print "w: " + str(event)
         
     #register button press / joystick movement
     if ((event.type == pygame.JOYBUTTONDOWN) or (event.type == pygame.JOYBUTTONUP)):

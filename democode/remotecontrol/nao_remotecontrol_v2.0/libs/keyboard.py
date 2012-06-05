@@ -1,14 +1,16 @@
 ########################################################
-# KEYBOARD LIBRARY FOR REMOTE-NAO-CONTROL FRAMEWORK
+# KEYBOARD - LIBRARY FOR REMOTE-NAO-CONTROL FRAMEWORK
 ########################################################
 #   May 2012, Hessel van der Molen, hmolen.science@gmail.com
 #   Dutch Nao Team - http://dutchnaoteam.nl
 #
 #   Requires:
-#   - python
-#   - pygame
+#   - python    [sys]
+#   - pygame    [python library: http://pygame.org]
 #   - remote control framework
 #   - keyboard
+#
+#   Processes input from keyboard and returns events (key-pres & release) to framework
 
 import pygame
 import sys

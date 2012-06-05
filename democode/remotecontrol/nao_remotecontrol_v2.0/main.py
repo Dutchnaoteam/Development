@@ -2,24 +2,31 @@
 # REMOTE NAO CONTROL
 # April 2012 - Hessel van der Molen
 # (c) Dutch Nao Team, licensed under GNU-GPL v3.0 
+# http://dutchnaoteam.nl
 #
-# HOW TO USE:
+# [QUICKGUIDE] HOW TO USE:
 # 1) Make sure you have installed:
 #   - Python 2.7
-#   - Naoqi SDK 12.3    (for python 2.7)
-#   - Pygame            (for Python 2.7)
-# 2) Determine the type of input device you want to use (keyboard, joystick..)
+#   - Naoqi SDK 12.3    (for python 2.7) [used by libs & eventHandlers]
+#   - Pygame            (for Python 2.7) [used by libs & eventHandlers]
+# 2) Determine the type of input device you want to use (keyboard, xbox..)
 # 3) Check if <inputdevice>.py exists in the 'lib' directory
-#           (if not, you have to create it yourself)
-# 4) Determine the input-processor & motion-files
-#           (you can made these yourself, or use the defaults in 'defaults')
-# 5) Connect Nao & Computer to same network
-# 6) get Nao-ipadress
-# 7) In terminal, goto the dir containing the above described files 
+#           (if not, you have to create it yourself [see README] )
+#           (default: keyboard)
+# 4) Determine the eventHandler to use.
+#           (provided handlers can be found in the 'eventHandler' directory)
+#           (see README for instructions to build your own)
+#           (default: dummy)
+# 5) Connect Nao & Computer to same network 
+# 6) Get Nao-ipadress
+# 7) In terminal, goto the directory containing 'main.py' 
 # 8) run: 
-#      terminal> python main.py <InputDevice> <EventProcessFile> <NaoIPadress> [optional: <inputID>]
-# 7) enjoy :)
+#      terminal> python main.py <NAOipadress> [-i <inputDevice> -p <eventHandler>]
+# 9) enjoy :)
 #
+# NOTE: for more options, run:
+#      terminal> python main.py help
+
 import sys
 import platform
 import os
@@ -137,7 +144,7 @@ arguments = len(sys.argv) - 2
 if (len(sys.argv) <= 1) or (sys.argv[1] == "help"):
     sys.stdout.write( '\n')
     sys.stdout.write( "Usage:" + '\n\n')
-    sys.stdout.write( "bash> python main.py <NaoIPadress> [-i <..> -p <..> -id <..> -d <..> -u <...>]" + '\n\n')    
+    sys.stdout.write( "terminal> python main.py <NaoIPadress> [-i <..> -p <..> -id <..> -d <..> -u <...>]" + '\n\n')    
     sys.stdout.write( "    <NaoIPadress>                            \n          ip adress of Nao, e.g. 192.168.0.24" + '\n\n')
     sys.stdout.write( "-i  <InputDevice>      default: 'keyboard'   \n          type of inputDevice (e.g. 'keyboard' or 'joystick')" + '\n\n')
     sys.stdout.write( "-p  <EventHandler>     default: 'dummy'      \n          name of file which processes data of <inputDevice> (e.g. 'keyDefault')" + '\n\n')
