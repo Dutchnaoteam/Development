@@ -42,12 +42,12 @@ it initializes the display module.
 > inputmodule: [Lib]
 Retrieves events from an input device. When the mainmodule asks for an event, the input modules returns it
 > processermodule: [eventHandler]
-Processes event passed to it from the main module. This module recieves a pointer from the main module to
-the display module, enabling it to display send commands (recieved events).
+Processes events passed from the main module. This module recieves a pointer from the main module to
+the display module, enabling it to display send instructions (recieved events).
 > display module
-Displays button-usage and send commands
+Displays button-usage and instructions which are send to the robot
 
-These modules are as follow connected:
+These modules are connected as follow:
 
 terminal --->  [mainmodule]
                  ^  ^  ^
@@ -57,8 +57,8 @@ terminal --->  [mainmodule]
                  +---------> [display] <---+
                  
 From the terminal, the main module is called. This main module validates the input & processor modules, 
-checking if these files contain errors and contain the correct function-names.
-If a module has passed the test, it is initialized. 
+checking if these files contain errors and contain the correct interface.
+If a module has passed the tests, it is initialized. 
 If it fails a test, the framework terminates (while reporting the error)
 After both modules are initialized, the display module is called.
 The main module now enters an infinit loop, asking for events from the input module and passing these events
@@ -67,7 +67,7 @@ to the processor module. If an error occures the system will shut down.
 
 CREATING A NEW EVENTHANDLER
 #################
-An event handler consists of the following interfaces: (function names)
+An eventHandler consists of (at least) the following interfaces:
 
 - init(<naoipadress>)
 - getButtonDefinition()
@@ -76,29 +76,30 @@ An event handler consists of the following interfaces: (function names)
 > init(<naoipadress>)
 The init-interface recieves the ipadress given by the user at the commandline-interface.
 Using this ip-adress, the init-function should setup a connection with the robot.
+If necessary it should setup and initialize additional datastructures and connections
 'init(<naoipadress>)' is called only once by the main-module, after validation.
-The framework does not expect a return.
+The framework does not expect a return of this interface.
 
 > getButtonDefinition()
 This interface contains a string defining the button-usage. The display module calls this function
 and prints the retrieved string in its output. A line-break in the text is simply created by adding
-"\n" in the string. Th display module expects a single string as return value.
+"\n" in the string. The display module expects a single string as return value.
 
 > processEvent(display, event)
 The framework passes a pointer to the display module and an event to this interface. There are no
-guideline in how to process an event: the event-data structure depends on the library implementation.
-Use the dummy-event handler to print events in order to determine the data-structure.
-With use of the 'display.execute(<string>)' and display.done() command a message can be send to the display.
+guidelines of how to process an event: the event-data structure depends on the library implementation.
+Use the dummy-eventHandler to print events in order to determine the data-structure.
+With use of the 'display.execute(<string>)' and 'display.done()' commands, a message can be send to the display.
 The 'display.execute(<string>)' results in the message 'Sending command <string> ...'.
-If 'display.done()' is called after execution of some cod, the display adds 'done' to the message and will 
+If 'display.done()' is called after execution of some code, the display adds 'done' to the message and will 
 display that it is ready to recieve new commands.
-The framework does not expect a return.
+The framework does not expect a return of this interface.
 
 
 CREATING A NEW LIBRARY
 #################
 
-A library consists of (atleast) the following interfaces:
+A library consists of (at least) the following interfaces:
 
 - init(<inputID>)
 - getQuitCommand()
@@ -106,7 +107,7 @@ A library consists of (atleast) the following interfaces:
 
 > init(<inputID>)
 The init-interface should initialize the input device and event-retrievement.
-The framework does not depend on it, so any implementation can be used.
+The framework does not depend on event-structure, so any implementation can be used.
 In the provided libraries the pygame event-queue is used for its simplicity.
 No return is expected.
 
