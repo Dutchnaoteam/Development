@@ -214,20 +214,9 @@ def x_y_height_width(component_points):
     print biggest_y
     return [smallest_x, smallest_y, width, height]
 
-
-
-
-
-
     # from these tuples select smallest y value
     
     # do the same thing for max x values and max y values
-
-
-
-
-
-
 
 def filterGreen(im):
     """filterGreen(im) -> single-channel IplImage
