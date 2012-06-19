@@ -695,8 +695,20 @@ firstCall = {'Initial' : True,
              'BallNotFound' : True,
              'FirstPress' : True}
 
-awakeSoul()
-
+try:
+    awakeSoul()
+except KeyboardInterrupt:
+    print('keyboard interrupt, stopping soul and closing all threads')
+except Exception as e:
+    print('error [ %s ] in soul, closing all threads', e)
+finally:
+    gsc.close()
+    mHandler.close()
+    visThread.close()
+    coa.close()
+    audProxy.setOutputVolume(60)
+    sentinel.enableDefaultActionDoubleClick(True)
+    sentinel.enableDefaultActionSimpleClick(True)
 # DEBUG #
 def testPhase(phase, interval):
     now = time.time()
