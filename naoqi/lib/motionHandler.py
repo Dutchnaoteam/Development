@@ -46,7 +46,7 @@ class MotionHandler(threading.Thread):
         self.pitchPID = fkChain.PID(0.3, 0.02, 0.02)
         self.rollPID  = fkChain.PID(0.3, 0.02, 0.02)
         # 200 samples for debugging
-        self.PF       = particleFilter.ParticleFilter( 200 ) 
+        #self.PF       = particleFilter.ParticleFilter( 200 ) 
         self.KF       = kalmanFilter.KalmanFilter( ) 
 
         # objects gotten from superclasses
@@ -106,11 +106,11 @@ class MotionHandler(threading.Thread):
         
     def postWalkTo( self, x, y, t ):
         self.mot.postWalkTo( x, y, t )
-        self.PF.iterate( None, [x,y,t] )
+        #self.PF.iterate( None, [x,y,t] )
         self.KF.iterate( None, [x,y,t] )
     
     def walkTo( self, x, y, t ):
-        self.PF.iterate( None, [x,y,t] )
+        #self.PF.iterate( None, [x,y,t] )
         self.KF.iterate( None, [x,y,t] )
         self.mot.walkTo( x, y, t )
     
@@ -246,7 +246,7 @@ class MotionHandler(threading.Thread):
                 for i in range(3):
                     control[i] = self.control[i] * interval
                 # update PF and KF
-                self.PF.iteratePlus( measurements, control )
+                #self.PF.iteratePlus( measurements, control )
                 self.KF.iterate( ballLoc, control )
                 
                 # if debugging, store info in memory
@@ -256,7 +256,7 @@ class MotionHandler(threading.Thread):
 		
     """Function involving writing info to memory"""
     def memorySend( self ):
-        particles = self.PF.samples
+        #particles = self.PF.samples
         toSendParticles = list()
         # debug screen is 600 x 400
         for particle in particles:
@@ -264,7 +264,7 @@ class MotionHandler(threading.Thread):
             y = int( particle[1] * 100 )
             t = int( particle[2] * 100 )
             toSendParticles.append( [x,y,t] )
-        meanState = self.PF.meanState
+        #meanState = self.PF.meanState
         
         toSendMeanState = [0,0,0]
         for i in range(3):
