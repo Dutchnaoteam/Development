@@ -2,8 +2,7 @@
 import threading
 import earlights as ear
 import time
-import logging
-from socket import *
+import socket
 
 ######
 ## oude comments
@@ -40,74 +39,77 @@ class coach(threading.Thread):
     def __init__(self, name, memProxy, earProxy, port=9876):
             #logging.info('port '+str(port))
             #logging.info( 'initializing coach' )
-            print 'port'.str(port).'\n initializing coach'
             threading.Thread.__init__(self)
             self.name = name
             self.on = True
             #proxy of the nao itself. used to check which action has to be taken
             self.memProxy = memProxy
-            
-
-            
-            
+            self.port = port
             
             self.ownNaoNum = self.memProxy.getData('dntNaoNum')
-            
             self.ear = ear.EarLights('', earProxy)
             self.ear.playerOffAll()
             
             #[timeSinceLastSignalRobot1, timeSinceLastSignalRobot2,...]
             self.activeNAOs = [0,0,0,0]
-            self.portlist = [0,0,0,0]
-            for i in range(4):
-                portlist[i] = port+i+1
-            portlist.remove(port+self.ownNaoNum)
-           
-       
-            self.s=socket(AF_INET,SOCK_DGRAM)
-            self.s.bind(('',port))
-            self.s.setblocking(0)           
+            self.portlist = [1,2,3,4]
+            self.portlist = [self.portlist[i]+ ([port]*4)[i] for i in range(4)]
+            self.portlist.remove(port+self.ownNaoNum)
             
-            self.allConnected = False
-            
+            self.sendSocket=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+            self.sendSocket.bind(('',0))
+            self.sendSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            self.socketList = list()
+            for n in self.portlist:
+                 s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+                 s.bind(('',n))
+                 s.setblocking(0)
+                 self.socketList.append(s)
             self.distList = [99,99,99,99]
-            
             self.start()
             
+            self.memProxy.insertData('dntAction', 'actionTempm' )
     
     def __del__(self):
         self.on = False
-        self.s.close()
+        for s in self.socketList:
+            s.close()
     
     def close(self):
         self.on = False
-        self.s.close()
+        for s in self.socketList:
+            s.close()
         #logging.info( 'socket closed' )
-        print 'socket closed'
+        print 'sockets closed'
         
     def run(self):
-        #logging.debug('coach running')
-        print 'coach running'
+        while self.on:
+            try:
+                self.receive()
+                self.send( self.port )
+                self.deviseStrategy(self.ownNaoNum-1)
+                time.sleep(0.25)
+            except KeyboardInterrupt:
+                #loggin.info('keyboard interrupt, closing thread')
+                print 'keyboard interrupt, closing thread'
+                self.close()
+            except Exception as e:
+                print e
+     
+
+    def receive(self):
         #Keep listening for some time.
-        #If no field player has reported that it found a ball, keep listening until one does 
         now = time.time()
-        try:
-            while self.on:
-            
-            
-            
-            
-                data,addr = self.s.recvfrom(1024)
+        for s in self.socketList:
+            try:
+                data = s.recv(1024)
                 self.extractData(data)
-                self.deviseStrategy(self.ownNaoNum)
-                time.sleep(0.05)
-        except KeyboardInterrupt:
-            #loggin.info('keyboard interrupt, closing thread')
-            print 'keyboard interrupt, closing thread'
-      #  except Exception as e:
-       #     logging.critical('error [ %s ] in coach, closing thread', e)
-        finally:
-            self.close()
+            except Exception as e: 
+                print 'nothing recieved from '+str(s.getsockname())
+                
+    def send( self, port ):
+        message = self.construct_message()
+        self.sendSocket.sendto(message, ('<broadcast>', port+self.ownNaoNum))
             
     def extractData(self, data):
         auth = data[0:3]
@@ -117,9 +119,6 @@ class coach(threading.Thread):
             #baldist = data[4:9]
             self.distList[int(robot)-1] = float(data[4:9])
             self.activeNAOs[int(robot)-1] = time.time()
-        else if auth == "DNT":
-            robot = data[3]
-            
 
         else:
             #logging.warning( "not a valid message" )
@@ -128,20 +127,21 @@ class coach(threading.Thread):
     def deviseStrategy(self, me):
         #start finding closest nao
         closest = 99
-        closestNao = 5#doesn't excist, so good for initial value
+        closestNao = me#yourself, so good for initial value
         active = [0,0,0,0]
+        action = ''
+        self.distList[me]=self.memProxy.getData( 'dntBallDist' )
         for i in range(4):
-            if time.time()-self.activeNAOs[i] < 0.5:
+            if time.time()-self.activeNAOs[i] < 0.5 or i == me:
                 active[i]=1
                 if self.distList[i]<closest:
                     closestNao = i
                     closest = self.distList[i]
-        logging.debug( closestNao )
         if closestNao != 5:
             if closestNao==me:
-                action = ''
+                action = 'false'
             else:
-                action = 'KeepDistance'        
+                action = 'KeepDistance'    
         #finding closest nao end
         for i in range(4):
             if active[i]:
@@ -150,6 +150,17 @@ class coach(threading.Thread):
                 self.ear.playerOff(i+1)
         #logging.debug( 'action '+action )
         #logging.debug( 'active robots '+ str(active) )
-        print 'action '+action
-        print 'active robots '+ str(active)
-        self.memProxy.insertData( 'dnt'+str(me), action )   
+        self.memProxy.insertData( 'dntAction', action ) 
+        
+    def construct_message( self ):
+        auth = "dnt"
+        robot = self.ownNaoNum
+        baldist = self.memProxy.getData( 'dntBallDist' )
+        return auth+str(robot)+self.makeLenght4(baldist)
+        
+    def makeLenght4(self, num):
+        newNum = round(float(num),2)
+        if newNum<10:
+            return "0"+str(newNum)
+        else:
+            return str(newNum)
