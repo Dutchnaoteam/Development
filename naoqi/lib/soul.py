@@ -656,6 +656,8 @@ def awakeSoul():
         state = gsc.getState()
         states.get(state)()
     gsc.close()
+    coa.close()
+    mHandler.close()
     visThread.close()
     # particleFilter.close()
 
@@ -700,7 +702,7 @@ try:
 except KeyboardInterrupt:
     print('keyboard interrupt, stopping soul and closing all threads')
 except Exception as e:
-    print('error [ %s ] in soul, closing all threads', e)
+    print 'error [ '+str(e)+' ] in soul, closing all threads'
 finally:
     gsc.close()
     mHandler.close()

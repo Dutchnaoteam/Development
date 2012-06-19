@@ -232,6 +232,7 @@ class VisionThread(threading.Thread):
     def close(self):
         self.on = False
         self.scanning = False
+        print 'visThread closed safely'
         
     # start finding of ball
     def startScan(self):
