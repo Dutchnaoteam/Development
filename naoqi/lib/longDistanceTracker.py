@@ -141,8 +141,11 @@ def filterImage(im):
     #hsvMax1 = cv.Scalar(14,  230,  255, 0)
 
     #Red values Mexico
-    hsvMin1 = cv.Scalar(5, 174, 137)
-    hsvMax1 = cv.Scalar(23, 238, 255)
+    #hsvMin1 = cv.Scalar(5, 174, 137)
+    #hsvMax1 = cv.Scalar(23, 238, 255)
+    #more restricted ones
+    hsvMin1 = cv.Scalar(7, 193, 171)
+    hsvMax1 = cv.Scalar(21, 232, 255)
     
     #hsvMin2 = cv.Scalar(170,  90,  130, 0)
     #hsvMax2 = cv.Scalar(200, 256, 256, 0)
