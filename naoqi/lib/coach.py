@@ -50,8 +50,7 @@ class coach(threading.Thread):
             self.ear = ear.EarLights('', earProxy)
             self.ear.playerOffAll()
             
-            #[timeSinceLastSignalRobot1, timeSinceLastSignalRobot2,...]
-            self.activeNAOs = [0,0,0,0]
+            
             self.portlist = [1,2,3,4]
             self.portlist = [self.portlist[i]+ ([port]*4)[i] for i in range(4)]
             self.portlist.remove(port+self.ownNaoNum)
@@ -65,7 +64,11 @@ class coach(threading.Thread):
                  s.bind(('',n))
                  s.setblocking(0)
                  self.socketList.append(s)
+            
+            #[timeSinceLastSignalRobot1, timeSinceLastSignalRobot2,...]
+            self.activeNAOs = [0,0,0,0]
             self.distList = [99,99,99,99]
+            self.timeSinceKeepSawBall = 0
             self.start()
             
             
@@ -118,6 +121,11 @@ class coach(threading.Thread):
             robot = data[3]
             self.distList[int(robot)-1] = float(data[4:9])
             self.activeNAOs[int(robot)-1] = time.time()
+            #if keep
+            if robot == 1 and self.distList[int(robot)-1]:
+                self.timeSinceKeepSawBall = time.time()
+                
+                
 
         else:
             #logging.warning( "not a valid message" )
@@ -150,6 +158,11 @@ class coach(threading.Thread):
         #logging.debug( 'action '+action )
         #logging.debug( 'active robots '+ str(active) )
         self.memProxy.insertData( 'dntAction', action ) 
+        
+        if self.timeSinceKeepSawBall - time.time() < 1.5;
+            self.memProxy.insertData( 'dntKeepSawBall', 1)
+        else:
+            self.memProxy.insertData( 'dntKeepSawBall', 0)
         
     def construct_message( self ):
         auth = "dnt"

@@ -82,7 +82,7 @@ phase = 'BallNotFound'
 
 # Robots own variables
 robot = gsc.getRobotNumber()
-memProxy.insertListData([['dntBallDist', '', 0], ['dntPhase', 0, 0], ['dntNaoNum', robot, 0]])
+memProxy.insertListData([['dntBallDist', '', 0], ['dntPhase', 0, 0], ['dntNaoNum', robot, 0],['dntAction','',0],['dntKeepSawBall',0,0]])
 teamColor = 0
 kickOff = 0
 penalty = 0
@@ -90,7 +90,7 @@ penalty = 0
 audProxy = ALProxy('ALAudioDevice', '127.0.0.1', 9559)
 audProxy.setOutputVolume(60)
 (teamColor, kickOff, penalty) = gsc.getMatchInfo()
-audProxy.setOutputVolume(0)
+#audProxy.setOutputVolume(0)
 
 # If keeper -> different style of play
 playerType = 1 if robot == 1 else 0
@@ -190,7 +190,7 @@ def Set():
         else:
             mot.keepNormalPose()
 
-        audProxy.setOutputVolume(0)                        # set volume to zero
+        #audProxy.setOutputVolume(0)                        # set volume to zero
 
         firstCall['Initial']   = True
         firstCall['Ready']     = True
@@ -224,7 +224,12 @@ def Playing():
         firstCall['Set']       = True
         firstCall['Playing']   = False
         firstCall['Penalized'] = True
-
+    
+    try:
+        if memProxy.getData('dntAction'):
+            phase = memProxy.getData('dntAction')
+    except:
+        pass
     # Execute the phase as specified by phase variable
     phases.get(phase)()
 
@@ -577,8 +582,8 @@ def Kick():
             mHandler.setBallLoc( ball )
         ball = mHandler.getKalmanBallPos()
         
-        # Cases 1-3, if you see your own goal, kick to the other side
-        if goalColor == teamColor:
+        # Cases 1-3, if you see your own goal, kick to the other side OR if the keeper saw the ball
+        if memProxy.getData('dntKeepSawBall'):
             # Case 1, goal is left, kick to the right.
             if kickangle >= 0.7:
                 mHandler.kick(-1.1)
@@ -586,8 +591,11 @@ def Kick():
             if kickangle <= -0.7:
                 mHandler.kick(1.1)
             else:
-            # Case 3, goal is straight forward, HAK
-                mHandler.kick(1.1)
+            # Case 3, goal is straight forward, HAK, but only in the first 2 minutes of each half.
+                if gsc.getSecondsRemaining()>8:
+                    mHandler.kick(1.1)
+                else:
+                    mHandler.kick(1.1)
 
         else:
             # Case 4, other player's goal is found.
