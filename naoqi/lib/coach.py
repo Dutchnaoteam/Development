@@ -84,7 +84,7 @@ class coach(threading.Thread):
         for s in self.socketList:
             s.close()
         #logging.info( 'socket closed' )
-        print 'sockets closed'
+        print 'coach closed safely'
         
     def run(self):
         while self.on:
@@ -109,7 +109,8 @@ class coach(threading.Thread):
                 data = s.recv(1024)
                 self.extractData(data)
             except Exception as e: 
-                print 'nothing recieved from '+str(s.getsockname())
+                pass
+                #print 'nothing recieved from '+str(s.getsockname())
                 
     def send( self, port ):
         message = self.construct_message()
