@@ -137,12 +137,18 @@ class StateController(threading.Thread):
             (teamColor, penalty, kickOff) = self.bc.getSetup()
         self.secondaryState = penalty
         return (teamColor, penalty, kickOff)
-
+    
+    def getPenalty(self, robot, team=6):
+        return self.gc.getPenalty(robot, team)
+        
+    def getSecondsRemaining():
+        return self.gc.getSecondsRemaining()
 
     # Closes thread
     def close(self):
         self.running = False
         self.gc.close()
+        print 'gsc closed safely'
 
 # This code will only be executed if invoked directly. Not when imported from another file.
 # It shows how to use this module
