@@ -37,6 +37,7 @@ import socket
 
 class coach(threading.Thread):
     def __init__(self, name, memProxy, earProxy, port=9876):
+            print 'coach called'
             #logging.info('port '+str(port))
             #logging.info( 'initializing coach' )
             threading.Thread.__init__(self)
@@ -159,7 +160,7 @@ class coach(threading.Thread):
         #logging.debug( 'active robots '+ str(active) )
         self.memProxy.insertData( 'dntAction', action ) 
         
-        if self.timeSinceKeepSawBall - time.time() < 1.5;
+        if self.timeSinceKeepSawBall - time.time() < 1.5:
             self.memProxy.insertData( 'dntKeepSawBall', 1)
         else:
             self.memProxy.insertData( 'dntKeepSawBall', 0)

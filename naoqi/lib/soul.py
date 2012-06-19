@@ -50,9 +50,6 @@ motProxy.setWalkArmsEnable(True, True)
 gsc = gameStateController.StateController('stateController', ttsProxy, memProxy, ledProxy, sensors )
 print 'Started gsc'
 
-coa = coach.coach('', memProxy, ledProxy, 6321)
-print 'coach started'
-
 # Motion class: motion functions etc.
 mot = motions.Motions( motProxy, posProxy )
 # Motionhandler: threaded instance handling motion update
@@ -91,6 +88,10 @@ audProxy = ALProxy('ALAudioDevice', '127.0.0.1', 9559)
 audProxy.setOutputVolume(60)
 (teamColor, kickOff, penalty) = gsc.getMatchInfo()
 #audProxy.setOutputVolume(0)
+
+print 'test'
+coa = coach.coach('', memProxy, ledProxy, 6321)
+print 'coach started'
 
 # If keeper -> different style of play
 playerType = 1 if robot == 1 else 0
@@ -228,6 +229,9 @@ def Playing():
     try:
         if memProxy.getData('dntAction'):
             phase = memProxy.getData('dntAction')
+            print 'coach says: '+ phase
+        else:
+            print 'coach says: nothing'
     except:
         pass
     # Execute the phase as specified by phase variable
