@@ -22,6 +22,7 @@ import motionHandler
 import time
 import math
 import socket
+import coach
 
 """ Proxy creation: protocol is first three letters with exceptions 
 TextToSpeech (tts), RobotPose (pos), Sentinel and Sensors """
@@ -48,6 +49,9 @@ motProxy.setWalkArmsEnable(True, True)
 # stateController class: robot state, penalized, etc.
 gsc = gameStateController.StateController('stateController', ttsProxy, memProxy, ledProxy, sensors )
 print 'Started gsc'
+
+coa = coach.coach('', memProxy, ledProxy, 6321)
+print 'coach started'
 
 # Motion class: motion functions etc.
 mot = motions.Motions( motProxy, posProxy )

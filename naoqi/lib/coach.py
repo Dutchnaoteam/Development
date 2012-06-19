@@ -68,7 +68,7 @@ class coach(threading.Thread):
             self.distList = [99,99,99,99]
             self.start()
             
-            self.memProxy.insertData('dntAction', 'actionTempm' )
+            
     
     def __del__(self):
         self.on = False
@@ -116,7 +116,6 @@ class coach(threading.Thread):
         #authenticate the message. We start the message with 'dnt'
         if auth == "dnt": 
             robot = data[3]
-            #baldist = data[4:9]
             self.distList[int(robot)-1] = float(data[4:9])
             self.activeNAOs[int(robot)-1] = time.time()
 
@@ -134,12 +133,12 @@ class coach(threading.Thread):
         for i in range(4):
             if time.time()-self.activeNAOs[i] < 0.5 or i == me:
                 active[i]=1
-                if self.distList[i]<closest:
+                if self.distList[i] and self.distList[i]<closest:
                     closestNao = i
                     closest = self.distList[i]
         if closestNao != 5:
             if closestNao==me:
-                action = 'false'
+                action = ''
             else:
                 action = 'KeepDistance'    
         #finding closest nao end
@@ -155,8 +154,8 @@ class coach(threading.Thread):
     def construct_message( self ):
         auth = "dnt"
         robot = self.ownNaoNum
-        baldist = self.memProxy.getData( 'dntBallDist' )
-        return auth+str(robot)+self.makeLenght4(baldist)
+        balldist = self.memProxy.getData( 'dntBallDist' )
+        return auth+str(robot)+self.makeLenght4(balldist)
         
     def makeLenght4(self, num):
         newNum = round(float(num),2)
