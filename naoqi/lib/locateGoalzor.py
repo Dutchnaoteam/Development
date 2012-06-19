@@ -38,22 +38,35 @@ def markGoalCV(im, color):
     '''
     # TODO AANPASSEN TIJMEN 
     # Goalfilter values made in Eindhoven 04/2012
+   # if(color == 'blue'):
+   #     hueMin = 106
+   #     hueMax = 113
+   #     saturationMin = 204 
+   #     saturationMax = 255 
+   #     valueMin = 119 
+   #     valueMax = 197
+   # if(color == 'yellow'):
+   #     hueMin = 29 
+   #     hueMax = 39 
+   #     saturationMin = 102 
+   #     saturationMax = 204
+   #     valueMin = 188
+   #     valueMax = 255 
+    # Mexicaon values. Two yellow goals so ugly fix        
     if(color == 'blue'):
-        hueMin = 106
-        hueMax = 113
-        saturationMin = 204 
-        saturationMax = 255 
-        valueMin = 119 
-        valueMax = 197
+        hueMin = 23 
+        hueMax = 32 
+        saturationMin = 117 
+        saturationMax = 218
+        valueMin = 123              
+        valueMax = 242      
     if(color == 'yellow'):
-        hueMin = 29 
-        hueMax = 39 
-        saturationMin = 102 
-        saturationMax = 204
-        valueMin = 188
-        valueMax = 255 
-            
-    
+        hueMin = 23 
+        hueMax = 32 
+        saturationMin = 117 
+        saturationMax = 218
+        valueMin = 123              
+        valueMax = 242      
     hsvMin1 = cv.Scalar(hueMin, saturationMin, valueMin, 0)
     hsvMax1 = cv.Scalar(hueMax, saturationMax, valueMax, 0)
     cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)

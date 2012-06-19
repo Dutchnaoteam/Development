@@ -136,8 +136,12 @@ def filterImage(im):
     
     # Values Eindhoven 4/2012
     # TODO AANPASSEN TIJMEN
-    hsvMin1 = cv.Scalar(4,  109,  142, 0)
-    hsvMax1 = cv.Scalar(14,  230,  255, 0)
+    #hsvMin1 = cv.Scalar(4,  109,  142, 0)
+    #hsvMax1 = cv.Scalar(14,  230,  255, 0)
+
+    #Red values Mexico
+    hsvMin1 = cv.Scalar(5, 174, 137)
+    hsvMax1 = cv.Scalar(23, 238, 255)
     
     #hsvMin2 = cv.Scalar(170,  90,  130, 0)
     #hsvMax2 = cv.Scalar(200, 256, 256, 0)
@@ -157,6 +161,8 @@ def filterGreen(im):
     size = cv.GetSize(im)
     hsvFrame = cv.CreateImage(size, cv.IPL_DEPTH_8U, 3)
     filter = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
+    filter2 = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
+    filter3 = cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
     ####################
     # filters for green# 
 
@@ -164,15 +170,23 @@ def filterGreen(im):
     #hsvMin1 = cv.Scalar(60,  3,  90, 0)
     #hsvMax1 = cv.Scalar(100,  190,  210, 0)
     
-    # Eindhoven values 4/2012 Aanpassen Tijmen
-    hsvMin1 = cv.Scalar(46,  94,  89, 0)
-    hsvMax1 = cv.Scalar(75,  204,  212, 0)
+    #Eindhoven values
+    #hsvMin1 = cv.Scalar(46,  94,  89, 0)
+    #hsvMax1 = cv.Scalar(75,  204,  212, 0)
+
+    #Mexico values
+    hsvMin1 = cv.Scalar(49,  55,  40, 0)
+    hsvMax1 = cv.Scalar(91,  158,  105, 0)
+
+    hsvMin2 = cv.Scalar(0,  0,  18, 0)
+    hsvMax2 = cv.Scalar(90,  149,  41, 0)
 
     # Color detection using HSV
     cv.CvtColor(im, hsvFrame, cv.CV_BGR2HSV)
     cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filter)
-
-    return filter
+    cv.InRangeS(hsvFrame, hsvMin1, hsvMax1, filter2)
+    cv.Or(filter, filter2, filter3)
+    return filter3
 
 def boundedBox(im_filter, im_orig):
     """ boundedBox(im_filter, im_orig) -> im_orig
