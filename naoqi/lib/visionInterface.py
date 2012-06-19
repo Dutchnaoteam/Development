@@ -25,6 +25,8 @@ class VisionInterface():
         self.vidProxy = vidProxy
         self.memProxy = memProxy
         self.ledProxy = ledProxy
+
+        self.subscribed = False
         
         # use the bottom Camera
         self.vidProxy.setParam(18, 1)
@@ -32,15 +34,15 @@ class VisionInterface():
         self.visionID = self.subscribe()
 
     def unsubscribe(self):
-        try:
+        if self.subscribed:
             self.vidProxy.unsubscribe('python_GVM')
-        except:
-            pass
     
     def subscribe(self):
         self.unsubscribe()
         # subscribe(gvmName, resolution={0,1,2}, colorSpace={0,9,10,11,12,13},
         #           fps={5,10,15,30}
+
+        self.subscribed = True
         return self.vidProxy.subscribe('python_GVM', 1, 11, 30)
 
     def snapShot(self):
