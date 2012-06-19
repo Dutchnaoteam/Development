@@ -141,7 +141,7 @@ class StateController(threading.Thread):
     def getPenalty(self, robot, team=6):
         return self.gc.getPenalty(robot, team)
         
-    def getSecondsRemaining():
+    def getSecondsRemaining(self):
         return self.gc.getSecondsRemaining()
 
     # Closes thread
