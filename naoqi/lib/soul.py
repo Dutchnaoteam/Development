@@ -433,6 +433,9 @@ def BallFound():
     if ball:
         seen = True
         #print 'RealPosition', ball
+    else:
+        ball = mHandler.getKalmanBallPos()
+
     if firstCall['BallFound']:
         mot.setFME(True)
         firstCall['BallFound'] = False
@@ -442,7 +445,6 @@ def BallFound():
             mHandler.setBallLoc( ball )
     
     mHandler.setBallLoc( ball )    
-    ball = mHandler.getKalmanBallPos()
     (x,y) = ball 
     memProxy.insertData('dntPhase', 'BallFound')
     
