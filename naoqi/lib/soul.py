@@ -23,7 +23,6 @@ import time
 import math
 import socket
 
-
 """ Proxy creation: protocol is first three letters with exceptions 
 TextToSpeech (tts), RobotPose (pos), Sentinel and Sensors """
 from naoqi import ALProxy
@@ -330,7 +329,7 @@ def BallFoundKeep():
             print 'Ball moving from ', xold, yold, 'to', xnew, ynew, '(mean). Speed', speed
 
             # calculate direction if speed is high enough
-            if speed > 0.25 or (distnew < 0.5 and speed > 0.05 ):
+            if speed > 0.25 or (distnew < 0.6 and speed > 0.05 ):
                 
                 # This is all triangular magic using similarity between two triangles formed by balllocations and Nao.
                 # Keep in mind that y-axis is inverted and that x is forward, y is sideways!
@@ -366,19 +365,7 @@ def BallFoundKeep():
                 dir = (yold - ynew ) * xnew / (xold - xnew) - ynew
                 print 'Direction', dir
                 # if a direction has been found, clear all variables
-
-                if dir >= 0.5:
-                    print 'Dive right'
-                    mot.diveRight()
-                elif dir <= -0.5:
-                    print 'Dive left'
-                    mot.diveLeft()
-                elif dir < 0.5 and dir >= 0:
-                    print 'Step right'
-                    mot.footRight()
-                elif dir > -0.5 and dir < 0:
-                    print 'Step left'
-                    mot.footLeft()
+                mHandler.dive(dir)
                 phase = 'BallNotFoundKeep'
 
                 ball_loc = list()
@@ -561,7 +548,7 @@ def Kick():
         print 'Ball too far'
         phase = 'BallFound'
     elif ball and not goal:
-        mot.kick(0, ball)
+        mHandler.kick(0)
         phase = 'BallNotFound'
     else:
         # else a goal is found, together with it's color
@@ -577,8 +564,6 @@ def Kick():
             goalColor = 0
         else:
             goalColor = 1
-        print 'Goalcolor', goalColor, 'KickAngle', kickangle
-        print 'TeamColor', teamColor
         
         # use kalman filter to position ball in 10 measurements 
         c = 0
@@ -592,13 +577,13 @@ def Kick():
         if goalColor == teamColor:
             # Case 1, goal is left, kick to the right.
             if kickangle >= 0.7:
-                mot.kick(-1.1)
+                mHandler.kick(-1.1)
             # Case 2, goal is right, kick to the left.
             if kickangle <= -0.7:
-                mot.kick(1.1)
+                mHandler.kick(1.1)
             else:
             # Case 3, goal is straight forward, HAK
-                mot.kick(1.1)
+                mHandler.kick(1.1)
 
         else:
             # Case 4, other player's goal is found.
@@ -612,7 +597,9 @@ def Kick():
                 ball = visThread.findBall()
                 mHandler.setBallLoc( ball )
             ball = mHandler.getKalmanBallPos()
-            mot.kick(kickangle, ( ball[0]-0.11, ball[1] ))
+            print 'Goalcolor', goalColor, 'KickAngle', kickangle
+            print 'TeamColor', teamColor, 'Locatie', ball
+            mHandler.kick(kickangle)
         phase = 'BallNotFound'
         ledProxy.fadeRGB('LeftFaceLeds', 0x00000000, 0)  # no goal yet, left led turns black
 

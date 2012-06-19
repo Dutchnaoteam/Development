@@ -54,7 +54,12 @@ def run(im, headInfo):
     # calculate the angles to the ball
     #(xAngle, yAngle) = calcAngles((xcoord, ycoord ), cam)
     # calculate the position of the ball
-    position = calcPosition(maxLocation, cam, head)
+
+    # we need to compensate for the ROI being set
+    x_pos, y_pos = maxLocation
+    x_off, y_off, _, _ = cv.GetImageROI(im)
+
+    position = calcPosition((x_pos + x_off, y_pos + y_off), cam, head)
     (xPos, yPos, xAngle, yAngle) = position
     
     #print position
@@ -131,8 +136,8 @@ def filterImage(im):
     
     # Values Eindhoven 4/2012
     # TODO AANPASSEN TIJMEN
-    hsvMin1 = cv.Scalar(4,  100,  130, 0)
-    hsvMax1 = cv.Scalar(14,  255,  255, 0)
+    hsvMin1 = cv.Scalar(4,  109,  142, 0)
+    hsvMax1 = cv.Scalar(14,  230,  255, 0)
     
     #hsvMin2 = cv.Scalar(170,  90,  130, 0)
     #hsvMax2 = cv.Scalar(200, 256, 256, 0)

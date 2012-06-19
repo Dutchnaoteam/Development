@@ -1,0 +1,8 @@
+README
+setup.py
+wiiuse/__init__.py
+wiiuse/pygame_wiimote.py
+wiiuse.egg-info/PKG-INFO
+wiiuse.egg-info/SOURCES.txt
+wiiuse.egg-info/dependency_links.txt
+wiiuse.egg-info/top_level.txt
