@@ -79,11 +79,12 @@ def calcPosition(coord, cam, headInfo):
     # convert pixel coord to angle
     radiusPerPixelHeight = 0.00345833333
     radiusPerPixelWidth = 0.003325
-    xAngle = xCoord * radiusPerPixelWidth    
-    yAngle = yCoord * radiusPerPixelHeight
+    xAngle = (xCoord +0.5) * radiusPerPixelWidth    
+    yAngle = (yCoord+ 0.5) * radiusPerPixelHeight
     if -1 < xAngle < 1 and -1 < yAngle < 1:
         yAngle = -0.47 - headInfo[0] if yAngle + headInfo[0] < -0.47 else yAngle
-        motion.changeAngles(['HeadPitch', 'HeadYaw'], [0.3*yAngle, 0.3*xAngle], 0.7)  # 0.3*angles for smoother movements, optional. Smoothinggg. 
+        motion.changeAngles(['HeadPitch', 'HeadYaw'], [0.1*yAngle, 0.1*xAngle], 0.7)  # 0.3*angles for smoother movements, optional. Smoothinggg. 
+        #motion.changeAngles(['HeadPitch', 'HeadYaw'], [0.3*yAngle, 0.3*xAngle], 0.7)  # 0.3*angles for smoother movements, optional. Smoothinggg. 
 
     #print 'angle from camera: ' + str(xAngle) + ', ' + str(yAngle)
 
