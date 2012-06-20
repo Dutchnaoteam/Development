@@ -380,7 +380,7 @@ def BallFound():
     if ball:
         (x,y) = ball
         #if x < 0.19 and -0.02 < y < 0.02:
-        if x < 0.2 and -0.02 < y < 0.02:
+        if x < 0.21 and -0.02 < y < 0.02:
             print 'Kick'
             MotionHandler.killWalk()
             phase = 'Kick'
@@ -396,9 +396,8 @@ def BallFound():
             y *= 0.5 
             theta *= 0.4      
             MotionHandler.sWTV(x , y, theta, max ( 1-x, 0.95 ))
-            #start looking for the goal
-            MotionHandler.featureScanning = True
-            MotionHandler.ballScanning = False
+            #start looking for the goal (possibly wrong)
+            #MotionHandler.setFeatureScanning(True)
             time.sleep(0.025)
             
     else:
@@ -415,14 +414,15 @@ def BallNotFound():
     global ball_loc
     global phase
 
-    # if this is the first time the ball is not founnd
+    # if this is the first time the ball is not found
     if firstCall['BallNotFound']:
         memProxy.insertData('dntPhase', 'BallNotFound')
         MotionHandler.killWalk()
-        MotionHandler.ballScanning = True
-        MotionHandler.featureScanning = False
         firstCall['BallFound'] = True
         firstCall['BallNotFound'] = False
+    
+    #start scanning for the ball again
+    MotionHandler.setBallScanning(True)
         
     # try to find a ball
     now = time.time()
@@ -441,8 +441,11 @@ def Kick():
     global phase
     print "Kick phase"
     ball     = MotionHandler.getKalmanBallPos()
+    #Maybe do this?
+    MotionHandler.setGoalScanning(True)
     #position = MotionHandler.getParticleFilterPos()
     goal = MotionHandler.vis.getGoal()
+    print "goal: ", goal
     if not ball:
         print "Ball gone"
         phase = "BallNotFound"
@@ -453,7 +456,7 @@ def Kick():
         MotionHandler.kick(0)
         phase = 'BallNotFound'
     else:
-        # else a goal is found, together with it's color
+        # else a goal is found, together with its color
         (color, kickangles ) = goal
         if type(kickangles[0]) == tuple:
 
