@@ -41,12 +41,15 @@ class StateController(threading.Thread):
             if self.gc.controlledRefresh():
                 gcState = self.gc.getGameState()                # get state from GameController
                 buttonState = self.listenToButtons(buttonState) # get buttonstate 
-
-                if (buttonState == 10 or self.gc.getPenalty(self.robot, self.team)):
-                    self.state = 10
-                else:
-                    self.state = gcState
-                self.manageLeds( self.state )
+                #TODO remove try and fix
+                try:
+                    if (buttonState == 10 or self.gc.getPenalty(self.robot, self.team)):
+                        self.state = 10
+                    else:
+                        self.state = gcState
+                    self.manageLeds( self.state )
+                except:
+                    pass
             # if gamecontroller not active, listen to buttons for some time (10 seconds) then try refreshing
             else: 
                 #print 'Gc, not active, listen to buttonInterface'

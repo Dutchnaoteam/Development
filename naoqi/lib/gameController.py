@@ -104,7 +104,7 @@ class gameController():
             # om te kijken of er al nieuwe data binnen is, dan is de timer niet nodig
             # Set the socket parameters
                 
-            if not(ord(data[68]) == self.ourTeamNum or ord(data[20]) == self.ourTeamNum):
+            if len(data)>=68 and (not(ord(data[68]) == self.ourTeamNum or ord(data[20]) == self.ourTeamNum)):
                 print 'wrong gc'
             else:
                 self.header = data[0:4]
