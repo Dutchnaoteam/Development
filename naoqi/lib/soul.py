@@ -379,7 +379,8 @@ def BallFound():
     
     if ball:
         (x,y) = ball
-        if x < 0.17 and -0.02 < y < 0.02:
+        #if x < 0.19 and -0.02 < y < 0.02:
+        if x < 0.2 and -0.02 < y < 0.02:
             print 'Kick'
             MotionHandler.killWalk()
             phase = 'Kick'
@@ -395,6 +396,9 @@ def BallFound():
             y *= 0.5 
             theta *= 0.4      
             MotionHandler.sWTV(x , y, theta, max ( 1-x, 0.95 ))
+            #start looking for the goal
+            MotionHandler.featureScanning = True
+            MotionHandler.ballScanning = False
             time.sleep(0.025)
             
     else:
@@ -415,6 +419,8 @@ def BallNotFound():
     if firstCall['BallNotFound']:
         memProxy.insertData('dntPhase', 'BallNotFound')
         MotionHandler.killWalk()
+        MotionHandler.ballScanning = True
+        MotionHandler.featureScanning = False
         firstCall['BallFound'] = True
         firstCall['BallNotFound'] = False
         
@@ -435,29 +441,76 @@ def Kick():
     global phase
     print "Kick phase"
     ball     = MotionHandler.getKalmanBallPos()
-    position = MotionHandler.getParticleFilterPos()
+    #position = MotionHandler.getParticleFilterPos()
+    goal = MotionHandler.vis.getGoal()
     if not ball:
         print "Ball gone"
         phase = "BallNotFound"
     elif ball[0] > 0.25 or ball[1] > 0.1 or ball[1] < -0.1:
         print "Ball too far"
         phase = "BallFound"
+    elif ball and not goal:
+        MotionHandler.kick(0)
+        phase = 'BallNotFound'
     else:
-        # Cases 1-3, if you see your own goal, kick to the other side
-        if teamColor == 0:
-            print "Trying to score in the far goal from", position
-            goalPosX, goalPosY = (6, 2)
+        # else a goal is found, together with it's color
+        (color, kickangles ) = goal
+        if type(kickangles[0]) == tuple:
+
+            (first, second) = kickangles
+            kickangle = (3 * first[0] + second[0]) / 4.0         # kick slightly more towards left pole
         else:
-            print "Trying to score in the close goal from", position
-            goalPosX, goalPosY = (0, 2)
+            kickangle = kickangles[0]
+
+        if color == 'Blue':
+            goalColor = 0
+        else:
+            goalColor = 1
         
-        x, y, t   = position
-        kickangle = math.atan2( goalPosY - y, goalPosX - x ) + t            
-       
-        if abs(kickangle) < 1:
-            MotionHandler.walkTo(0, ball[1] + math.copysign( 0.035, kickangle ), 0)
-        MotionHandler.kick(kickangle)
-        phase = "BallNotFound"
+        # use kalman filter to position ball in 10 measurements 
+        '''
+        c = 0
+        while c < 10:
+            c += 1
+            ball = visThread.findBall()
+            MotionHandler.setBallLoc( ball )
+        ball = MotionHandler.getKalmanBallPos()
+        '''
+
+        # Cases 1-3, if you see your own goal, kick to the other side OR if the keeper saw the ball
+        if memProxy.getData('dntKeepSawBall'):
+            # Case 1, goal is left, kick to the right.
+            if kickangle >= 0.7:
+                MotionHandler.kick(-1.1)
+            # Case 2, goal is right, kick to the left.
+            if kickangle <= -0.7:
+                MotionHandler.kick(1.1)
+            else:
+            # Case 3, goal is straight forward, HAK, but only in the first 2 minutes of each half.
+                if gsc.getSecondsRemaining()>8:
+                    MotionHandler.kick(1.1)
+                else:
+                    MotionHandler.kick(1.1)
+
+        else:
+            # Case 4, other player's goal is found.
+            # Kick towards it.
+
+            # general kick interface distributes kick
+            if abs(kickangle < 0.6):
+                MotionHandler.walkTo(0, math.copysign( 0.03, kickangle ) , 0)
+            '''
+            while c < 10:
+                c += 1
+                ball = visThread.findBall()
+                MotionHandler.setBallLoc( ball )
+            '''
+            ball = MotionHandler.getKalmanBallPos()
+            print 'Goalcolor', goalColor, 'KickAngle', kickangle
+            print 'TeamColor', teamColor, 'Locatie', ball
+            MotionHandler.kick(kickangle)
+        phase = 'BallNotFound'
+        ledProxy.fadeRGB('LeftFaceLeds', 0x00000000, 0)  # no goal yet, left led turns black
         
 def Unpenalized():
     """When unpenalized, a player starts at the side of the field """

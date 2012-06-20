@@ -199,7 +199,8 @@ class MotionHandler(threading.Thread):
                                         [ 0.2,  0.2], 0.4)
             self.rollPID.setSP(0.0075 + abs(angle) * 0.005)
             
-        self.balancer = True 
+        #self.balancer = True 
+        self.balancer = False 
         self.mot.kick(angle)
         time.sleep(0.1)
         self.balancer = False
