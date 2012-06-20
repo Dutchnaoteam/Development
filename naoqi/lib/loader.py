@@ -27,10 +27,10 @@ audProxy.setOutputVolume(60)
 # Soul variable
 soul = False
 
-ttsProxy.say("Shall I activate my soul?")
+ttsProxy.say("Press button, to activate soul")
 start = time.time()
 
-while time.time() - start < 2:
+while time.time() - start < 2.7:
     if (((memProxy.getData("LeftBumperPressed", 0) != 0.0) or \
          (memProxy.getData("RightBumperPressed", 0) != 0.0)) or \
         ((len(sys.argv) > 1 ) and (sys.argv[1] == "True"))):
@@ -44,4 +44,4 @@ if soul:
     senProxy.enableDefaultActionDoubleClick(False)
     os.system("python /home/nao/naoqi/lib/soul.py")
 else:
-    ttsProxy.say("I am ready for another great day")
+    ttsProxy.say("Fuck you")

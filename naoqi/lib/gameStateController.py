@@ -47,9 +47,10 @@ class StateController(threading.Thread):
                         self.state = 10
                     else:
                         self.state = gcState
-                    self.manageLeds( self.state )
                 except:
                     pass
+                self.manageLeds( self.state )
+                
             # if gamecontroller not active, listen to buttons for some time (10 seconds) then try refreshing
             else: 
                 #print 'Gc, not active, listen to buttonInterface'
