@@ -190,9 +190,9 @@ class gameController():
         '''
         countdown = 0
         if team == self.ourTeamNum:
-            countdown = self.we['nao'+str(robot)]['unpenalizedCountdown']
+            countdown = self.we['nao'+str(robot-1)]['unpenalizedCountdown']
         else:
-            countdown = self.them['nao'+str(robot)]['unpenalizedCountdown']
+            countdown = self.them['nao'+str(robot-1)]['unpenalizedCountdown']
         return countdown
         
     def getScore(self):
