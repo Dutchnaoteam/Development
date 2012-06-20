@@ -136,7 +136,7 @@ class MotionHandler(threading.Thread):
             self.supportLeg = "L"
             self.mot.motProxy.setAngles(["LAnkleRoll","RAnkleRoll"], [ 0.2,  0.2], 0.5)
             
-        self.balancer = True 
+        self.balancer = False
         self.mot.kickOld( angle )
         self.balancer = False
         time.sleep(0.2)
