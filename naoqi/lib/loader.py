@@ -9,6 +9,12 @@ import time
 import os
 import sys
 
+# warming up the camera!
+# seriously, this is necessary
+vidProxy = ALProxy("ALVideoDevice", "127.0.0.1", 9559)
+vidProxy.setParam(18, 1)
+del vidProxy
+
 # Proxies
 ttsProxy = ALProxy("ALTextToSpeech", "127.0.0.1", 9559)
 audProxy = ALProxy('ALAudioDevice', '127.0.0.1', 9559)

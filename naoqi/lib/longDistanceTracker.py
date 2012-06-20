@@ -80,6 +80,9 @@ def calcPosition(coord, cam, headInfo, track):
 
     xAngle = xCoord * radiusPerPixelWidth      
     yAngle = yCoord * radiusPerPixelHeight
+    if -1 < xAngle < 1 and -1 < yAngle < 1:
+        yAngle = -0.47 - headInfo[0] if yAngle + headInfo[0] < -0.47 else yAngle
+        motion.changeAngles(['HeadPitch', 'HeadYaw'], [0.3*yAngle, 0.3*xAngle], 0.7)  # 0.3*angles for smoother movements, optional. Smoothinggg. 
 
     if track:
         if -1 < xAngle < 1 and -1 < yAngle < 1:
