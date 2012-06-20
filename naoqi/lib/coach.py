@@ -54,8 +54,10 @@ class coach(threading.Thread):
             
             self.portlist = [1,2,3,4]
             self.portlist = [self.portlist[i]+ ([port]*4)[i] for i in range(4)]
-            self.portlist.remove(port+self.ownNaoNum)
-            
+            try:
+                self.portlist.remove(port+self.ownNaoNum)
+            except:
+                pass
             self.sendSocket=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
             self.sendSocket.bind(('',0))
             self.sendSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
