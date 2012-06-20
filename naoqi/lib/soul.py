@@ -422,7 +422,7 @@ def BallNotFound():
         firstCall['BallNotFound'] = False
     
     #start scanning for the ball again
-    MotionHandler.setBallScanning(True)
+    #MotionHandler.setBallScanning(True)
         
     # try to find a ball
     now = time.time()
@@ -442,7 +442,7 @@ def Kick():
     print "Kick phase"
     ball     = MotionHandler.getKalmanBallPos()
     #Maybe do this?
-    MotionHandler.setGoalScanning(True)
+    #MotionHandler.setGoalScanning(True)
     #position = MotionHandler.getParticleFilterPos()
     goal = MotionHandler.vis.getGoal()
     print "goal: ", goal
