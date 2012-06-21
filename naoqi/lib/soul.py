@@ -21,7 +21,7 @@ import motionHandler
 import time
 import math
 import socket
-import coach
+#import coach
 import motions as mot
 
 """ Proxy creation: protocol is first three letters with exceptions 
@@ -89,9 +89,9 @@ audProxy.setOutputVolume(60)
 (teamColor, kickOff, penalty) = gsc.getMatchInfo()
 #audProxy.setOutputVolume(0)
 
-print 'test'
-coa = coach.coach('', memProxy, ledProxy, 6321)
-print 'coach started'
+#print 'test'
+#coa = coach.coach('', memProxy, ledProxy, 6321)
+#print 'coach started'
 
 # If keeper -> different style of play
 playerType = 1 if robot == 1 else 0
