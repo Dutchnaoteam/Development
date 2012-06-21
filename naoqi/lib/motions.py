@@ -1353,7 +1353,7 @@ class Motions():
         elif angle <= -1.1:
             self.sideLeftKick()
 
-    def kickOld(self, angle ):
+    def kickOld(self, angle, coordinates = (0.05, -0.01)):
         if angle >= 0.6:
             self.sideRightKickOld()
         elif angle >= 0:
