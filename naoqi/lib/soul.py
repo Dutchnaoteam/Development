@@ -1,4 +1,3 @@
-
 ## NOTES TO EDITORS
 # todo: Implement New Gamecontroller
 # TODO: Fix locategoal
@@ -292,7 +291,7 @@ def BallFoundKeep():
         mot.setFME(False)
         
     maxlength = 6
-    halfmaxlength = (maxlength/2.0)
+    halfmaxlength = 3
 
     #  FIND A BALL  #
     ball = visThread.findBall()
@@ -339,10 +338,10 @@ def BallFoundKeep():
             distnew = math.sqrt(xnew**2 + ynew**2)
             speed = distold - distnew
 
-            print 'Ball moving from ', xold, yold, 'to', xnew, ynew, '(mean). Speed', speed
+            print 'Ball moving from ', xold, yold, 'to', xnew, ynew, '(mean). Speed', speed , 'Distnew: ', distnew
 
             # calculate direction if speed is high enough
-            if speed > 0.25 or (distnew < 0.6 and speed > 0.05 ):
+            if speed > 0.23 or (distnew < 0.8 and speed > 0.05 ):
                 
                 # This is all triangular magic using similarity between two triangles formed by balllocations and Nao.
                 # Keep in mind that y-axis is inverted and that x is forward, y is sideways!
@@ -589,7 +588,8 @@ def Kick():
         ball = mHandler.getKalmanBallPos()
         
         # Cases 1-3, if you see your own goal, kick to the other side OR if the keeper saw the ball
-        if memProxy.getData('dntKeepSawBall'):
+        print "keep saw ball: " + str(memProxy.getData('dntKeepSawBall'))
+	if memProxy.getData('dntKeepSawBall'):
             # Case 1, goal is left, kick to the right.
             if kickangle >= 0.7:
                 mHandler.kick(-1.1)

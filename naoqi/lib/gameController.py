@@ -105,7 +105,10 @@ class gameController():
             # Set the socket parameters
                 
             if len(data)>=68 and (not(ord(data[68]) == self.ourTeamNum or ord(data[20]) == self.ourTeamNum)):
-                print 'wrong gc'
+                print 'wrong gc' 
+                print self.ourTeamNum
+                print ord(data[68])
+                print ord(data[20])
             else:
                 self.header = data[0:4]
                 # Data
