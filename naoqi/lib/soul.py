@@ -1,4 +1,3 @@
-
 ## NOTES TO EDITORS
 # todo: Implement New Gamecontroller
 # TODO: Fix locategoal
@@ -589,7 +588,8 @@ def Kick():
         ball = mHandler.getKalmanBallPos()
         
         # Cases 1-3, if you see your own goal, kick to the other side OR if the keeper saw the ball
-        if False and memProxy.getData('dntKeepSawBall'):
+        print "keep saw ball: " + str(memProxy.getData('dntKeepSawBall'))
+	if memProxy.getData('dntKeepSawBall'):
             # Case 1, goal is left, kick to the right.
             if kickangle >= 0.7:
                 mHandler.kick(-1.1)
