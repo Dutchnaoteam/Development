@@ -1344,14 +1344,10 @@ class Motions():
                                     
     # kick towards front, right leg
     def kick(self, angle ):
-        if angle >= 0.55:
-            self.sideRightKick()
-        elif angle >= 0:
+        if angle >= 0:
             self.rKickAngled(angle )
-        elif -0.55 <= angle < 0:
+        elif angle < 0:
             self.lKickAngled( -angle )
-        elif angle <= -0.55:
-            self.sideLeftKick()
 
     def kickOld(self, angle, coordinates = (0.05, -0.01)):
         if angle >= 0.6:
