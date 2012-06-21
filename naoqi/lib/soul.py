@@ -22,6 +22,7 @@ import time
 import math
 import socket
 import coach
+import motions as mot
 
 """ Proxy creation: protocol is first three letters with exceptions 
 TextToSpeech (tts), RobotPose (pos), Sentinel and Sensors """
@@ -224,6 +225,9 @@ def Playing():
         firstCall['Set']       = True
         firstCall['Playing']   = False
         firstCall['Penalized'] = True
+        
+    if mot.standUp():
+        print 'Fallen'
     
     try:
         if memProxy.getData('dntAction'):
@@ -447,7 +451,7 @@ def BallFound():
     (x,y) = ball 
     memProxy.insertData('dntPhase', 'BallFound')
     
-    if seen and x < 0.17 and -0.02 < y < 0.02:
+    if seen and x < 0.17 and -0.016 < y < 0.016:
         print 'Kick'
         # BLOCKING CALL: FIND BALL WHILE STANDING STILL FOR ACCURATE CORRECTION
         mHandler.killWalk()

@@ -70,7 +70,7 @@ class coach(threading.Thread):
             
             #[timeSinceLastSignalRobot1, timeSinceLastSignalRobot2,...]
             self.activeNAOs = [0,0,0,0]
-            self.distList = [99,99,99,99]
+            self.distList = [0,0,0,0]
             self.timeSinceKeepSawBall = 0
             self.start()
             

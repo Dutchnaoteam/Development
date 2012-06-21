@@ -24,13 +24,16 @@ class KalmanFilter():
     z = matrix.zero( 2,1 )
     I = [[1,0],[0,1]]
     
+    
+    
     def __init__(self):
-	self.mu = [[0],[0]]
-	self.lost = True
+        self.mu = [[0],[0]]
+        self.lost = True
+        self.ballPos = [[0],[0]] #duncan: hack?
 	
     def iterate(self, measurement, control ):
         if measurement:
-	    self.lost = False
+            self.lost = False
 	
         velocity = control
                 

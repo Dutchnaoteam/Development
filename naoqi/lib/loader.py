@@ -27,7 +27,7 @@ audProxy.setOutputVolume(60)
 # Soul variable
 soul = False
 
-ttsProxy.say("Press button, to activate soul")
+ttsProxy.say("Press button for Pleasure Mode")
 start = time.time()
 
 while time.time() - start < 2.7:
@@ -39,7 +39,7 @@ while time.time() - start < 2.7:
 
 # Activate soul
 if soul:
-    ttsProxy.say("Activating soul")
+    ttsProxy.say("Owww Yeah, soul")
     senProxy.enableDefaultActionSimpleClick(False)
     senProxy.enableDefaultActionDoubleClick(False)
     os.system("python /home/nao/naoqi/lib/soul.py")
