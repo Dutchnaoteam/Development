@@ -1893,8 +1893,36 @@ class Motions():
 
 
 
-
-
+    # right kick with inputangle      
+    def rKickAngled(self, angle):
+        self.motProxy.angleInterpolationWithSpeed( \
+            ["LAnklePitch", "LKneePitch", "RAnklePitch", "RKneePitch"],
+            [-0.35,           0.6,          -0.35,        0.6],
+            0.3,
+            True)
+        
+        self.motProxy.setAngles(['LShoulderRoll',    'RShoulderRoll'], #, 'LKneePitch', 'LAnklePitch'], 
+                                 [0.35 + 0.2*angle, -0.25,         ], 0.1)#    0.7,          -0.3], 0.1)
+        time.sleep(1)
+        # Left leg stretched, right leg goes backwards
+        self.motProxy.post.angleInterpolation(
+            ['LHipYawPitch', 'LHipRoll',  'RHipRoll',          'LHipPitch',         'RHipPitch', 'RKneePitch',        'RAnklePitch'], 
+            [[0.75*angle],   [0.1+0.1*angle], [0.075-0.295*angle], [-0.35 - 0.05*angle], [0.4],  [0.95, 0.5 - 0.45*angle],  [-0.6 + 0.1 * angle]],
+            [[1.3],          [1.3],       [0.9],                   [1.7],               [1.0],   [0.4,  1.7],               [0.9]             ], 
+            True)
+        self.motProxy.setAngles(['LShoulderPitch', 'LElbowRoll', 'LElbowYaw'], [0.3, -0.8, 0.3], 0.3 ) 
+        time.sleep(2)
+        # kick
+        self.motProxy.setAngles(['RShoulderPitch', 'RShoulderRoll'], [2, -0.35], 1)
+        self.motProxy.setAngles(['LHipYawPitch', 'LHipRoll', 'RHipPitch',     'RKneePitch',       'RAnklePitch'],
+                                [0.75*angle,      0.1,       -0.35-0.2*angle , 0.05 + 0.2*angle, 0.1 - 0.25*angle], 1)
+        time.sleep(0.85)
+        # return to start position
+        self.motProxy.post.angleInterpolation(
+            ['LHipYawPitch', 'RHipRoll', 'RHipPitch', 'RKneePitch', 'LHipRoll', 'LHipPitch', 'LKneePitch', 'RAnklePitch', 'RAnkleRoll', 'LAnklePitch'],
+            [[0],            [0],        [-0.4],      [1.0],        [0],       [-0.4],       [0.95],      [-0.6],       [0],         [-0.6]],
+            [[0.65],         [0.85],     [0.85],      [0.85],       [0.85],     [0.85],       [0.85],      [0.65],        [0.6],     [ 0.85 ]], True)
+        time.sleep(0.9)
 
 
                 
