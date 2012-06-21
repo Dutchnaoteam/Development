@@ -1356,9 +1356,11 @@ class Motions():
     def kickOld(self, angle, coordinates = (0.05, -0.01)):
         if angle >= 0.6:
             self.sideRightKickOld()
-        elif angle >= 0:
+        elif angle > 0.1:
             self.cartesianRightOld( angle, min( 0.04, max( coordinates[0], -0.2)), min ( max( coordinates[1], -0.1 ), 0.01 ) )            
-        elif -0.6 <= angle < 0:
+        elif -0.1 <= angle <= 0.1 :
+            self.rKickAngled(angle)
+        elif -0.6 <= angle < -0.1:
             self.cartesianLeftOld( angle, min( coordinates[0], 0.2), max ( min( coordinates[1], 0.1 ), -0.01 ) )
         elif angle <= -0.6:
             self.sideLeftKickOld()
