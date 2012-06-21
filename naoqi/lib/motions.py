@@ -1764,11 +1764,6 @@ class Motions():
 
 
 
-
-
-
-
-
     # soft kick towards right, left leg
     def sideLeftKick(self):
         self.motProxy.angleInterpolation(['RShoulderRoll', 'LShoulderRoll'], 
@@ -1811,7 +1806,6 @@ class Motions():
                                     [[0.0],     [-0.6],     [1.3],        [-0.6]], 
                                     [[0.5],     [0.6],       [0.6],        [0.6]], True)
         time.sleep(0.6)
-
 
     # right kick with inputangle      
     def rKickAngled(self, angle):
