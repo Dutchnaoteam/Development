@@ -1844,6 +1844,62 @@ class Motions():
             [[0.65],         [0.85],     [0.85],      [0.85],       [0.85],     [0.85],       [0.85],      [0.65],        [0.6],     [ 0.85 ]], True)
         time.sleep(0.9)
 
+    # left kick with inputangle
+    def lKickAngled(self, angle):
+        self.motProxy.angleInterpolationWithSpeed( \
+            ["RAnklePitch", "RKneePitch", "LAnklePitch", "LKneePitch"],
+            [-0.35,           0.6,          -0.35,        0.6],
+            0.3,
+            True)
+        
+        self.motProxy.setAngles(['RShoulderRoll',    'LShoulderRoll'], #, 'LKneePitch', 'LAnklePitch'], 
+                                 [-0.35 - 0.2*angle,  0.25,         ], 0.1)#    0.7,          -0.3], 0.1)
+        time.sleep(1)
+        # Left leg stretched, right leg goes backwards
+        self.motProxy.post.angleInterpolation(
+            ['LHipYawPitch', 'RHipRoll',      'LHipRoll',            'RHipPitch',         'LHipPitch', 'LKneePitch',        'LAnklePitch'], 
+            [[0.75*angle],   [-0.1-0.1*angle], [-0.075+0.295*angle], [-0.35 - 0.05*angle], [0.4],  [0.95, 0.5 - 0.45*angle],  [-0.6 + 0.1 * angle]],
+            [[1.3],          [1.3],            [0.9],                   [1.7],               [1.0],   [0.4,  1.7],               [0.9]             ], 
+            True)
+        self.motProxy.setAngles(['RShoulderPitch', 'RElbowRoll', 'RElbowYaw'], [0.3, -0.8, 0.3], 0.3 ) 
+        time.sleep(2)
+       # kick
+        self.motProxy.setAngles(['LShoulderPitch', 'LShoulderRoll'], [2, 0.35], 1)
+        self.motProxy.setAngles(['LHipYawPitch', 'RHipRoll', 'LHipPitch',     'LKneePitch',       'LAnklePitch'],
+                                [0.75*angle,      -0.1,       -0.35-0.15*angle , 0.05 + 0.2*angle, 0.1 - 0.25*angle], 1)
+        time.sleep(0.85)
+        # return to start position
+        self.motProxy.post.angleInterpolation(
+            ['LHipYawPitch', 'RHipRoll', 'RHipPitch', 'RKneePitch', 'LHipRoll', 'LHipPitch', 'LKneePitch', 'LAnklePitch', 'LAnkleRoll', 'LAnklePitch'],
+            [[0],            [0],        [-0.4],      [0.95],        [0],       [-0.4],       [1.0],      [-0.6],       [0],         [-0.6]],
+            [[0.65],         [0.85],     [0.85],      [0.85],       [0.85],     [0.85],       [0.85],      [0.65],        [0.6],     [ 0.85 ]], True)
+        time.sleep(0.9)
+        
+    # a normal pose from which walking is almost immediately possible
+    def normalPose(self, force = False): 
+        anglelist = self.motProxy.getAngles(['RHipPitch','RKneePitch', 'RAnklePitch'],True)
+        if force or not( self.posProxy.getActualPoseAndTime()[0] == 'Stand' and
+                        -0.41 <= anglelist[0] <= -0.39 and
+                        0.94 <= anglelist[1] <= 0.96 and 
+                        -0.56 <= anglelist[2] <= -0.54):
+            names = list()
+            times = list()
+            angles = list()
+                    
+            names.extend( ['LShoulderPitch','LShoulderRoll','LElbowYaw','LElbowRoll','RShoulderPitch','RShoulderRoll'])
+            angles.extend([[1.2],           [0.15],         [0.0],      [0.0],       [1.2],           [-0.15] ])
+            times.extend( [[1.0],           [1.0],          [1.0],      [1.0],       [1.0],           [1.0  ] ])
+     
+            names.extend( ['RElbowYaw','RElbowRoll','LHipYawPitch','LHipRoll','LHipPitch','LKneePitch','LAnklePitch'])
+            angles.extend([[0.0],      [0.0],       [0.0],         [0.0],     [-0.4],      [0.95],     [-0.55]])
+            times.extend( [[1.0],      [1.0],       [1.0],         [1.0],     [1.0],       [1.0],      [1.0]])
+
+            names.extend( ['LAnkleRoll', 'RHipRoll', 'RHipPitch', 'RKneePitch', 'RAnklePitch', 'RAnkleRoll'] )
+            angles.extend([[0.0],        [0.0],      [-0.4],      [0.95],       [-0.55],       [0.0]] )
+            times.extend( [[1.0],        [1.0],      [1.0],       [1.0],        [1.0],         [1.0]] )
+
+            self.motProxy.angleInterpolation(names, angles, times, True)    
+            
 
                 
 def minimizedAngle( angle ) :
