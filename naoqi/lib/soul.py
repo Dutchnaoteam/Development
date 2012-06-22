@@ -22,6 +22,7 @@ import time
 import math
 import socket
 #import coach
+import swearingEngine as swe
 import motions as mot
 
 """ Proxy creation: protocol is first three letters with exceptions 
@@ -258,7 +259,8 @@ def Penalized():
                 phase = 'BallNotFoundKeep'
             else:                                          # else, become a player
                 phase = 'Unpenalized'
-
+        swe.penalized(gsc.getPenalty())
+        
         firstCall['Initial']   = True
         firstCall['Ready']     = True
         firstCall['Set']       = True
