@@ -67,7 +67,7 @@ class gameController():
         self.port = port
         # Create socket and bind to address
         self.socket = socket(AF_INET,SOCK_DGRAM,)
-        self.socket.bind((host,port))
+        self.socket.bind(('',port))
         self.socket.setblocking(0)
 
     # DESTRUCTOR
@@ -104,11 +104,8 @@ class gameController():
             # om te kijken of er al nieuwe data binnen is, dan is de timer niet nodig
             # Set the socket parameters
                 
-            if len(data)>=68 and (not(ord(data[68]) == self.ourTeamNum or ord(data[20]) == self.ourTeamNum)):
-                print 'wrong gc' 
-                print self.ourTeamNum
-                print ord(data[68])
-                print ord(data[20])
+            if not(ord(data[68]) == self.ourTeamNum or ord(data[20]) == self.ourTeamNum):
+                print 'wrong gc'
             else:
                 self.header = data[0:4]
                 # Data
@@ -125,6 +122,7 @@ class gameController():
                 for t in (0, 1):
                     # Team is a pointer to the team dictionary
                     team = self.we if ord(data[20+(48*t)]) == self.ourTeamNum else self.them
+                                           
                     team['teamColor'] = ord(data[21+(48*t)])
                     team['goalColor'] = ord(data[22+(48*t)])
                     team['score'] = ord(data[23+(48*t)])
@@ -133,8 +131,6 @@ class gameController():
                         # robot = team['nao'+str(r)]
                         team['nao'+str(r)]['penalty'] = self.stringToDecimal([data[24 + r*4 +(48*t)], data[25 + r*4+(48*t)]])
                         team['nao'+str(r)]['unpenalizedCountdown'] = self.stringToDecimal([data[26+r*4+(48*t)], data[27+r*4+(48*t)]])
-                        #print 'r' + str(r)
-                        #print _stringToDecimal([data[24 + r*4 +(48*t)], data[25 + r*4+(48*t)]])
 
                 self.time = time.time()
     
@@ -158,9 +154,9 @@ class gameController():
         '''
         return self.version
 
-    def getPenalty(self, robot, team=6):
+    def getPenalty(self, robot, team=8):
         '''
-        Returns the penalty of the robot'th nao in the given team. If no team is specified, team = 6 (the Dutch Nao Team for SPL2011).
+        Returns the penalty of the robot'th nao in the given team. If no team is specified, team = 8 (the Dutch Nao Team for SPL2012).
         BALL_HOLDING            1
         PLAYER_PUSHING          2
         OBSTRUCTION             3
@@ -171,12 +167,16 @@ class gameController():
         REQUEST_FOR_PICKUP      8
         MANUAL                  15
         '''
-        penalty = 0
-        if team == self.ourTeamNum:
-            penalty = self.we['nao'+str(robot-1)]['penalty']
-        else:
-            penalty = self.them['nao'+str(robot-1)]['penalty']
-        return penalty
+        try:
+            penalty = 0
+            if team == self.ourTeamNum:
+                penalty = self.we['nao'+str(robot-1)]['penalty']
+            else:
+                penalty = self.them['nao'+str(robot-1)]['penalty']
+            return penalty
+            
+        except:
+            return 0
         
     def getAvailableNaos(self, team=6):
         '''
@@ -193,9 +193,9 @@ class gameController():
         '''
         countdown = 0
         if team == self.ourTeamNum:
-            countdown = self.we['nao'+str(robot-1)]['unpenalizedCountdown']
+            countdown = self.we['nao'+str(robot)]['unpenalizedCountdown']
         else:
-            countdown = self.them['nao'+str(robot-1)]['unpenalizedCountdown']
+            countdown = self.them['nao'+str(robot)]['unpenalizedCountdown']
         return countdown
         
     def getScore(self):
