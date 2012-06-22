@@ -123,18 +123,8 @@ def Initial():
         # Empty variables
         ball_loc = list()
 
-        mot.stiff()                                        # stiffness on (if it wasnt already)
-        mot.setHead(0,0)                                   # head in normal position
-
-        # if a regular player
-        if playerType == 0:
-            phase = 'BallNotFound'
-            mot.normalPose(True)                           # normalPose, forcing call
-        # if a keeper
-        else:
-            phase = 'BallNotFoundKeep'
-            mot.keepNormalPose()
-
+        mot.kill()
+		
         firstCall['Initial']   = False
         firstCall['Ready']     = True
         firstCall['Set']       = True
@@ -155,6 +145,13 @@ def Ready():
         visThread.stopScan()
         print 'In ready state'
         mHandler.killWalk()
+				
+        # Initial pose
+        mot.stiff()
+        if playerType == 0:
+            mot.normalPose()
+        else:
+            mot.keepNormalPose()
 
         firstCall['Initial'] = True
         firstCall['Ready']   = False
@@ -215,6 +212,19 @@ def Playing():
     """
     global phase
     global firstCall
+	
+    if firstCall['Set']:
+        mot.stiff()                                        # stiffness on (if it wasnt already)
+        mot.setHead(0,0)                                   # head in normal position
+
+        # if a regular player
+        if playerType == 0:
+            phase = 'BallNotFound'
+            mot.normalPose(True)                           # normalPose, forcing call
+        # if a keeper
+        else:
+            phase = 'BallNotFoundKeep'
+            mot.keepNormalPose()
    
     if firstCall['Playing']:
         mHandler.killWalk()
@@ -459,7 +469,7 @@ def BallFound():
     else:
         if seen:
             print 'Kalman position', x,y
-            theta = math.atan(y/x)
+            theta = math.atan(y/x) # TypeError: unsupported operand type(s) for /: 'list' and 'list'??
             # hacked influencing of perception, causing walking forward to have priority
             theta *= 0.4      
             x = (3.0 * (x - 0.17))  
@@ -662,7 +672,7 @@ def awakeSoul():
         state = gsc.getState()
         states.get(state)()
     gsc.close()
-    coa.close()
+    #coa.close()   #for closing the coach
     mHandler.close()
     visThread.close()
     # particleFilter.close()
@@ -713,7 +723,7 @@ finally:
     gsc.close()
     mHandler.close()
     visThread.close()
-    coa.close()
+    #coa.close()  #for closing the coach
     audProxy.setOutputVolume(60)
     sentinel.enableDefaultActionDoubleClick(True)
     sentinel.enableDefaultActionSimpleClick(True)
