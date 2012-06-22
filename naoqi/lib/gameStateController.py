@@ -7,6 +7,8 @@ import time
 import gameController as gameC
 import buttonController as buttonC
 import threading
+global firstcallLightsoff
+global firstcallLightsoff2
 
 class StateController(threading.Thread):
     # VARIABLES
@@ -25,6 +27,8 @@ class StateController(threading.Thread):
         self.bc = buttonC.buttonController( ttsProxy, memProxy, sensors )
         self.gc = gameC.gameController( self.team )
         self.ledProxy = ledProxy
+        self.firstcallLightsoff = True
+        self.firstcallLightsoff2 = True
         
     def __del__(self):
         self.running = False
@@ -62,13 +66,17 @@ class StateController(threading.Thread):
     def manageLeds( self, state ): 
         # case initial
         if state == 0:
-            self.ledProxy.off('AllLeds')
+            if self.firstcallLightsoff:
+                self.ledProxy.off('AllLeds')
+                self.firstcallLightsoff = False
+            self.ledProxy.fadeRGB('LeftFaceLeds',0x00ff30ff, 0)
             # Team color must be displayed on left foot (Reference to rules)
             if (self.getTeamColor == 0):
                 self.ledProxy.fadeRGB('LeftFootLeds', 0x000000ff, 0)
             else:
                 self.ledProxy.fadeRGB('LeftFootLeds', 0x00ff0000, 0)
         elif self.state == 1:
+            self.ledProxy.off('LeftFaceLeds')
             # ChestLed is blue
             self.ledProxy.fadeRGB('ChestLeds',0x000000ff, 0)
         elif self.state == 2:
@@ -80,6 +88,9 @@ class StateController(threading.Thread):
             else:
                 self.ledProxy.fadeRGB('LeftFootLeds', 0x00ff0000, 0)
         elif self.state == 3:
+            if self.firstcallLightsoff2:
+                self.ledProxy.off('LeftFaceLeds')
+                self.firstcallLightsoff2 = False
             # ChestLed is greens
             self.ledProxy.fadeRGB('ChestLeds', 0x0000ff00, 0)
         elif self.state == 10:
