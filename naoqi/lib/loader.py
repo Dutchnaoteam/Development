@@ -22,7 +22,7 @@ senProxy = ALProxy("ALSentinel", "127.0.0.1", 9559)
 # Enable Button actions and Sound.
 senProxy.enableDefaultActionSimpleClick(True)
 senProxy.enableDefaultActionDoubleClick(True)
-audProxy.setOutputVolume(60)
+audProxy.setOutputVolume(200)
 
 # Soul variable
 soul = False
