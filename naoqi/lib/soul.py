@@ -225,6 +225,7 @@ def Playing():
         else:
             phase = 'BallNotFoundKeep'
             mot.keepNormalPose()
+        firstCall['Set'] = False
    
     if firstCall['Playing']:
         mHandler.killWalk()
@@ -473,7 +474,9 @@ def BallFound():
                 theta = math.atan(y/x) # TypeError: unsupported operand type(s) for /: 'list' and 'list'??
             except:
                 theta = float(1)
-                print "Error in KalmanPosition soul.py: 473"
+                y = y[0]
+                x = x[0]
+                print "error in theta calculation"
             # hacked influencing of perception, causing walking forward to have priority
             theta *= 0.4      
             x = (3.0 * (x - 0.17))  
@@ -486,8 +489,9 @@ def BallFound():
             try:
                 theta = math.atan(y/x) # TypeError: unsupported operand type(s) for /: 'list' and 'list'??
             except:
+                y = y[0]
                 theta = float(1)
-                print "Error in KalmanPosition soul.py: 487"
+                print "error in theta calculation"
             mHandler.postWalkTo( 0,0, math.copysign( theta, y ) / 2.0 )
             # TODO determine where ball is in headposition and look there instead of random places
             if not vis.scanCircle(visThread):
