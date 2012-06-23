@@ -7,8 +7,7 @@ import time
 import gameController as gameC
 import buttonController as buttonC
 import threading
-global firstcallLightsoff
-global firstcallLightsoff2
+import swearingEngine as swe
 
 class StateController(threading.Thread):
     # VARIABLES
@@ -27,8 +26,7 @@ class StateController(threading.Thread):
         self.bc = buttonC.buttonController( ttsProxy, memProxy, sensors )
         self.gc = gameC.gameController( self.team )
         self.ledProxy = ledProxy
-        self.firstcallLightsoff = True
-        self.firstcallLightsoff2 = True
+        self.firstCallPenalty = True
         
     def __del__(self):
         self.running = False
@@ -45,16 +43,13 @@ class StateController(threading.Thread):
             if self.gc.controlledRefresh():
                 gcState = self.gc.getGameState()                # get state from GameController
                 buttonState = self.listenToButtons(buttonState) # get buttonstate 
-                #TODO remove try and fix
-                try:
-                    if (buttonState == 10 or self.gc.getPenalty(self.robot, self.team)):
-                        self.state = 10
-                    else:
-                        self.state = gcState
-                except:
-                    pass
+
+                if (buttonState == 10 or self.gc.getPenalty(self.robot, self.team)):
+                    self.state = 10
+                else:
+                    self.state = gcState
                 self.manageLeds( self.state )
-                
+                self.swearingEngine()
             # if gamecontroller not active, listen to buttons for some time (10 seconds) then try refreshing
             else: 
                 #print 'Gc, not active, listen to buttonInterface'
@@ -62,21 +57,30 @@ class StateController(threading.Thread):
                 while time.time() - now < 10.0:
                     self.state = self.listenToButtons( self.state )
                     self.manageLeds( self.state )
+                    self.swearingEngine()
+                    
+                               
+                    
 
+    def swearingEngine(self):
+        if self.state == 10 and self.firstCallPenalty:
+            try:
+                swe.penalized(self.getPenalty())
+            except:
+                pass
+            self.firstCallPenalty = False
+        if not(self.state==10) and not(self.firstCallPenalty):
+            self.firstCallPenalty = True 
     def manageLeds( self, state ): 
         # case initial
         if state == 0:
-            if self.firstcallLightsoff:
-                self.ledProxy.off('AllLeds')
-                self.firstcallLightsoff = False
-            self.ledProxy.fadeRGB('LeftFaceLeds',0x00ff30ff, 0)
+            self.ledProxy.off('AllLeds')
             # Team color must be displayed on left foot (Reference to rules)
             if (self.getTeamColor == 0):
                 self.ledProxy.fadeRGB('LeftFootLeds', 0x000000ff, 0)
             else:
                 self.ledProxy.fadeRGB('LeftFootLeds', 0x00ff0000, 0)
         elif self.state == 1:
-            self.ledProxy.off('LeftFaceLeds')
             # ChestLed is blue
             self.ledProxy.fadeRGB('ChestLeds',0x000000ff, 0)
         elif self.state == 2:
@@ -88,9 +92,6 @@ class StateController(threading.Thread):
             else:
                 self.ledProxy.fadeRGB('LeftFootLeds', 0x00ff0000, 0)
         elif self.state == 3:
-            if self.firstcallLightsoff2:
-                self.ledProxy.off('LeftFaceLeds')
-                self.firstcallLightsoff2 = False
             # ChestLed is greens
             self.ledProxy.fadeRGB('ChestLeds', 0x0000ff00, 0)
         elif self.state == 10:
@@ -152,18 +153,18 @@ class StateController(threading.Thread):
             (teamColor, penalty, kickOff) = self.bc.getSetup()
         self.secondaryState = penalty
         return (teamColor, penalty, kickOff)
-    
-    def getPenalty(self, robot, team=6):
-        return self.gc.getPenalty(robot, team)
+
+    def getPenalty(self):
+        return self.gc.getPenalty(self.robot, self.team)
         
-    def getSecondsRemaining(self):
+    def getSecondsRemaining():
         return self.gc.getSecondsRemaining()
 
     # Closes thread
     def close(self):
         self.running = False
         self.gc.close()
-        print 'gsc closed safely'
+        print 'gameStateController closed safely'
 
 # This code will only be executed if invoked directly. Not when imported from another file.
 # It shows how to use this module

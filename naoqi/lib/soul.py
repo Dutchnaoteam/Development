@@ -85,7 +85,7 @@ kickOff = 0
 penalty = 0
 
 audProxy = ALProxy('ALAudioDevice', '127.0.0.1', 9559)
-audProxy.setOutputVolume(60)
+audProxy.setOutputVolume(100)
 (teamColor, kickOff, penalty) = gsc.getMatchInfo()
 #audProxy.setOutputVolume(0)
 
@@ -269,7 +269,8 @@ def Penalized():
                 phase = 'BallNotFoundKeep'
             else:                                          # else, become a player
                 phase = 'Unpenalized'
-
+        
+      
         firstCall['Initial']   = True
         firstCall['Ready']     = True
         firstCall['Set']       = True
@@ -736,7 +737,7 @@ finally:
     mHandler.close()
     visThread.close()
     #coa.close()  #for closing the coach
-    audProxy.setOutputVolume(60)
+    audProxy.setOutputVolume(100)
     sentinel.enableDefaultActionDoubleClick(True)
     sentinel.enableDefaultActionSimpleClick(True)
 # DEBUG #
